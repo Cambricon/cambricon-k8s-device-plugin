@@ -77,4 +77,4 @@ spec:
 
 ### Version v1.0.0
 
-Implement basic function
+Implement basic function.
