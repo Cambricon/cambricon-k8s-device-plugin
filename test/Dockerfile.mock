@@ -1,0 +1,27 @@
+FROM ubuntu:16.04 as build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        g++ \
+        ca-certificates \
+        wget && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV GOLANG_VERSION 1.12
+RUN wget -nv -O - http://192.168.100.43:9000/public/go-lang/go1.12.linux-amd64.tar.gz \
+     | tar -C /usr/local -xz
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+WORKDIR /go/src/github.com/cambricon/cambricon-k8s-device-plugin
+COPY . .
+
+RUN export CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' && \
+    go install -ldflags="-s -w" -v github.com/cambricon/cambricon-k8s-device-plugin
+
+FROM ubuntu:16.04
+COPY --from=build /go/bin/cambricon-k8s-device-plugin /k8s-device-plugin
+COPY pkg/cndev/mock/libcndev.so /usr/lib
+COPY test/mock.json /
+WORKDIR /
+
+CMD ./k8s-device-plugin

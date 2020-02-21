@@ -1,0 +1,36 @@
+variables:
+  GIT_CLONE_PATH: $CI_BUILDS_DIR/src/github.com/cambricon/cambricon-k8s-device-plugin
+.only-mr-refs: &only-mr-refs
+  refs:
+    - merge_requests
+    - master
+
+stages:
+  - lint
+  - build
+  - test
+
+run-build:
+  stage: build
+  image: 10.110.210.252:5001/cambricon/golang:1.11
+  script:
+    - export GO111MODULE=off
+    - export GOPATH=$CI_BUILDS_DIR
+    - go build .
+    - go test ./... -v
+
+run-lint:
+  stage: lint
+  image: 10.110.210.252:5001/cambricon/golinter:20190221
+  script:
+    - export GO111MODULE=off
+    - export GOPATH=$CI_BUILDS_DIR
+    - test -z `go fmt ./...`
+    - go vet ./...
+
+run-test-device-plugin:
+  stage: test
+  tags:
+    - shell47
+  script:
+    - bash ./test/deploy-test-device-plugin.sh
