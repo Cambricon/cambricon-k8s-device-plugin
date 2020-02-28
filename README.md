@@ -23,7 +23,7 @@ The list of prerequisites for running the Cambricon device plugin is described b
 
 ### Preparing your MLU Nodes
 
-It assumes that the Cambricon drivers and neauware are installed on your MLU Nodes.
+It assumes that the Cambricon drivers and neuware are installed on your MLU Nodes.
 
 ### Download and build
 
@@ -34,7 +34,7 @@ git checkout v1.0.0
 bash build_image.sh
 ```
 
-Please make sure Cambricon neauware is installed in your compiling environment.
+Please make sure Cambricon neuware is installed in your compiling environment.
 It uses libcndev.so binary in your compiling machine and generates cambricon device plugin docker images under folder ./image.
 
 ### Enabling MLU Support in Kubernetes
