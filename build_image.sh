@@ -10,7 +10,7 @@ fi
 
 cndev_path="/usr/local/neuware/lib64/libcndev.so"
 if [ ! -f $cndev_path ]; then
-        echo "Dependency check failed, please install Cambricon neauware!"
+        echo "Dependency check failed, please install Cambricon neuware!"
         exit 1
 else
         echo "Dependency check passed."
