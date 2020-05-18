@@ -22,16 +22,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/cambricon/cambricon-k8s-device-plugin/pkg/cndev"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 	"log"
 	"net"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cambricon/cambricon-k8s-device-plugin/pkg/cndev"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
 const (
@@ -177,10 +179,11 @@ func (m *CambriconDevicePlugin) PrepareResponse(req *pluginapi.ContainerAllocate
 
 	devpaths := m.uuidToPath(req.DevicesIDs)
 
-	for _, devpath := range devpaths {
+	for id, devpath := range devpaths {
+		var containerPath string
 		if isMLU270Device(devpath) {
 			if !hasMLU270ShareDevice {
-				addDevice(&car, mlu270MonitorDeviceName)
+				addDevice(&car, mlu270MonitorDeviceName, mlu270MonitorDeviceName)
 				hasMLU270ShareDevice = true
 			}
 
@@ -190,24 +193,25 @@ func (m *CambriconDevicePlugin) PrepareResponse(req *pluginapi.ContainerAllocate
 			if err != nil {
 				log.Printf("Failed to get device index for device path %v", err)
 			} else {
-				addDevice(&car, fmt.Sprintf(mlu270MSGQDeviceName+":%d", index))
-				addDevice(&car, fmt.Sprintf(mlu270RPCDeviceName+":%d", index))
-				addDevice(&car, fmt.Sprintf(mlu270CmsgDeviceName+"%d", index))
-				addDevice(&car, fmt.Sprintf(mlu270COMMUDeviceName+"%d", index))
+				addDevice(&car, fmt.Sprintf(mlu270MSGQDeviceName+":%d", index), fmt.Sprintf(mlu270MSGQDeviceName+":%d", id))
+				addDevice(&car, fmt.Sprintf(mlu270RPCDeviceName+":%d", index), fmt.Sprintf(mlu270RPCDeviceName+":%d", id))
+				addDevice(&car, fmt.Sprintf(mlu270CmsgDeviceName+"%d", index), fmt.Sprintf(mlu270CmsgDeviceName+"%d", id))
+				addDevice(&car, fmt.Sprintf(mlu270COMMUDeviceName+"%d", index), fmt.Sprintf(mlu270COMMUDeviceName+"%d", id))
 			}
-
+			containerPath = mlu270DeviceName + strconv.Itoa(id)
 		} else {
 			if !hasMLU100ShareDevice {
-				addDevice(&car, mlu100MonitorDeviceName)
+				addDevice(&car, mlu100MonitorDeviceName, mlu100MonitorDeviceName)
 				_, err := os.Stat(mlu100CodecDeviceName)
 				if err == nil {
-					addDevice(&car, mlu100CodecDeviceName)
+					addDevice(&car, mlu100CodecDeviceName, mlu100CodecDeviceName)
 				}
 
 				hasMLU100ShareDevice = true
 			}
+			containerPath = mlu100DeviceName + strconv.Itoa(id)
 		}
-		addDevice(&car, devpath)
+		addDevice(&car, devpath, containerPath)
 	}
 	return car
 }
@@ -296,10 +300,10 @@ func (m *CambriconDevicePlugin) Serve() error {
 	return nil
 }
 
-func addDevice(car *pluginapi.ContainerAllocateResponse, deviceName string) {
+func addDevice(car *pluginapi.ContainerAllocateResponse, hostPath string, containerPath string) {
 	dev := new(pluginapi.DeviceSpec)
-	dev.HostPath = deviceName
-	dev.ContainerPath = deviceName
+	dev.HostPath = hostPath
+	dev.ContainerPath = containerPath
 	dev.Permissions = "rw"
 	car.Devices = append(car.Devices, dev)
 }
