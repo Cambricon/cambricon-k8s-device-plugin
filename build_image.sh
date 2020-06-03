@@ -22,6 +22,6 @@ echo "Building Cambricon device plugin docker image."
 docker build -t  cambricon-k8s-device-plugin:v1.0.0  -f Dockerfile  .
 
 echo "Saving Cambricon device plugin docker image."
-docker save -o "$curpath/image/cambricon_device_plugin_ubuntu.tar cambricon-k8s-device-plugin:v1.0.0"
+docker save -o $curpath/image/cambricon_device_plugin_ubuntu.tar cambricon-k8s-device-plugin:v1.0.0
 
 rm -rf "$curpath/libcndev.so"
