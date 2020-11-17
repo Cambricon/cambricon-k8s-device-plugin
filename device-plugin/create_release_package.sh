@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2020 Cambricon, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,30 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-image: 10.110.210.252:5001/cambricon/buildpack:20200424
-variables:
-  GOPROXY: http://10.110.210.252:8080
+set -e
 
-.only-mr-refs: &only-mr-refs
-  refs:
-    - merge_requests
-    - master
+usage() {
+	echo "Usage:"
+	echo "$0 TAG"
+	exit 0
+}
 
-stages:
-  - lint
-  - build
-  - test
+tag=$1
+[[ $tag == "" ]] && usage
 
-include:
-  - local: device-plugin/.gitlab-ci.yml
+rm -rf image
+mkdir -p image
+TAG=$tag ./build_image.sh
+sed "s|v[0-9]\.[0-9].[0-9]|$tag|g" examples/cambricon-device-plugin-daemonset.yaml > image/cambricon-device-plugin-daemonset.yaml
+sed "s|v[0-9]\.[0-9].[0-9]|$tag|g" examples/cambricon-device-plugin-static-pod.yaml > image/cambricon-device-plugin-static-pod.yaml
+cp examples/pod.yaml image/
 
-run-shellcheck-lint:
-  stage: lint
-  image: 10.110.210.252:5001/cambricon/shellcheck-alpine:v0.7.0
-  script:
-    - find . -name '*.sh' -exec shellcheck {} +
-  only:
-    changes:
-      - .gitlab-ci.yml
-      - "**/*.sh"
-    <<: *only-mr-refs
+tar -zcvf cambricon_k8s_device_plugin_packages_"$tag".tar.gz image

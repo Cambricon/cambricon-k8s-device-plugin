@@ -12,30 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-image: 10.110.210.252:5001/cambricon/buildpack:20200424
-variables:
-  GOPROXY: http://10.110.210.252:8080
-
-.only-mr-refs: &only-mr-refs
-  refs:
-    - merge_requests
-    - master
-
-stages:
-  - lint
-  - build
-  - test
-
-include:
-  - local: device-plugin/.gitlab-ci.yml
-
-run-shellcheck-lint:
-  stage: lint
-  image: 10.110.210.252:5001/cambricon/shellcheck-alpine:v0.7.0
-  script:
-    - find . -name '*.sh' -exec shellcheck {} +
-  only:
-    changes:
-      - .gitlab-ci.yml
-      - "**/*.sh"
-    <<: *only-mr-refs
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+ENV MOCK_JSON=/mock.json
+COPY mock.json /
