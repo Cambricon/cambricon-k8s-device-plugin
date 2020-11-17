@@ -12,30 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-image: 10.110.210.252:5001/cambricon/buildpack:20200424
-variables:
-  GOPROXY: http://10.110.210.252:8080
+ARG BUILDPLATFORM=linux/amd64
+FROM --platform=$BUILDPLATFORM golang:1.13 as build
+ARG APT_PROXY
+ARG GOPROXY
+ARG TARGETPLATFORM
+RUN set -ex && export http_proxy=$APT_PROXY && \
+  apt-get update && \
+  apt-get install -y build-essential gcc-aarch64-linux-gnu ca-certificates make
+WORKDIR /work/
+COPY . .
+RUN make build
 
-.only-mr-refs: &only-mr-refs
-  refs:
-    - merge_requests
-    - master
-
-stages:
-  - lint
-  - build
-  - test
-
-include:
-  - local: device-plugin/.gitlab-ci.yml
-
-run-shellcheck-lint:
-  stage: lint
-  image: 10.110.210.252:5001/cambricon/shellcheck-alpine:v0.7.0
-  script:
-    - find . -name '*.sh' -exec shellcheck {} +
-  only:
-    changes:
-      - .gitlab-ci.yml
-      - "**/*.sh"
-    <<: *only-mr-refs
+FROM ubuntu:18.04
+ARG TARGETPLATFORM
+COPY --from=build /work/k8s-device-plugin /usr/bin/
+COPY libs/$TARGETPLATFORM/libcndev.so /usr/lib
+CMD ["/usr/bin/k8s-device-plugin"]
