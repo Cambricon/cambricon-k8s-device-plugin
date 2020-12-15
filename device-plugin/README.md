@@ -28,7 +28,7 @@ It assumes that the Cambricon drivers and neuware are installed on your MLU Node
 ### Download and build
 
 ```shell
-git clone github.com/cambricon/cambricon-k8s-device-plugin.git
+git clone https://github.com/Cambricon/cambricon-k8s-device-plugin.git
 cd cambricon-k8s-device-plugin/device-plugin
 ```
 
@@ -67,15 +67,11 @@ It uses **libcndev.so** binary on your compiling machine and generates docker im
    docker load -i image/cambricon-k8s-device-plugin-amd64.tar
    ```
 
-2. Enable MLU support in your cluster by deploying the daemonset in examples folder:
+2. Enable MLU support in your cluster by deploying the daemonset in [examples](examples) folder:
 
    Set the mode arg in the yaml file to change mode
 
    ```yaml
-   - image: cambricon-k8s-device-plugin:v1.1.1
-     name: cambricon-device-plugin-ctr
-     command:
-       - /usr/bin/k8s-device-plugin
      args:
        - -mode
        - default # switch mode here

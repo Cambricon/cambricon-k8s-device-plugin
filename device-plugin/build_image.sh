@@ -60,7 +60,7 @@ arm64)
 	exit 1
 esac
 
-if ! file "$LIBCNDEV" | grep -q "$file_arch"; then
+if ! file "$LIBCNDEV" --dereference | grep -q "$file_arch"; then
 	echo "$LIBCNDEV is not for $ARCH"
 	exit 1
 fi
