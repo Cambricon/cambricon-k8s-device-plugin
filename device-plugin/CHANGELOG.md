@@ -12,3 +12,7 @@
 
 + Fix SR-IOV vf device name same as env-share fake device name.
 + Support building image on arm64 machines.
+
+## v1.1.2
+
++ Support allocating UART console device(/dev/ttyMS) in container.

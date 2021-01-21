@@ -15,15 +15,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
-	"golang.org/x/net/context"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -32,14 +30,13 @@ const (
 	mlu100CodecDeviceName   = "/dev/cncodec_dev"
 	mlu100DeviceName        = "/dev/cambricon_c10Dev"
 
-	mluMonitorDeviceName = "/dev/cambricon_ctl"
-	mluMsgqDeviceName    = "/dev/cambr-msgq"
-	mluRPCDeviceName     = "/dev/cambr-rpc"
-	mluCmsgDeviceName    = "/dev/cmsg_ctrl"
-	mluDeviceName        = "/dev/cambricon_dev"
-	mluCommuDeviceName   = "/dev/commu"
-
-	VirtualizationNum = "VIRTUALIZATION_NUM"
+	mluMonitorDeviceName     = "/dev/cambricon_ctl"
+	mluMsgqDeviceName        = "/dev/cambr-msgq"
+	mluRPCDeviceName         = "/dev/cambr-rpc"
+	mluCmsgDeviceName        = "/dev/cmsg_ctrl"
+	mluDeviceName            = "/dev/cambricon_dev"
+	mluCommuDeviceName       = "/dev/commu"
+	mluUARTConsoleDeviceName = "/dev/ttyMS"
 )
 
 type deviceList struct {
@@ -47,23 +44,25 @@ type deviceList struct {
 	hasCodecDev bool
 	hasC10Dev   bool
 
-	hasCtrlDev  bool
-	hasMsgqDev  bool
-	hasRPCDev   bool
-	hasCmsgDev  bool
-	hasCommuDev bool
+	hasCtrlDev        bool
+	hasMsgqDev        bool
+	hasRPCDev         bool
+	hasCmsgDev        bool
+	hasCommuDev       bool
+	hasUARTConsoleDev bool
 }
 
 func newDeviceList() *deviceList {
 	return &deviceList{
-		hasCnmonDev: hostDeviceExistsWithPrefix(mlu100MonitorDeviceName),
-		hasCodecDev: hostDeviceExistsWithPrefix(mlu100CodecDeviceName),
-		hasC10Dev:   hostDeviceExistsWithPrefix(mlu100DeviceName),
-		hasCtrlDev:  hostDeviceExistsWithPrefix(mluMonitorDeviceName),
-		hasMsgqDev:  hostDeviceExistsWithPrefix(mluMsgqDeviceName),
-		hasRPCDev:   hostDeviceExistsWithPrefix(mluRPCDeviceName),
-		hasCmsgDev:  hostDeviceExistsWithPrefix(mluCmsgDeviceName),
-		hasCommuDev: hostDeviceExistsWithPrefix(mluCommuDeviceName),
+		hasCnmonDev:       hostDeviceExistsWithPrefix(mlu100MonitorDeviceName),
+		hasCodecDev:       hostDeviceExistsWithPrefix(mlu100CodecDeviceName),
+		hasC10Dev:         hostDeviceExistsWithPrefix(mlu100DeviceName),
+		hasCtrlDev:        hostDeviceExistsWithPrefix(mluMonitorDeviceName),
+		hasMsgqDev:        hostDeviceExistsWithPrefix(mluMsgqDeviceName),
+		hasRPCDev:         hostDeviceExistsWithPrefix(mluRPCDeviceName),
+		hasCmsgDev:        hostDeviceExistsWithPrefix(mluCmsgDeviceName),
+		hasCommuDev:       hostDeviceExistsWithPrefix(mluCommuDeviceName),
+		hasUARTConsoleDev: hostDeviceExistsWithPrefix(mluUARTConsoleDeviceName),
 	}
 }
 
@@ -82,9 +81,9 @@ func check(err error) {
 	}
 }
 
-func generateFakeDevs(origin *cndev.Device, num int, sriovEnabled bool) ([]*pluginapi.Device, []*cndev.Device) {
-	var devs []*pluginapi.Device
-	var devsInfo []*cndev.Device
+func generateFakeDevs(origin *cndev.Device, num int, sriovEnabled bool) ([]*pluginapi.Device, map[string]*cndev.Device) {
+	devs := []*pluginapi.Device{}
+	devsInfo := make(map[string]*cndev.Device)
 	var uuid string
 	path := origin.Path
 	for i := 0; i < num; i++ {
@@ -94,11 +93,11 @@ func generateFakeDevs(origin *cndev.Device, num int, sriovEnabled bool) ([]*plug
 		} else {
 			uuid = fmt.Sprintf("%s-_-%d", origin.UUID, i+1)
 		}
-		devsInfo = append(devsInfo, &cndev.Device{
+		devsInfo[uuid] = &cndev.Device{
 			Slot: origin.Slot,
 			UUID: uuid,
 			Path: path,
-		})
+		}
 		devs = append(devs, &pluginapi.Device{
 			ID:     uuid,
 			Health: pluginapi.Healthy,
@@ -107,35 +106,36 @@ func generateFakeDevs(origin *cndev.Device, num int, sriovEnabled bool) ([]*plug
 	return devs, devsInfo
 }
 
-func getDevices(feature int) ([]*pluginapi.Device, []*cndev.Device) {
-	var devs []*pluginapi.Device
-	var devsInfo []*cndev.Device
+func getDevices(mode string, fakeNum int) ([]*pluginapi.Device, map[string]*cndev.Device) {
+	devs := []*pluginapi.Device{}
+	devsInfo := make(map[string]*cndev.Device)
 
 	num, err := cndev.GetDeviceCount()
 	check(err)
 
-	fakeNum := 0
-	if feature == sriovShare || feature == envShare {
-		fakeNum, err = getVirtualizationNum()
-		check(err)
-	}
-
 	for i := uint(0); i < num; i++ {
-		d, err := cndev.NewDeviceLite(i, feature == sriovShare)
+		d, err := cndev.NewDeviceLite(i, mode == sriov)
 		check(err)
-		switch feature {
+		switch mode {
 		case envShare:
+			if fakeNum < 1 {
+				check(fmt.Errorf("invalid env-share number %d", fakeNum))
+			}
 			devices, infos := generateFakeDevs(d, fakeNum, false)
 			devs = append(devs, devices...)
-			devsInfo = append(devsInfo, infos...)
-		case sriovShare:
+			for k, v := range infos {
+				devsInfo[k] = v
+			}
+		case sriov:
 			err = d.EnableSriov(fakeNum)
 			check(err)
 			devices, infos := generateFakeDevs(d, fakeNum, true)
 			devs = append(devs, devices...)
-			devsInfo = append(devsInfo, infos...)
+			for k, v := range infos {
+				devsInfo[k] = v
+			}
 		default:
-			devsInfo = append(devsInfo, d)
+			devsInfo[d.UUID] = d
 			devs = append(devs, &pluginapi.Device{
 				ID:     d.UUID,
 				Health: pluginapi.Healthy,
@@ -154,7 +154,7 @@ func deviceExists(devs []*pluginapi.Device, id string) bool {
 	return false
 }
 
-func watchUnhealthy(ctx context.Context, devs []*pluginapi.Device, devsInfo []*cndev.Device, unhealthy chan<- *pluginapi.Device) {
+func watchUnhealthy(ctx context.Context, devs []*pluginapi.Device, devsInfo map[string]*cndev.Device, unhealthy chan<- *pluginapi.Device) {
 	healthCheck := true
 	for {
 		select {
@@ -183,16 +183,4 @@ func watchUnhealthy(ctx context.Context, devs []*pluginapi.Device, devsInfo []*c
 		//Sleep 1 second between two health checks
 		time.Sleep(time.Second)
 	}
-}
-
-func getVirtualizationNum() (int, error) {
-	s := os.Getenv(VirtualizationNum)
-	num, err := strconv.Atoi(s)
-	if err != nil {
-		return 0, err
-	}
-	if num < 1 {
-		return 0, fmt.Errorf("num %d should be larger than 0", num)
-	}
-	return num, nil
 }

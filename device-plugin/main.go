@@ -15,7 +15,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -26,20 +25,9 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
-const (
-	sriovShare int = iota + 1
-	envShare
-)
-
-var mode = flag.String("mode", "default",
-	`default: default version; mode number 0.
-sriov: MLU is divided into VFs by SR-IOV on host machine; mode number 1.
-env-share: A whole MLU can be allocated to multiple containers; A container can only use one MLU. mode number 2.
-`)
-
 func main() {
 
-	flag.Parse()
+	options := ParseFlags()
 
 	log.Println("Loading CNDEV")
 	if err := cndev.Init(); err != nil {
@@ -78,7 +66,7 @@ L:
 				devicePlugin.Stop()
 			}
 
-			devicePlugin = NewCambriconDevicePlugin()
+			devicePlugin = NewCambriconDevicePlugin(options)
 			if err := devicePlugin.Serve(); err != nil {
 				log.Println("Could not contact Kubelet, retrying. Did you enable the device plugin feature gate?")
 			} else {

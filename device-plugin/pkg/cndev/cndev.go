@@ -43,11 +43,7 @@ type Device struct {
 func NewDeviceLite(idx uint, pcieAware bool) (*Device, error) {
 	var pcie *pcie
 
-	uuid, err := getDeviceUUID(idx)
-	if err != nil {
-		return nil, err
-	}
-	path, err := getDevicePath(idx)
+	uuid, path, err := getDeviceInfo(idx)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +140,7 @@ func enableSriov(id string, num int) error {
 	command := "echo " + strconv.Itoa(num) + " > " + path
 	err := exec.Command("bash", "-c", command).Run()
 	if err != nil {
-		return err
+		return fmt.Errorf("echo %d to file %s, err: %v", num, path, err)
 	}
 	time.Sleep(time.Second)
 	newNum, err := getNumFromFile(path)

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -25,42 +26,39 @@ import (
 	"time"
 
 	"github.com/cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 const (
-	resourceName           = "cambricon.com/mlu"
-	serverSock             = pluginapi.DevicePluginPath + "cambricon.sock"
-	envDisableHealthChecks = "DP_DISABLE_HEALTHCHECKS"
+	resourceName = "cambricon.com/mlu"
+	serverSock   = pluginapi.DevicePluginPath + "cambricon.sock"
 )
 
 // CambriconDevicePlugin implements the Kubernetes device plugin API
 type CambriconDevicePlugin struct {
 	devs       []*pluginapi.Device
-	devsInfo   []*cndev.Device
+	devsInfo   map[string]*cndev.Device
 	socket     string
 	stop       chan interface{}
 	health     chan *pluginapi.Device
 	server     *grpc.Server
-	feature    int
 	deviceList *deviceList
+	options    Options
 }
 
 // NewCambriconDevicePlugin returns an initialized CambriconDevicePlugin
-func NewCambriconDevicePlugin() *CambriconDevicePlugin {
-	feature := getFeature()
-	devs, devsInfo := getDevices(feature)
+func NewCambriconDevicePlugin(o Options) *CambriconDevicePlugin {
+	devs, devsInfo := getDevices(o.Mode, int(o.VirtualizationNum))
 	return &CambriconDevicePlugin{
-		devs:     devs,
-		devsInfo: devsInfo,
-		socket:   serverSock,
-
+		devs:       devs,
+		devsInfo:   devsInfo,
+		socket:     serverSock,
 		stop:       make(chan interface{}),
 		health:     make(chan *pluginapi.Device),
-		feature:    feature,
 		deviceList: newDeviceList(),
+		options:    o,
 	}
 }
 
@@ -191,15 +189,12 @@ func (m *CambriconDevicePlugin) PrepareResponse(req *pluginapi.ContainerAllocate
 	}
 
 	for id, devpath := range devpaths {
-		if m.feature == sriovShare {
+		if m.options.Mode == sriov {
 			vfid := strings.Split(devpath, mluDeviceName)[1]
 			if m.deviceList.hasCommuDev {
 				addDevice(&resp, mluCommuDeviceName+vfid, mluCommuDeviceName+strconv.Itoa(id))
 			}
 			addDevice(&resp, devpath, mluDeviceName+strconv.Itoa(id))
-			if id == len(devpaths)-1 {
-				break
-			}
 			continue
 		}
 
@@ -220,6 +215,9 @@ func (m *CambriconDevicePlugin) PrepareResponse(req *pluginapi.ContainerAllocate
 		}
 		if m.deviceList.hasCommuDev {
 			addDevice(&resp, fmt.Sprintf(mluCommuDeviceName+"%d", index), fmt.Sprintf(mluCommuDeviceName+"%d", id))
+		}
+		if m.deviceList.hasUARTConsoleDev && m.options.EnableConsole {
+			addDevice(&resp, fmt.Sprintf(mluUARTConsoleDeviceName+"%d", index), fmt.Sprintf(mluUARTConsoleDeviceName+"%d", id))
 		}
 		addDevice(&resp, devpath, mluDeviceName+strconv.Itoa(id))
 	}
@@ -247,11 +245,8 @@ func (m *CambriconDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Al
 func (m *CambriconDevicePlugin) uuidToPath(uuids []string) []string {
 	var paths []string
 	for _, uuid := range uuids {
-		for _, dev := range m.devsInfo {
-			if dev.UUID == uuid {
-				paths = append(paths, dev.Path)
-			}
-		}
+		dev := m.devsInfo[uuid]
+		paths = append(paths, dev.Path)
 	}
 	return paths
 }
@@ -264,17 +259,13 @@ func (m *CambriconDevicePlugin) cleanup() error {
 	if err := os.Remove(m.socket); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-
 	return nil
 }
 
 func (m *CambriconDevicePlugin) healthcheck() {
-	disableHealthChecks := strings.ToLower(os.Getenv(envDisableHealthChecks))
-
 	ctx, cancel := context.WithCancel(context.Background())
-
 	var unhealthy chan *pluginapi.Device
-	if !strings.Contains(disableHealthChecks, "all") {
+	if !m.options.DisableHealthCheck {
 		unhealthy = make(chan *pluginapi.Device)
 		go watchUnhealthy(ctx, m.devs, m.devsInfo, unhealthy)
 	}
@@ -321,16 +312,4 @@ func addDevice(car *pluginapi.ContainerAllocateResponse, hostPath string, contai
 	dev.ContainerPath = containerPath
 	dev.Permissions = "rw"
 	car.Devices = append(car.Devices, dev)
-}
-
-func getFeature() int {
-	feature := 0
-	switch *mode {
-	case "sriov":
-		feature = sriovShare
-	case "env-share":
-		feature = envShare
-	}
-	log.Printf("device plugin feature mode number %d. \n", feature)
-	return feature
 }

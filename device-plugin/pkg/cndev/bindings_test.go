@@ -44,16 +44,11 @@ func TestGetDeviceCount(t *testing.T) {
 	assert.Equal(t, uint(8), count)
 }
 
-func TestGetDeviceUUID(t *testing.T) {
-	uuid, err := getDeviceUUID(uint(0))
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("MLU-%x", 2701111), uuid)
-}
-
-func TestGetDevicePath(t *testing.T) {
-	path, err := getDevicePath(uint(1))
+func TestGetDeviceInfo(t *testing.T) {
+	uuid, path, err := getDeviceInfo(uint(1))
 	assert.NoError(t, err)
 	assert.Equal(t, "/dev/cambricon_dev1", path)
+	assert.Equal(t, fmt.Sprintf("MLU-%x", 2701112), uuid)
 }
 
 func TestGetDeviceHealthState(t *testing.T) {

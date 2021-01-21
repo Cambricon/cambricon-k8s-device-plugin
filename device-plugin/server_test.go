@@ -15,11 +15,11 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -32,17 +32,16 @@ func TestCambriconDevicePluginAllocateMLU100(t *testing.T) {
 			ID: "MLU-testdevice-sn0002",
 		},
 	}
-	devsInfo := []*cndev.Device{
-		{
+	devsInfo := map[string]*cndev.Device{
+		"MLU-testdevice-sn0001": {
 			UUID: "MLU-testdevice-sn0001",
 			Path: "/dev/cambricon_c10Dev0",
 		},
-		{
+		"MLU-testdevice-sn0002": {
 			UUID: "MLU-testdevice-sn0002",
 			Path: "/dev/cambricon_c10Dev1",
 		},
 	}
-
 	tests := []struct {
 		m   *CambriconDevicePlugin
 		req *pluginapi.AllocateRequest
@@ -51,7 +50,9 @@ func TestCambriconDevicePluginAllocateMLU100(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  0,
+				options: Options{
+					Mode: "default",
+				},
 				deviceList: &deviceList{
 					hasCnmonDev: true,
 					hasCodecDev: true,
@@ -72,7 +73,9 @@ func TestCambriconDevicePluginAllocateMLU100(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  0,
+				options: Options{
+					Mode: "default",
+				},
 				deviceList: &deviceList{
 					hasCnmonDev: true,
 					hasC10Dev:   true,
@@ -92,7 +95,9 @@ func TestCambriconDevicePluginAllocateMLU100(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  0,
+				options: Options{
+					Mode: "default",
+				},
 				deviceList: &deviceList{
 					hasCnmonDev: true,
 					hasC10Dev:   true,
@@ -145,12 +150,12 @@ func TestCambriconDevicePluginAllocate(t *testing.T) {
 			ID: "MLU-testdevice-sn0002",
 		},
 	}
-	devsInfo := []*cndev.Device{
-		{
+	devsInfo := map[string]*cndev.Device{
+		"MLU-testdevice-sn0001": {
 			UUID: "MLU-testdevice-sn0001",
 			Path: "/dev/cambricon_dev0",
 		},
-		{
+		"MLU-testdevice-sn0002": {
 			UUID: "MLU-testdevice-sn0002",
 			Path: "/dev/cambricon_dev1",
 		},
@@ -164,7 +169,9 @@ func TestCambriconDevicePluginAllocate(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  0,
+				options: Options{
+					Mode: "default",
+				},
 				deviceList: &deviceList{
 					hasCtrlDev:  true,
 					hasMsgqDev:  true,
@@ -188,10 +195,14 @@ func TestCambriconDevicePluginAllocate(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  0,
+				options: Options{
+					Mode:          "default",
+					EnableConsole: true,
+				},
 				deviceList: &deviceList{
-					hasCtrlDev:  true,
-					hasCommuDev: true,
+					hasCtrlDev:        true,
+					hasCommuDev:       true,
+					hasUARTConsoleDev: true,
 				},
 			},
 			req: &pluginapi.AllocateRequest{
@@ -229,10 +240,11 @@ func TestCambriconDevicePluginAllocate(t *testing.T) {
 				assert.Equal(t, mluCommuDeviceName+"1", devices[9].HostPath)
 				assert.Equal(t, mluDeviceName+"1", devices[10].HostPath)
 			case 1:
-				assert.Equal(t, 3, len(devices))
+				assert.Equal(t, 4, len(devices))
 				assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)
 				assert.Equal(t, mluCommuDeviceName+"1", devices[1].HostPath)
-				assert.Equal(t, mluDeviceName+"1", devices[2].HostPath)
+				assert.Equal(t, mluUARTConsoleDeviceName+"1", devices[2].HostPath)
+				assert.Equal(t, mluDeviceName+"1", devices[3].HostPath)
 			}
 		})
 	}
@@ -247,17 +259,16 @@ func TestCambriconDevicePluginAllocateSriov(t *testing.T) {
 			ID: "MLU-testdevice-sn0001--fake--2",
 		},
 	}
-	devsInfo := []*cndev.Device{
-		{
+	devsInfo := map[string]*cndev.Device{
+		"MLU-testdevice-sn0001--fake--1": {
 			UUID: "MLU-testdevice-sn0001--fake--1",
 			Path: "/dev/cambricon_dev0vf1",
 		},
-		{
+		"MLU-testdevice-sn0001--fake--2": {
 			UUID: "MLU-testdevice-sn0001--fake--2",
 			Path: "/dev/cambricon_dev0vf2",
 		},
 	}
-
 	tests := []struct {
 		m   *CambriconDevicePlugin
 		req *pluginapi.AllocateRequest
@@ -266,7 +277,10 @@ func TestCambriconDevicePluginAllocateSriov(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  sriovShare,
+				options: Options{
+					Mode:              sriov,
+					VirtualizationNum: 2,
+				},
 				deviceList: &deviceList{
 					hasCtrlDev:  true,
 					hasMsgqDev:  true,
@@ -290,7 +304,10 @@ func TestCambriconDevicePluginAllocateSriov(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  sriovShare,
+				options: Options{
+					Mode:              sriov,
+					VirtualizationNum: 2,
+				},
 				deviceList: &deviceList{
 					hasCtrlDev:  true,
 					hasCommuDev: true,
@@ -343,12 +360,12 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 			ID: "MLU-testdevice-sn0001-_-2",
 		},
 	}
-	devsInfo := []*cndev.Device{
-		{
+	devsInfo := map[string]*cndev.Device{
+		"MLU-testdevice-sn0001-_-1": {
 			UUID: "MLU-testdevice-sn0001-_-1",
 			Path: "/dev/cambricon_dev0",
 		},
-		{
+		"MLU-testdevice-sn0001-_-2": {
 			UUID: "MLU-testdevice-sn0001-_-2",
 			Path: "/dev/cambricon_dev0",
 		},
@@ -357,12 +374,11 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 		ContainerRequests: []*pluginapi.ContainerAllocateRequest{
 			{
 				DevicesIDs: []string{
-					"MLU-testdevice-sn0001-_-1",
+					"MLU-testdevice-sn0001-_-2",
 				},
 			},
 		},
 	}
-
 	tests := []struct {
 		m   *CambriconDevicePlugin
 		req *pluginapi.AllocateRequest
@@ -371,7 +387,10 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  envShare,
+				options: Options{
+					Mode:              envShare,
+					VirtualizationNum: 2,
+				},
 				deviceList: &deviceList{
 					hasCtrlDev:  true,
 					hasMsgqDev:  true,
@@ -386,7 +405,10 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 			m: &CambriconDevicePlugin{
 				devs:     devs,
 				devsInfo: devsInfo,
-				feature:  envShare,
+				options: Options{
+					Mode:              envShare,
+					VirtualizationNum: 2,
+				},
 				deviceList: &deviceList{
 					hasCtrlDev:  true,
 					hasCommuDev: true,
@@ -403,6 +425,7 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, 1, len(resp.ContainerResponses))
 			devices := resp.ContainerResponses[0].Devices
+			assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)
 			switch i {
 			case 0:
 				assert.Equal(t, 6, len(devices))
@@ -412,6 +435,7 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 				assert.Equal(t, mluCmsgDeviceName+"0", devices[3].HostPath)
 				assert.Equal(t, mluCommuDeviceName+"0", devices[4].HostPath)
 				assert.Equal(t, mluDeviceName+"0", devices[5].HostPath)
+
 			case 1:
 				assert.Equal(t, 3, len(devices))
 				assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)

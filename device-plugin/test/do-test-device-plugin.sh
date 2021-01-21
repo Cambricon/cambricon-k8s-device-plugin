@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 set -e
 
 function test_mlu100() {
@@ -23,7 +22,7 @@ function test_mlu100() {
     pod=$(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
     kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
     kubectl create -f test/mock-deployment.yaml
-    mapfile -t PODS < <( kubectl get pods -o name -l app=binpack-1 )
+    mapfile -t PODS < <(kubectl get pods -o name -l app=binpack-1)
     for var in "${PODS[@]}"; do
         kubectl wait --for=condition=Ready "$var" --timeout=120s
         test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_c10Dev -c)" -eq 2
@@ -39,7 +38,7 @@ function test_mlu270_default() {
     pod=$(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
     kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
     kubectl create -f test/mock-deployment.yaml
-    mapfile -t PODS < <( kubectl get pods -o name -l app=binpack-1 )
+    mapfile -t PODS < <(kubectl get pods -o name -l app=binpack-1)
     for var in "${PODS[@]}"; do
         kubectl wait --for=condition=Ready "$var" --timeout=120s
         test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 2
@@ -55,12 +54,13 @@ function test_mlu270_env_share() {
     sed -i "s|default|env-share|" test/cambricon-device-plugin.yml
     sed "s|replicas: .*|replicas: 16|" examples/deployment.yaml >test/mock-deployment.yaml
     sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 1|" test/mock-deployment.yaml
-    sed -i "s|value: \"0\"|value: \"2\"|" test/cambricon-device-plugin.yml
+    sed -i "s|virtualization-num=1|virtualization-num=2|" test/cambricon-device-plugin.yml
+    sed -i "s|#- --enable-console|- --enable-console|" test/cambricon-device-plugin.yml
     kubectl create -f test/cambricon-device-plugin.yml
     pod=$(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
     kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
     kubectl create -f test/mock-deployment.yaml
-    mapfile -t PODS < <( kubectl get pods -o name -l app=binpack-1 )
+    mapfile -t PODS < <(kubectl get pods -o name -l app=binpack-1)
     for var in "${PODS[@]}"; do
         kubectl wait --for=condition=Ready "$var" --timeout=120s
         test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 1
@@ -69,6 +69,7 @@ function test_mlu270_env_share() {
         test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cmsg_ctrl -c)" -eq 1
         test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep commu -c)" -eq 1
         test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_ctl -c)" -eq 1
+        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep ttyMS -c)" -eq 1
     done
 }
 

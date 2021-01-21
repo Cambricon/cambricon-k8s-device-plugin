@@ -69,6 +69,16 @@ function mock_mlu270() {
     sudo mknod /dev/commu7 c 244 7 || true
 
     sudo mknod /dev/cambricon_ctl c 245 0 || true
+
+    sudo mknod /dev/ttyMS0 c 246 0 || true
+    sudo mknod /dev/ttyMS1 c 246 1 || true
+    sudo mknod /dev/ttyMS2 c 246 2 || true
+    sudo mknod /dev/ttyMS3 c 246 3 || true
+    sudo mknod /dev/ttyMS4 c 246 4 || true
+    sudo mknod /dev/ttyMS5 c 246 5 || true
+    sudo mknod /dev/ttyMS6 c 246 6 || true
+    sudo mknod /dev/ttyMS7 c 246 7 || true
+
 }
 
 function remove_devices() {
@@ -82,6 +92,7 @@ function remove_devices() {
     sudo rm -f /dev/cmsg_ctrl* || true
     sudo rm -f /dev/commu* || true
     sudo rm -f /dev/cambricon_ctl || true
+    sudo rm -f /dev/ttyMS* || true
 }
 
 function do_recover() {

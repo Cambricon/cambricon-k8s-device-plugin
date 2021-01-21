@@ -16,7 +16,7 @@
 curpath=$(dirname "$0")
 cd "$curpath" || exit 1
 
-: "${TAG:=v1.1.1}"
+: "${TAG:=v1.1.2}"
 : "${ARCH:=amd64}"
 : "${LIBCNDEV:=/usr/local/neuware/lib64/libcndev.so}"
 
@@ -65,7 +65,7 @@ if ! file "$LIBCNDEV" --dereference | grep -q "$file_arch"; then
 	exit 1
 fi
 
-cp "$LIBCNDEV" "$curpath/libs/linux/$ARCH/"
+cp "$LIBCNDEV" "$curpath/libs/linux/$ARCH/libcndev.so"
 
 echo "Building Cambricon device plugin docker image."
 

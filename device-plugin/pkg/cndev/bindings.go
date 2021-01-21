@@ -48,40 +48,36 @@ func Release() error {
 
 func GetDeviceCount() (uint, error) {
 	var cardInfos C.cndevCardInfo_t
-	cardInfos.version = C.int(1)
+	cardInfos.version = C.int(3)
 	r := C.cndevGetDeviceCount(&cardInfos)
 	return uint(cardInfos.Number), errorString(r)
 }
 
-func getDeviceUUID(idx uint) (string, error) {
+func getDeviceInfo(idx uint) (string, string, error) {
+	var cardName C.cndevCardName_t
 	var cardSN C.cndevCardSN_t
+	var path string
+
 	cardSN.version = C.int(3)
 	r := C.cndevGetCardSN(&cardSN, C.int(idx))
 	err := errorString(r)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	sn := fmt.Sprintf("%x", int(cardSN.sn))
-	uuid := "MLU-" + sn
-	return uuid, nil
-}
+	uuid := fmt.Sprintf("MLU-%x", int(cardSN.sn))
 
-func getDevicePath(idx uint) (string, error) {
-	var cardName C.cndevCardName_t
-	var path string
 	cardName.version = C.int(3)
-	r := C.cndevGetCardName(&cardName, C.int(idx))
-	err := errorString(r)
+	r = C.cndevGetCardName(&cardName, C.int(idx))
+	err = errorString(r)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	cardType := cardName.id
-	if cardType == C.MLU100 {
+	if cardName.id == C.MLU100 {
 		path = fmt.Sprintf("/dev/cambricon_c10Dev%d", idx)
 	} else {
 		path = fmt.Sprintf("/dev/cambricon_dev%d", idx)
 	}
-	return path, nil
+	return uuid, path, nil
 }
 
 func getDeviceHealthState(idx uint, delayTime int) (int, error) {

@@ -69,24 +69,22 @@ It uses **libcndev.so** binary on your compiling machine and generates docker im
 
 2. Enable MLU support in your cluster by deploying the daemonset in [examples](examples) folder:
 
-   Set the mode arg in the yaml file to change mode
+   Set the args in the yaml file
 
    ```yaml
-     args:
-       - -mode
-       - default # switch mode here
-     env:
-       # change this if env-share mode or sriov mode is enabled.
-       - name: VIRTUALIZATION_NUM
-         value: "0"
+   args:
+     - --mode=default #device plugin mode: default, sriov or env-share
+     - --virtualization-num=1 #  virtualization number for each MLU, used only in sriov mode or env-share mode
+     #- --enable-console #uncomment to enable UART console device(/dev/ttyMS) in container
+     #- --disable-health-check #uncomment to disable health check
    ```
 
    supported features:
 
    - default: default mode
-   - sriov: supports SR-IOV. Set `VIRTUALIZATION_NUM` as number of VFs on host.
+   - sriov: supports SR-IOV. Set `virtualization-num` as number of VFs on host.
    - env-share: a whole card can be allocated into multiple containers. A container should use only one card in this mode.
-     Set `VIRTUALIZATION_NUM` as maximum number of containers one MLU can be allocated into.
+     Set `virtualization-num` as maximum number of containers one MLU can be allocated into.
 
    ```shell
    kubectl create -f cambricon-device-plugin-daemonset.yml
