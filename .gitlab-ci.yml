@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-image: 10.110.210.252:5001/cambricon/buildpack:20200424
+image: 192.168.100.44:5001/cambricon/buildpack:20200915
 variables:
-  GOPROXY: http://10.110.210.252:8080
+  GOPROXY: http://192.168.100.44:8080
 
 .only-mr-refs: &only-mr-refs
   refs:
@@ -31,7 +31,7 @@ include:
 
 run-shellcheck-lint:
   stage: lint
-  image: 10.110.210.252:5001/cambricon/shellcheck-alpine:v0.7.0
+  image: 192.168.100.44:5001/cambricon/shellcheck-alpine:v0.7.0
   script:
     - find . -name '*.sh' -exec shellcheck {} +
   only:

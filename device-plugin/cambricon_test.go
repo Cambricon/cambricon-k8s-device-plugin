@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/stretchr/testify/assert"
 )
 

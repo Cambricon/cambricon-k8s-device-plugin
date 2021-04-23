@@ -1,4 +1,4 @@
-module github.com/cambricon/cambricon-k8s-device-plugin/device-plugin
+module github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin
 
 go 1.13
 

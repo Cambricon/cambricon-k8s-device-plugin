@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )

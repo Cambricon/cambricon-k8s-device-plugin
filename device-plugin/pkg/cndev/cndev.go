@@ -99,14 +99,16 @@ func (d *Device) EnableSriov(num int) error {
 	if err != nil {
 		return err
 	}
-	if vf == 0 {
-		return enableSriov(id, num)
+	if vf == num {
+		log.Println("sriov already enabled, pass")
+		return nil
 	}
-	if vf != num {
-		return fmt.Errorf("sriov enabled. vf number %d different from set %d", vf, num)
+	if vf != 0 {
+		if err = setSriovNum(id, 0); err != nil {
+			return fmt.Errorf("failed to set sriov num to 0, pcie: %s now: %d", id, vf)
+		}
 	}
-	log.Println("sriov already enabled, pass")
-	return nil
+	return setSriovNum(id, num)
 }
 
 func (d *Device) ValidateSriovNum(num int) error {
@@ -135,7 +137,7 @@ func getNumFromFile(path string) (int, error) {
 	return int(num), err
 }
 
-func enableSriov(id string, num int) error {
+func setSriovNum(id string, num int) error {
 	path := "/sys/bus/pci/devices/" + id + "/sriov_numvfs"
 	command := "echo " + strconv.Itoa(num) + " > " + path
 	err := exec.Command("bash", "-c", command).Run()
@@ -143,9 +145,9 @@ func enableSriov(id string, num int) error {
 		return fmt.Errorf("echo %d to file %s, err: %v", num, path, err)
 	}
 	time.Sleep(time.Second)
-	newNum, err := getNumFromFile(path)
-	if err != nil || newNum != num {
-		return fmt.Errorf("the number of VFs is still not correct after enabling vf again. new: %d, err: %v", newNum, err)
+	got, err := getNumFromFile(path)
+	if err != nil || got != num {
+		return fmt.Errorf("the number of VFs is not expected. got: %d, err: %v, expected: %d", got, err, num)
 	}
 	return nil
 }

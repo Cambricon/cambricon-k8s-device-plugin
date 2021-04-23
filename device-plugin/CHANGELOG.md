@@ -16,3 +16,7 @@
 ## v1.1.2
 
 + Support allocating UART console device(/dev/ttyMS) in container.
+
+## v1.1.3
+
++ Allow changing sriov num by yaml after vf num has been set
