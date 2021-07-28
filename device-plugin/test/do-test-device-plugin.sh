@@ -15,94 +15,105 @@
 
 set -e
 
-function test_mlu100() {
+function test_mlu_default() {
+    echo "==================================="
+    echo "Test MLU Device Plugin Default Mode"
+    echo "==================================="
+    sed -i "s|--mode=.*|--mode=default|" test/cambricon-device-plugin.yml
+    sed -i "s|#- --enable-device-type|- --enable-device-type|" test/cambricon-device-plugin.yml
     sed "s|replicas: .*|replicas: 2|" examples/deployment.yaml >test/mock-deployment.yaml
-    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 2|" test/mock-deployment.yaml
+    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu270: 2|" test/mock-deployment.yaml
     kubectl create -f test/cambricon-device-plugin.yml
-    pod=$(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
-    kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
-    kubectl create -f test/mock-deployment.yaml
-    mapfile -t PODS < <(kubectl get pods -o name -l app=binpack-1)
-    for var in "${PODS[@]}"; do
-        kubectl wait --for=condition=Ready "$var" --timeout=120s
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_c10Dev -c)" -eq 2
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cnmon_dev -c)" -eq 1
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cncodec_dev -c)" -eq 1
+    mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
+    for pod in "${pods[@]}"; do
+        kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
     done
+    kubectl create -f test/mock-deployment.yaml
+    mapfile -t pods < <(kubectl get pods -o name -l app=binpack-1)
+    for pod in "${pods[@]}"; do
+        kubectl wait --for=condition=Ready "$pod" --timeout=120s
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 2
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambr-msgq -c)" -eq 2
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambr-rpc -c)" -eq 2
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cmsg_ctrl -c)" -eq 2
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep commu -c)" -eq 2
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_ctl -c)" -eq 1
+    done
+    sed -i "s|- --enable-device-type|#- --enable-device-type|" test/cambricon-device-plugin.yml
 }
 
-function test_mlu270_default() {
-    sed "s|replicas: .*|replicas: 2|" examples/deployment.yaml >test/mock-deployment.yaml
-    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 2|" test/mock-deployment.yaml
-    kubectl create -f test/cambricon-device-plugin.yml
-    pod=$(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
-    kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
-    kubectl create -f test/mock-deployment.yaml
-    mapfile -t PODS < <(kubectl get pods -o name -l app=binpack-1)
-    for var in "${PODS[@]}"; do
-        kubectl wait --for=condition=Ready "$var" --timeout=120s
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 2
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambr-msgq -c)" -eq 2
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambr-rpc -c)" -eq 2
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cmsg_ctrl -c)" -eq 2
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep commu -c)" -eq 2
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_ctl -c)" -eq 1
-    done
-}
-
-function test_mlu270_env_share() {
-    sed -i "s|default|env-share|" test/cambricon-device-plugin.yml
+function test_mlu_env_share() {
+    echo "====================================="
+    echo "Test MLU Device Plugin Env Share Mode"
+    echo "====================================="
+    sed -i "s|--mode=.*|--mode=env-share|" test/cambricon-device-plugin.yml
     sed "s|replicas: .*|replicas: 16|" examples/deployment.yaml >test/mock-deployment.yaml
     sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 1|" test/mock-deployment.yaml
     sed -i "s|virtualization-num=1|virtualization-num=2|" test/cambricon-device-plugin.yml
     sed -i "s|#- --enable-console|- --enable-console|" test/cambricon-device-plugin.yml
     kubectl create -f test/cambricon-device-plugin.yml
-    pod=$(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
-    kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
+    mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
+    for pod in "${pods[@]}"; do
+        kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
+    done
     kubectl create -f test/mock-deployment.yaml
-    mapfile -t PODS < <(kubectl get pods -o name -l app=binpack-1)
-    for var in "${PODS[@]}"; do
-        kubectl wait --for=condition=Ready "$var" --timeout=120s
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 1
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambr-msgq -c)" -eq 1
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambr-rpc -c)" -eq 1
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cmsg_ctrl -c)" -eq 1
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep commu -c)" -eq 1
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep cambricon_ctl -c)" -eq 1
-        test "$(kubectl exec -ti "${var:4}" -- ls -l /dev | grep ttyMS -c)" -eq 1
+    mapfile -t pods < <(kubectl get pods -o name -l app=binpack-1)
+    for pod in "${pods[@]}"; do
+        kubectl wait --for=condition=Ready "$pod" --timeout=120s
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambr-msgq -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambr-rpc -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cmsg_ctrl -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep commu -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_ctl -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep ttyMS -c)" -eq 1
     done
 }
 
-function test_mlu270() {
+function test_mlu_topology() {
+    echo "=========================================="
+    echo "Test MLU Device Plugin Topology Aware Mode"
+    echo "=========================================="
+    sed -i "s|--mode=.*|--mode=topology-aware|" test/cambricon-device-plugin.yml
+    sed -i "s|--mlulink-policy=.*|--mlulink-policy=guaranteed|" test/cambricon-device-plugin.yml
+    sed "s|replicas: .*|replicas: 2|" examples/deployment.yaml >test/mock-deployment.yaml
+    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 2|" test/mock-deployment.yaml
+    kubectl create -f test/cambricon-device-plugin.yml
+    mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
+    for pod in "${pods[@]}"; do
+        kubectl wait --for=condition=Ready "$pod" -n kube-system --timeout=120s
+    done
+    kubectl create -f test/mock-deployment.yaml
+    mapfile -t pods < <(kubectl get pods -o name -l app=binpack-1)
+    for pod in "${pods[@]}"; do
+        kubectl wait --for=condition=Ready "$pod" --timeout=120s
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 2
+    done
+    read -r -a containers <<<"$(kubectl get pods -o jsonpath="{.items[*].status.containerStatuses[*].containerID}" -l app=binpack-1)"
+    allocated=()
+    for container in "${containers[@]}"; do
+        id=$(echo "${container}" | cut -f3 -d'/')
+        mapfile -t devices < <(docker inspect --format='{{range .HostConfig.Devices }}{{.PathOnHost}}{{"\n"}}{{end}}' "${id}")
+        for device in "${devices[@]}"; do
+            [[ $device == /dev/cambricon_dev* ]] && allocated+=("${device}")
+        done
+    done
+    echo "${allocated[@]}"
+    set1=("/dev/cambricon_dev0" "/dev/cambricon_dev1" "/dev/cambricon_dev2" "/dev/cambricon_dev3")
+    set2=("/dev/cambricon_dev4" "/dev/cambricon_dev5" "/dev/cambricon_dev6" "/dev/cambricon_dev7")
+    diff1=$(echo "${set1[@]}" "${allocated[@]}" | tr ' ' '\n' | sort | uniq -u | wc -l)
+    diff2=$(echo "${set2[@]}" "${allocated[@]}" | tr ' ' '\n' | sort | uniq -u | wc -l)
+    test "$diff1" -eq 0 -o "$diff2" -eq 0
+}
+
+function test_mlu() {
     if [ "$1" == "default" ]; then
-        test_mlu270_default
+        test_mlu_default
     elif [ "$1" == "env_share" ]; then
-        test_mlu270_env_share
+        test_mlu_env_share
+    elif [ "$1" == "topology_aware" ]; then
+        test_mlu_topology
     fi
 }
 
-tag=$(date +%s)
-mock_file="test/mockmlu100.json"
-
-if [ "$1" == "MLU100" ]; then
-    echo "Test MLU100 Device Plugin"
-    mock_file="test/mockmlu100.json"
-elif [ "$1" == "MLU270" ]; then
-    echo "Test MLU270 Device Plugin"
-    mock_file="test/mockmlu270.json"
-fi
-
-cp $mock_file test/mock.json
-
-TAG=$tag LIBCNDEV=pkg/cndev/mock/libcndev.so ./build_image.sh
-docker build --build-arg "BASE_IMAGE=cambricon-k8s-device-plugin:$tag" -t "cambricon-k8s-device-plugin:mock-$tag" test
-
-sed "s|cambricon-k8s-device-plugin:[A-Za-z0-9\.]*|cambricon-k8s-device-plugin:mock-$tag|" examples/cambricon-device-plugin-daemonset.yaml >test/cambricon-device-plugin.yml
-
-if [ "$1" == "MLU100" ]; then
-    test_mlu100
-fi
-
-if [ "$1" == "MLU270" ]; then
-    test_mlu270 "$2"
-fi
+test_mlu "$1"

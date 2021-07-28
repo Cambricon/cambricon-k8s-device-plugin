@@ -43,37 +43,37 @@ func TestGetDevices(t *testing.T) {
 
 	devs, devsInfo := getDevices("default", 0)
 	assert.Equal(t, 8, len(devs))
-	assert.Equal(t, fmt.Sprintf("MLU-%x", 2701114), devs[3].ID)
+	assert.Equal(t, "MLU-40001012-1916-0000-0000-000000000000\x00", devs[3].ID)
 	assert.Equal(t, 8, len(devsInfo))
-	assert.Equal(t, uint(3), devsInfo[fmt.Sprintf("MLU-%x", 2701114)].Slot)
-	assert.Equal(t, "/dev/cambricon_dev3", devsInfo[fmt.Sprintf("MLU-%x", 2701114)].Path)
+	assert.Equal(t, uint(3), devsInfo["MLU-40001012-1916-0000-0000-000000000000\x00"].Slot)
+	assert.Equal(t, "/dev/cambricon_dev3", devsInfo["MLU-40001012-1916-0000-0000-000000000000\x00"].Path)
 
 	devs, devsInfo = getDevices(envShare, 2)
 	assert.Equal(t, 16, len(devs))
-	assert.Equal(t, fmt.Sprintf("MLU-%x-_-2", 2701112), devs[3].ID)
+	assert.Equal(t, "MLU-20001012-1916-0000-0000-000000000000\x00-_-2", devs[3].ID)
 	assert.Equal(t, 16, len(devsInfo))
-	assert.Equal(t, uint(1), devsInfo[fmt.Sprintf("MLU-%x-_-2", 2701112)].Slot)
-	assert.Equal(t, "/dev/cambricon_dev1", devsInfo[fmt.Sprintf("MLU-%x-_-2", 2701112)].Path)
+	assert.Equal(t, uint(1), devsInfo["MLU-20001012-1916-0000-0000-000000000000\x00-_-2"].Slot)
+	assert.Equal(t, "/dev/cambricon_dev1", devsInfo["MLU-20001012-1916-0000-0000-000000000000\x00-_-2"].Path)
 }
 
 func TestGenerateFakeDevs(t *testing.T) {
 	d := &cndev.Device{
 		Slot: 1,
-		UUID: fmt.Sprintf("MLU-%x", 2701112),
+		UUID: "MLU-20001012-1916-0000-0000-000000000000\x00",
 		Path: "/dev/cambricon_dev1",
 	}
 	devs, devsInfo := generateFakeDevs(d, 4, true)
 	assert.Equal(t, 4, len(devs))
-	assert.Equal(t, fmt.Sprintf("MLU-%x--fake--4", 2701112), devs[3].ID)
+	assert.Equal(t, fmt.Sprintf("%s--fake--4", d.UUID), devs[3].ID)
 	assert.Equal(t, 4, len(devsInfo))
-	assert.Equal(t, "/dev/cambricon_dev1vf4", devsInfo[fmt.Sprintf("MLU-%x--fake--4", 2701112)].Path)
-	assert.Equal(t, uint(1), devsInfo[fmt.Sprintf("MLU-%x--fake--4", 2701112)].Slot)
+	assert.Equal(t, "/dev/cambricon_dev1vf4", devsInfo[fmt.Sprintf("%s--fake--4", d.UUID)].Path)
+	assert.Equal(t, uint(1), devsInfo[fmt.Sprintf("%s--fake--4", d.UUID)].Slot)
 	devs, devsInfo = generateFakeDevs(d, 2, false)
 	assert.Equal(t, 2, len(devs))
-	assert.Equal(t, fmt.Sprintf("MLU-%x-_-2", 2701112), devs[1].ID)
+	assert.Equal(t, fmt.Sprintf("%s-_-2", d.UUID), devs[1].ID)
 	assert.Equal(t, 2, len(devsInfo))
-	assert.Equal(t, "/dev/cambricon_dev1", devsInfo[fmt.Sprintf("MLU-%x-_-2", 2701112)].Path)
-	assert.Equal(t, uint(1), devsInfo[fmt.Sprintf("MLU-%x-_-2", 2701112)].Slot)
+	assert.Equal(t, "/dev/cambricon_dev1", devsInfo[fmt.Sprintf("%s-_-2", d.UUID)].Path)
+	assert.Equal(t, uint(1), devsInfo[fmt.Sprintf("%s-_-2", d.UUID)].Slot)
 }
 
 func TestHostDeviceExistsWithPrefix(t *testing.T) {

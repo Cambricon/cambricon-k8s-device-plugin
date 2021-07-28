@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Cambricon, Inc.
+ * Copyright 2021 Cambricon, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ extern "C" {
 #define CNDEV_VERSION_4 4
 #define CNDEV_VERSION_5 5
 
-#define CCLINK_PORT 6
+#define MLULINK_PORT 6
+#define TINYCOREMAXCOUNT 10
 
 #if defined(WIN32) || defined(WINDOWS)
 #define EXPORT __declspec(dllexport)
@@ -45,27 +46,27 @@ extern "C" {
 #endif
 
 #ifdef WIN32
-typedef unsigned char __uint8_t;      // NOLINT
-typedef unsigned short __uint16_t;    // NOLINT
-typedef int __int32_t;                // NOLINT
-typedef unsigned int __uint32_t;      // NOLINT
-typedef unsigned long long __uint64_t;// NOLINT
-typedef long __int64_t;               // NOLINT
+typedef unsigned char __uint8_t;
+typedef unsigned short __uint16_t;
+typedef int __int32_t;
+typedef unsigned int __uint32_t;
+typedef unsigned long long __uint64_t;
+typedef long __int64_t;
 #endif
 /**< Error codes */
 typedef enum {
   CNDEV_SUCCESS = 0,                       /**< No error */
   CNDEV_ERROR_NO_DRIVER = 1,               /**< No Driver */
-  CNDEV_ERROR_LOW_DRIVER_VERSION = 2,      /**< Driver Version Low*/
-  CNDEV_ERROR_UNSUPPORTED_API_VERSION = 3, /**< API Version is not support*/
-  CNDEV_ERROR_UNINITIALIZED = 4,           /**< API not Initial*/
-  CNDEV_ERROR_INVALID_ARGUMENT = 5,        /**< Invalid pointer*/
-  CNDEV_ERROR_INVALID_DEVICE_ID = 6,       /**< Invalid device id*/
-  CNDEV_ERROR_UNKNOWN = 7,                 /**< Unknown error*/
-  CNDEV_ERROR_MALLOC = 8,                  /**< internal malloc fail*/
-  CNDEV_ERROR_INSUFFICIENT_SPACE = 9,      /**< cndevInfoCount has not enough space*/
-  CNDEV_ERROR_NOT_SUPPORTED = 10,          /**< not supported*/
-  CNDEV_ERROR_INVALID_LINK = 11            /**< Invalid link port*/
+  CNDEV_ERROR_LOW_DRIVER_VERSION = 2,      /**< Driver Version Low */
+  CNDEV_ERROR_UNSUPPORTED_API_VERSION = 3, /**< API Version is not support */
+  CNDEV_ERROR_UNINITIALIZED = 4,           /**< API not Initial */
+  CNDEV_ERROR_INVALID_ARGUMENT = 5,        /**< Invalid pointer */
+  CNDEV_ERROR_INVALID_DEVICE_ID = 6,       /**< Invalid device id */
+  CNDEV_ERROR_UNKNOWN = 7,                 /**< Unknown error */
+  CNDEV_ERROR_MALLOC = 8,                  /**< internal malloc fail */
+  CNDEV_ERROR_INSUFFICIENT_SPACE = 9,      /**< cndevInfoCount has not enough space */
+  CNDEV_ERROR_NOT_SUPPORTED = 10,          /**< not supported */
+  CNDEV_ERROR_INVALID_LINK = 11            /**< Invalid link port */
 } cndevRet_t;
 
 typedef enum {
@@ -75,41 +76,42 @@ typedef enum {
   MLU220_EDGE = 17,  /**< MLU220_EDGE */
   MLU220_EVB = 18,   /**< MLU220_EVB */
   MLU220_M2i = 19,   /**< MLU220_M2i */
-  MLU290 = 20        /**< MLU290 */
+  MLU290 = 20,       /**< MLU290 */
+  MLU370 = 23        /**< MLU370 */
 } cndevNameEnum_t;
 
 typedef enum {
   SELF = 0,
-  INTERNAL = 1,    /**< devices that are on the same board*/
-  SINGLE = 2,      /**< all devices that only need traverse a single PCIe switch*/
-  MULTIPLE = 3,    /**< all devices that need not traverse a host bridge*/
-  HOST_BRIDGE = 4, /**< all devices that are connected to the same host bridge*/
-  CPU = 5,         /**< all devices that are connected to the same CPU but possibly multiple host bridges*/
-  SYSTEM = 6       /**< all device in the system*/
+  INTERNAL = 1,    /**< devices that are on the same board */
+  SINGLE = 2,      /**< all devices that only need traverse a single PCIe switch */
+  MULTIPLE = 3,    /**< all devices that need not traverse a host bridge */
+  HOST_BRIDGE = 4, /**< all devices that are connected to the same host bridge */
+  CPU = 5,         /**< all devices that are connected to the same CPU but possibly multiple host bridges */
+  SYSTEM = 6       /**< all device in the system */
 } cndevTopologyRelationshipEnum_t;
 
 typedef enum {
   SPEED_FMT_NRZ = 0,
   SPEED_FMT_PM4 = 1
-} cclinkSpeedEnum_t;
+} cndevMLULinkSpeedEnum_t;
 
 typedef enum {
-  CCLINK_CNTR_RD_BYTE = 0,
-  CCLINK_CNTR_RD_PKG = 1,
-  CCLINK_CNTR_WR_BYTE = 2,
-  CCLINK_CNTR_WR_PKG = 3,
-  CCLINK_ERR_RPY = 4,
-  CCLINK_ERR_FTL = 5,
-  CCLINK_ERR_ECC_DEB = 6,
-  CCLINK_ERR_CRC24 = 7,
-  CCLINK_ERR_CRC32 = 8,
-  CCLINK_ERR_CORR = 9,
-  CCLINK_ERR_UNCORR = 10
-} cclinkCounterEnum_t;
+  MLULINK_CNTR_RD_BYTE = 0,
+  MLULINK_CNTR_RD_PKG = 1,
+  MLULINK_CNTR_WR_BYTE = 2,
+  MLULINK_CNTR_WR_PKG = 3,
+  MLULINK_ERR_RPY = 4,
+  MLULINK_ERR_FTL = 5,
+  MLULINK_ERR_ECC_DBE = 6,
+  MLULINK_ERR_CRC24 = 7,
+  MLULINK_ERR_CRC32 = 8,
+  MLULINK_ERR_CORR = 9,
+  MLULINK_ERR_UNCORR = 10
+} cndevMLULinkCounterEnum_t;
 
 typedef enum {
-  CNDEV_FEATURE_ENABLED = 0,
-  CNDEV_FEATURE_DISABLED = 1
+  CNDEV_FEATURE_DISABLED = 0,
+  CNDEV_FEATURE_ENABLED = 1
 } cndevEnableStatusEnum_t;
 
 /**
@@ -132,177 +134,188 @@ const char *cndevGetErrorString(cndevRet_t errorId);
   do {                                                                                                                         \
     cndevRet_t _err = (err);                                                                                                   \
     if (CNDEV_SUCCESS != _err) {                                                                                               \
-      fprintf(stderr, "cndevCheckErrors(%d): %s, from file <%s>, line %i.\n", _err, cndevGetErrorString(_err), basename((char*)file), \
-              line);                                                                                                           \
+      fprintf(stderr, "cndevCheckErrors(%d): %s, from file <%s>, line %i.\n",                                                  \
+      _err, cndevGetErrorString(_err), basename((char*)file), line);                                                           \
       exit(1);                                                                                                                 \
     }                                                                                                                          \
   } while (0)
 #define cndevCheckErrors(err) __cndevCheckErrors((err), __FILE__, __LINE__)
 #endif
 
+#define UUID_SIZE 37
 /**< Card information */
 typedef struct {
-  int version;     /**< driver version*/
-  unsigned Number; /**< card_id*/
+  int version;     /**< driver version */
+  unsigned number; /**< card_id */
 } cndevCardInfo_t;
+
+/**< UUID information */
+typedef struct {
+  int version;
+  __uint8_t uuid[UUID_SIZE]; /**< uuid */
+} cndevUUID_t;
 
 /**< Memory information */
 typedef struct {
   int version;
-  __int64_t PhysicalMemoryTotal; /**< MLU physical total memory, unit:MB*/
-  __int64_t PhysicalMemoryUsed;  /**< MLU physical used memory, unit:MB*/
-  __int64_t VirtualMemoryTotal;  /**< MLU virtual total memory, unit:MB*/
-  __int64_t VirtualMemoryUsed;   /**< MLU virtual used memory, unit:MB*/
-  __int64_t ChannelNumber;       /**< Memory channel number*/
-  __int64_t ChannelMemoryUsed[20];   /**< Memory used each channel, unit:MB*/
+  __int64_t physicalMemoryTotal;    /**< MLU physical total memory, unit:MB */
+  __int64_t physicalMemoryUsed;     /**< MLU physical used memory, unit:MB */
+  __int64_t virtualMemoryTotal;     /**< MLU virtual total memory, unit:MB */
+  __int64_t virtualMemoryUsed;      /**< MLU virtual used memory, unit:MB */
+  __int64_t channelNumber;          /**< Memory channel number */
+  __int64_t channelMemoryUsed[20];  /**< Memory used each channel, unit:MB */
 } cndevMemoryInfo_t;
 
 /**< Version information */
 typedef struct {
   int version;
-  unsigned MCUMajorVersion;    /**< MCU major id*/
-  unsigned MCUMinorVersion;    /**< MCU minor id*/
-  unsigned MCUBuildVersion;    /**< MCU build id*/
-  unsigned DriverMajorVersion; /**< Driver major id*/
-  unsigned DriverMinorVersion; /**< Driver minor id*/
-  unsigned DriverBuildVersion; /**< Driver build id*/
+  unsigned mcuMajorVersion;    /**< MCU major id */
+  unsigned mcuMinorVersion;    /**< MCU minor id */
+  unsigned mcuBuildVersion;    /**< MCU build id */
+  unsigned driverMajorVersion; /**< Driver major id */
+  unsigned driverMinorVersion; /**< Driver minor id */
+  unsigned driverBuildVersion; /**< Driver build id */
 } cndevVersionInfo_t;
 
 /**< ECC information */
 typedef struct {
   int version;
-  __uint64_t OneBitError;           /**< single single-bit error*/
-  __uint64_t MultipleOneError;      /**< multiple single-bit error*/
-  __uint64_t MultipleError;         /**< single multiple-bits error*/
-  __uint64_t MultipleMultipleError; /**< multiple multiple-bits error*/
-  __uint64_t CorrectedError;        /**< corrected error*/
-  __uint64_t UncorrectedError;      /**< uncorrected error*/
-  __uint64_t TotalError;            /**< ECC error total times*/
+  __uint64_t oneBitError;           /**< single single-bit error */
+  __uint64_t multipleOneError;      /**< multiple single-bit error */
+  __uint64_t multipleError;         /**< single multiple-bits error */
+  __uint64_t multipleMultipleError; /**< multiple multiple-bits error */
+  __uint64_t correctedError;        /**< corrected error */
+  __uint64_t uncorrectedError;      /**< uncorrected error */
+  __uint64_t totalError;            /**< ECC error total times */
 } cndevECCInfo_t;
 
 /**< Power information */
 typedef struct {
-  int version; /**< API version*/
-  int Usage;   /**< current power dissipation,unit:W*/
-  int Cap;     /**< cap power dissipation unit:W*/
-  int Usage_Decimal;  /**< decimal places for current power dissipation*/
-  int Machine;        /**< current machine power dissipation,unit:W*/
+  int version;        /**< API version */
+  int usage;          /**< current power dissipation,unit:W */
+  int cap;            /**< cap power dissipation unit:W */
+  int usageDecimal;   /**< decimal places for current power dissipation */
+  int machine;        /**< current machine power dissipation,unit:W */
+  int capDecimal;     /**< decimal places for cap powewr */
 } cndevPowerInfo_t;
 
 /**< Temperature information */
 typedef struct {
-  int version;     /**< API version*/
-  int Board;       /**< MLU board temperature, unit:℃ */
-  int Cluster[20]; /**< MLU cluster temperature, unit:℃ */
-  int MemoryDie[8];  /**< MLU MemoryDie temperature, unit:℃ */
-  int Chip;          /**< MLU Chip temperature, unit:℃ */
-  int Case;   /**< MLU case temperature, unit:℃ */
+  int version;       /**< API version */
+  int board;         /**< MLU board temperature, unit:℃ */
+  int cluster[20];   /**< MLU cluster temperature, unit:℃ */
+  int memoryDie[8];  /**< MLU MemoryDie temperature, unit:℃ */
+  int chip;          /**< MLU Chip temperature, unit:℃ */
+  int airInlet;      /**< MLU air inlet temperature, unit:℃ */
+  int airOutlet;     /**< MLU air outlet temperature, unit:℃ */
 } cndevTemperatureInfo_t;
 
-/**< Fan speed information*/
+/**< Fan speed information */
 typedef struct {
-  int version;  /**< API version*/
-  int FanSpeed; /**< MLU fan speed，the percentage of the max fan speed*/
+  int version;      /**< API version */
+  int fanSpeed;     /**< MLU fan speed，the percentage of the max fan speed */
+  int chassisFanCount;  /**< MLU290 chassis fan count */
+  int chassisFan[12];  /**< MLU290 chaassis fan speed */
 } cndevFanSpeedInfo_t;
 
-/**< LLC information*/
+/**< LLC information */
 typedef struct {
-  int version;      /**< API version*/
-  __uint64_t Total; /**< LLC total times*/
-  __uint64_t Hit;   /**< LLC hit times*/
+  int version;      /**< API version */
+  __uint64_t total; /**< LLC total times */
+  __uint64_t hit;   /**< LLC hit times */
 } cndevLLCInfo_t;
 
-/**< MLU utilization information*/
+/**< MLU utilization information */
 typedef struct {
-  int version;             /**< API version*/
-  int BoardUtilization;    /**< MLU board utilization*/
-  int CoreUtilization[80]; /**< MLU core utilization*/
+  int version;                /**< API version */
+  int averageCoreUtilization; /**< MLU average core utilization */
+  int coreUtilization[80];    /**< MLU core utilization */
 } cndevUtilizationInfo_t;
 
-/**< MLU frequency information*/
+/**< MLU frequency information */
 typedef struct {
-  int version;   /**< API version*/
-  int Frequency; /**< MLU board frequency, unit:MHz*/
-  int DdrFreq;  /**< MLU ddr frequency, unit:MHz*/
-  __uint8_t OvertempDfsFlag; /* Over-temperature dynamic frequency*/
-  __uint8_t FastDfsFlag;     /* Fast dynamic frequency*/
+  int version;               /**< API version */
+  int boardFreq;             /**< MLU board frequency, unit:MHz */
+  int ddrFreq;               /**< MLU ddr frequency, unit:MHz */
+  __uint8_t overtempDfsFlag; /**< Over-temperature dynamic frequency */
+  __uint8_t fastDfsFlag;     /**< Fast dynamic frequency */
 } cndevFrequencyInfo_t;
 
-/**< Process information*/
+/**< Process information */
 typedef struct {
-  int version;                      /**< API version*/
-  unsigned int pid;                 /**< pid*/
-  unsigned long PhysicalMemoryUsed; /**< MLU physical memory used, unit:KiB*/
-  unsigned long VirtualMemoryUsed;  /**< MLU virtual memory used, unit:KiB*/
+  int version;                      /**< API version */
+  unsigned int pid;                 /**< pid */
+  __uint64_t physicalMemoryUsed; /**< MLU physical memory used, unit:KiB */
+  __uint64_t virtualMemoryUsed;  /**< MLU virtual memory used, unit:KiB */
 } cndevProcessInfo_t;
 
-/**< Library version information*/
+/**< Library version information */
 typedef struct {
-  int version;              /**< API version*/
-  unsigned LibMajorVersion; /**< library major version*/
-  unsigned LibMinorVersion; /**< library minor version*/
-  unsigned LibBuildVersion; /**< library build version*/
+  int version;              /**< API version */
+  unsigned libMajorVersion; /**< library major version */
+  unsigned libMinorVersion; /**< library minor version */
+  unsigned libBuildVersion; /**< library build version */
 } cndevLibVersionInfo_t;
 
-/**< Card core count*/
+/**< Card core count */
 typedef struct {
-  int version; /** API version*/
-  int count;   /** card core count*/
+  int version; /**< API version */
+  int count;   /**< card core count */
 } cndevCardCoreCount_t;
 
-/**< Card cluster count*/
+/**< Card cluster count */
 typedef struct {
-  int version; /** API version*/
-  int count;   /** card cluster count*/
+  int version; /**< API version */
+  int count;   /**< card cluster count */
 } cndevCardClusterCount_t;
 
-/**< Card name*/
+/**< Card name */
 typedef struct {
-  int version;        /**API version*/
-  cndevNameEnum_t id; /** card name*/
+  int version;        /**< API version */
+  cndevNameEnum_t id; /**< card name */
 } cndevCardName_t;
 
-/**< Codec count*/
+/**< Codec count */
 typedef struct {
-  int version;
-  int count; /** card codec count*/
+  int version;  /**< API version */
+  int count;    /**< card codec count */
 } cndevCodecCount_t;
 
-/**< Codec utilization*/
+/**< Codec utilization */
 typedef struct {
-  int version;
-  int totalUtilization[20];
+  int version;               /**< API version */
+  int totalUtilization[20];  /**< codec utilization */
 } cndevCodecUtilization_t;
 
-/**< SN*/
+/**< SN */
 typedef struct {
-  int version;
-  __int64_t sn; /** card SN in hex*/
-  __int64_t mother_board_sn; /** motherboard SN in hex*/
+  int version;               /**< API version */
+  __int64_t sn;              /**< card SN in hex */
+  __int64_t motherBoardSn;   /**< motherboard SN in hex */
 } cndevCardSN_t;
 
-/**device id information**/
+/**< device id information */
 typedef struct {
   int version;
-  unsigned int subsystem_id;        /**PCIe Sub-System ID**/
-  unsigned int device_id;           /**PCIe Device ID**/
-  unsigned short vendor;            // NOLINT            /**PCIe Vendor ID**/
-  unsigned short subsystem_vendor;  // NOLINT  /**PCIe Sub-Vendor ID**/
-  unsigned int domain;              /**PCIe domain**/
-  unsigned int bus;                 /**PCIe bus_num**/
-  unsigned int device;              /**PCIe device, slot**/
-  unsigned int function;            /**PCIe function, func**/
-  const char * phy_slot;                  /**Physical Slot**/
+  unsigned int subsystemId;         /**< PCIe Sub-System ID */
+  unsigned int deviceId;            /**< PCIe Device ID */
+  __uint16_t vendor;            /**< PCIe Vendor ID */
+  __uint16_t subsystemVendor;   /**< PCIe Sub-Vendor ID */
+  unsigned int domain;              /**< PCIe domain */
+  unsigned int bus;                 /**< PCIe bus number */
+  unsigned int device;              /**< PCIe device, slot */
+  unsigned int function;            /**< PCIe function, func */
+  const char * physicalSlot;        /**< Physical Slot */
 } cndevPCIeInfo_t;
 
-/**PCie throughput,read and write**/
+/**< PCie throughput,read and write */
 typedef struct {
-  int version;          /** API version*/
-  __int64_t pcie_read;  /** PCIe throughput read ,unit: Byte*/
-  __int64_t pcie_write; /** PCIe throughput write ,unit: Byte*/
+  int version;          /**< API version */
+  __int64_t pcieRead;   /**< PCIe throughput read ,unit: Byte */
+  __int64_t pcieWrite;  /**< PCIe throughput write ,unit: Byte */
 } cndevPCIethroughput_t;
 
-/**device affinity information**/
+/**< device affinity information */
 typedef struct {
   int version;
   __uint32_t cpuCount;
@@ -320,9 +333,9 @@ typedef struct {
 } cndevTopologyRelationship_t;
 
 typedef struct {
-  int version;      /**API version**/
-  int currentSpeed; /**PCI current speed**/
-  int currentWidth; /**PCI current width**/
+  int version;      /**< API version */
+  int currentSpeed; /**< PCI current speed */
+  int currentWidth; /**< PCI current width */
 } cndevCurrentPCIInfo_t;
 
 typedef struct cndevTopologyNodeCapInfo_t {
@@ -332,30 +345,31 @@ typedef struct cndevTopologyNodeCapInfo_t {
 } cndevTopologyNodeCapInfo_t;
 
 typedef struct cndevTopologyNode_t {
-  int virtual_root_node;  // bool
+  int virtualRootNode;    // bool
   int domain;
   int bus;
   int device;
   int function;
-  unsigned int subsystem_id;
-  unsigned int device_id;
+  unsigned int subsystemId;
+  unsigned int deviceId;
   unsigned int vendor;
-  unsigned int subsystem_vendor;
-  char const *device_name;
-  unsigned int class_val;  // hex
-  char const *class_name;
-  struct cndevTopologyNodeCapInfo_t *first_cap;
+  unsigned int subsystemVendor;
+  char const *deviceName;
+  unsigned int classVal;  // hex
+  char const *className;
+  struct cndevTopologyNodeCapInfo_t *firstCap;
   struct cndevTopologyNode_t *parent;
   struct cndevTopologyNode_t *left;
   struct cndevTopologyNode_t *right;
   struct cndevTopologyNode_t *child;  // first child
-  unsigned int link_speed;
-  int is_bridge;  // bool
-  int is_cardbus;  // bool
+  unsigned int linkSpeed;
+  int isBridge;  // bool
+  int isCardbus;  // bool
   // if is_bridge or is_cardbus, the following fields will be filled, otherwise these will be 0.
-  unsigned char primary_bus;
-  unsigned char secondary_bus;
-  unsigned char subordinate_bus;
+  unsigned char primaryBus;
+  unsigned char secondaryBus;
+  unsigned char subordinateBus;
+  int acsCtrl;
 } cndevTopologyNode_t;
 
 typedef struct {
@@ -364,40 +378,40 @@ typedef struct {
   __uint16_t cap;
 } cndevCapabilityInfo_t;
 
-/**< health state**/
+/**< health state */
 typedef struct {
     int version;
     int health;
 }cndevCardHealthState_t;
 
-/**< link speed**/
+/**< link speed */
 typedef struct {
     int version;
-    int link_speed;
+    int linkSpeed;
 }cndevLinkSpeed_t;
 
-/**< vpu utilization**/
+/**< vpu utilization */
 typedef struct {
     int version;
     int vpuCount;
     int vpuCodecUtilization[20];
 }cndevVideoCodecUtilization_t;
 
-/**< jpu utilization**/
+/**< jpu utilization */
 typedef struct {
     int version;
     int jpuCount;
     int jpuCodecUtilization[20];
 }cndevImageCodecUtilization_t;
 
-/**< fast alloc memory**/
+/**< fast alloc memory */
 typedef struct {
   int version;
-  int fa_memtotal;
-  int fa_memfree;
+  int fastMemoryTotal;
+  int fastMemoryFree;
 }cndevFastAlloc_t;
 
-/**< NUMA node id **/
+/**< NUMA node id */
 typedef struct {
   int version;
   __int32_t nodeId;
@@ -415,92 +429,220 @@ typedef struct {
 }cndevCodecTurbo_t;
 
 typedef struct {
-  int version; /** API version*/
-  int count;   /** card memorydie count*/
+  int version; /**< API version */
+  int count;   /**< card memorydie count */
 } cndevCardMemoryDieCount_t;
 
 typedef struct {
-  int version; /** API version*/
-  int qdd[8];  /** serdes port status*/
+  int version; /**< API version */
+  int qdd[8];  /**< serdes port status */
 } cndevQsfpddStatus_t;
 
-/**< cclink version**/
+/**< MLU-Link version */
 typedef struct {
   int version;
   unsigned majorVersion;
   unsigned minorVersion;
   unsigned buildVersion;
-} cndevCclinkVersion_t;
+} cndevMLULinkVersion_t;
 
-/**< cclink status**/
+/**< MLU-Link status */
 typedef struct {
   int version;
   cndevEnableStatusEnum_t isActive;
-} cndevCclinkStatus_t;
+} cndevMLULinkStatus_t;
 
-/**< cclink speed**/
+/**< MLU-Link speed */
 typedef struct {
   int version;
-  int speedValue;
-  cclinkSpeedEnum_t speedFormat;
-} cndevCclinkSpeed_t;
+  float speedValue;
+  cndevMLULinkSpeedEnum_t speedFormat;
+} cndevMLULinkSpeed_t;
 
-/**< cclink capability**/
+/**< MLU-Link capability */
 typedef struct {
   int version;
   unsigned p2pTransfer;
   unsigned interlakenSerdes;
-} cndevCclinkCapability_t;
+} cndevMLULinkCapability_t;
 
-/**< cclink counter**/
+/**< MLU-Link counter */
 typedef struct {
   int version;
-  int cntrReadByte;
-  int cntrReadPackage;
-  int cntrWriteByte;
-  int cntrWritePackage;
-  int errReplay;
-  int errFatal;
-  int errEccDouble;
-  int errCRC24;
-  int errCRC32;
-  int errCorrected;
-  int errUncorrected;
-} cndevCclinkCounter_t;
+  __uint64_t cntrReadByte;
+  __uint64_t cntrReadPackage;
+  __uint64_t cntrWriteByte;
+  __uint64_t cntrWritePackage;
+  __uint64_t errReplay;
+  __uint64_t errFatal;
+  __uint64_t errEccDouble;
+  __uint64_t errCRC24;
+  __uint64_t errCRC32;
+  __uint64_t errCorrected;
+  __uint64_t errUncorrected;
+} cndevMLULinkCounter_t;
 
-/**< reset cclink counter**/
+/**< reset MLU-Link counter */
 typedef struct {
   int version;
-  cclinkCounterEnum_t setCounter;
-} cndevCclinkSetCounter_t;
+  cndevMLULinkCounterEnum_t setCounter;
+} cndevMLULinkSetCounter_t;
 
-/**< cclink remote information**/
+/**< MLU-Link remote information */
 typedef struct {
   int version;
-  __int64_t mc_sn;
-  __int64_t ba_sn;
-  int slot_id;
-  int port_id;
-  unsigned dev_ip[16];
-  unsigned uuid[16];
-  int dev_ip_version;
-  int is_ip_valid;
-  int connect_type;
-} cndevCclinkRemoteInfo_t;
+  __int64_t mcSn;
+  __int64_t baSn;
+  __uint32_t slotId;
+  __uint32_t portId;
+  __uint8_t devIp[16];
+  __uint8_t uuid[UUID_SIZE];
+  __uint32_t devIpVersion;
+  __uint32_t isIpValid;
+  int connectType;
+} cndevMLULinkRemoteInfo_t;
 
-/**< cclink bandwidth utilization**/
+/**< MLU-Link devices sn */
 typedef struct {
   int version;
-  int utilCount;
-  int util[8];
-} cndevCclinkBandwidthUtil_t;
+  __int64_t mlulinkMcSn[6];
+  __int64_t mlulinkBaSn[6];
+} cndevMLULinkDevSN_t;
 
-/**< cclink devices sn**/
+typedef struct {
+  __uint8_t nvmeSn[20];
+  __uint8_t nvmeModel[16];
+  __uint8_t nvmeFw[8];
+  __uint8_t nvmeMfc[8];
+} cndevNvmeSsdInfo_t;
+
+typedef struct {
+  __uint8_t psuSn[17];
+  __uint8_t psuModel[17];
+  __uint8_t psuFw[17];
+  __uint8_t psuMfc[17];
+} cndevPsuInfo_t;
+
+typedef struct {
+  __uint8_t ibSn[25];
+  __uint8_t ibModel[17];
+  __uint8_t ibFw[9];
+  __uint8_t ibMfc[3];
+} cndevIbInfo_t;
+
 typedef struct {
   int version;
-  __int64_t cclinkMcSn[6];
-  __int64_t cclinkBaSn[6];
-} cndevCclinkDevSN_t;
+  __uint64_t chassisSn; /**< chassis sn */
+  char chassisProductDate[12];
+  char chassisPartNum[9];
+
+  char chassisVendorName[17];
+
+  __uint8_t nvmeSsdNum;
+  cndevNvmeSsdInfo_t nvmeInfo[4];
+
+  __uint8_t ibBoardNum;
+  cndevIbInfo_t ibInfo[2];
+
+  __uint8_t psuNum;
+  cndevPsuInfo_t psuInfo[2];
+} cndevChassisInfo_t;
+
+typedef struct {
+  int version;
+  __uint16_t pcieReversion;      /**< PCIe firmware reversion */
+  __uint16_t pcieBuildID;        /**< PCIe firmware build id */
+  __uint16_t pcieEngineeringId;  /**< PCIe firmware engineering id */
+} cndevPCIeFirmwareVersion_t;
+
+typedef struct {
+  int version;
+  __uint16_t chipUtilization;
+  __uint8_t coreNumber;
+  __uint8_t coreUtilization[80];
+} cndevDeviceCPUUtilization_t;
+
+typedef struct {
+  int version;
+  __uint32_t samplingInterval;
+} cndevDeviceCPUSamplingInterval_t;
+
+typedef enum {
+  CNDEV_PAGE_RETIREMENT_CAUSE_MULTIPLE_SINGLE_BIT_ECC_ERRORS = 0,
+  CNDEV_PAGE_RETIREMENT_CAUSE_DOUBLE_BIT_ECC_ERROR = 1
+} cndevRetirePageCauseEnum_t;
+
+typedef struct {
+  int version;
+  cndevRetirePageCauseEnum_t cause;
+  __uint32_t pageCount;
+  __uint64_t pageAddress[512];
+} cndevRetiredPageInfo_t;
+
+typedef struct {
+  int version;
+  __uint32_t isPending;
+  __uint32_t isFailure;
+} cndevRetiredPageStatus_t;
+
+typedef struct {
+  int version;
+  __uint32_t correctRows;
+  __uint32_t uncorrectRows;
+  __uint32_t pendingRows;
+  __uint32_t failedRows;
+} cndevRemappedRow_t;
+
+typedef struct {
+  int version;
+  cndevEnableStatusEnum_t retirePageOption;
+} cndevRetiredPageOperation_t;
+
+typedef struct {
+  int version;
+  int vfState;
+} cndevCardVfState_t;
+
+typedef enum {
+  PORT_WORK_MODE_UNINITIALIZED = 0,
+  PORT_WORK_MODE_ALL_SUPPORT = 1,
+  PORT_WORK_MODE_MLULINK = 2,
+  PORT_WORK_MODE_ROCE = 3,
+} cndevPortModeEnum_t;
+
+typedef struct {
+  int version;
+  cndevPortModeEnum_t mode;
+  cndevPortModeEnum_t supportMode;
+} cndevMLULinkPortMode_t;
+
+typedef enum {
+  MLULINK_ROCE_FIELD_NONE,
+  /* 6:IPV6,   4:IPV4*/
+  MLULINK_ROCE_FIELD_IP_VERSION,
+  MLULINK_ROCE_FIELD_VLAN_TAG,
+  NCS_ROCE_FILED_VLAN_EN,
+  MLULINK_ROCE_FIELD_DSCP,
+  /* ONLY WORK WITH IPV4 */
+  MLULINK_ROCE_FIELD_IP_TTL,
+  /* ONLY WORK WITH IPV6 */
+  MLULINK_ROCE_FIELD_FLOW_LABLE,
+  /* ONLY WORK WITH IPV6 */
+  MLULINK_ROCE_FIELD_HOP_LIMIT,
+  MLULINK_ROCE_FIELD_NUM,
+}  cndevRoceFieldEnum_t;
+
+typedef struct {
+  int version;
+  cndevRoceFieldEnum_t field;
+  __uint32_t value;
+} cndevMLULinkPortRoceCtrl_t;
+
+typedef struct {
+  int version;
+  int tinyCoreCount;
+  int tinyCoreUtilization[TINYCOREMAXCOUNT];
+} cndevTinyCoreUtilization_t;
 
 typedef int (*CNDEV_TRAVERSE_CALLBACK)(cndevTopologyNode_t *current, void *userdata);
 /**
@@ -1300,9 +1442,9 @@ EXPORT
 cndevRet_t cndevGetQsfpddStatus(cndevQsfpddStatus_t* qddstatus, int devId);
 
 /**
- * @ brief get the cclink version
+ * @ brief get the MLU-Link version
  *
- * @ param version will stores a pointer to a structure which stores the cclink version
+ * @ param version will stores a pointer to a structure which stores the MLU-Link version
  * @ param devId the number of the card which the user selects, starting from 0
  * @ param link the number of the port which the user selects, starting from 0
  *
@@ -1315,11 +1457,11 @@ cndevRet_t cndevGetQsfpddStatus(cndevQsfpddStatus_t* qddstatus, int devId);
  * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
  */
 EXPORT
-cndevRet_t cndevGetCclinkVersion(cndevCclinkVersion_t *version, int devId, int link);
+cndevRet_t cndevGetMLULinkVersion(cndevMLULinkVersion_t *version, int devId, int link);
 /**
- * @ brief get the cclink status
+ * @ brief get the MLU-Link status
  *
- * @ param status will stores a pointer to a structure which stores the cclink status
+ * @ param status will stores a pointer to a structure which stores the MLU-Link status
  * @ param devId the number of the card which the user selects, starting from 0
  * @ param link the number of the port which the user selects, starting from 0
  *
@@ -1332,11 +1474,11 @@ cndevRet_t cndevGetCclinkVersion(cndevCclinkVersion_t *version, int devId, int l
  * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
  */
 EXPORT
-cndevRet_t cndevGetCclinkStatus(cndevCclinkStatus_t *status, int devId, int link);
+cndevRet_t cndevGetMLULinkStatus(cndevMLULinkStatus_t *status, int devId, int link);
 /**
- * @ brief get the cclink speed
+ * @ brief get the MLU-Link speed
  *
- * @ param speed will stores a pointer to a structure which stores the cclink speed
+ * @ param speed will stores a pointer to a structure which stores the MLU-Link speed
  * @ param devId the number of the card which the user selects, starting from 0
  * @ param link the number of the port which the user selects, starting from 0
  *
@@ -1349,11 +1491,11 @@ cndevRet_t cndevGetCclinkStatus(cndevCclinkStatus_t *status, int devId, int link
  * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
  */
 EXPORT
-cndevRet_t cndevGetCclinkSpeedInfo(cndevCclinkSpeed_t *speed, int devId, int link);
+cndevRet_t cndevGetMLULinkSpeedInfo(cndevMLULinkSpeed_t *speed, int devId, int link);
 /**
- * @ brief get the cclink capability
+ * @ brief get the MLU-Link capability
  *
- * @ param capability will stores a pointer to a structure which stores the cclink capability
+ * @ param capability will stores a pointer to a structure which stores the MLU-Link capability
  * @ param devId the number of the card which the user selects, starting from 0
  * @ param link the number of the port which the user selects, starting from 0
  *
@@ -1366,11 +1508,11 @@ cndevRet_t cndevGetCclinkSpeedInfo(cndevCclinkSpeed_t *speed, int devId, int lin
  * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
  */
 EXPORT
-cndevRet_t cndevGetCclinkCapability(cndevCclinkCapability_t *capability, int devId, int link);
+cndevRet_t cndevGetMLULinkCapability(cndevMLULinkCapability_t *capability, int devId, int link);
 /**
- * @ brief get the cclink counter information
+ * @ brief get the MLU-Link counter information
  *
- * @ param count will stores a pointer to a structure which stores the cclink counter information
+ * @ param count will stores a pointer to a structure which stores the MLU-Link counter information
  * @ param devId the number of the card which the user selects, starting from 0
  * @ param link the number of the port which the user selects, starting from 0
  *
@@ -1383,11 +1525,11 @@ cndevRet_t cndevGetCclinkCapability(cndevCclinkCapability_t *capability, int dev
  * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
  */
 EXPORT
-cndevRet_t cndevGetCclinkCounter(cndevCclinkCounter_t *count, int devId, int link);
+cndevRet_t cndevGetMLULinkCounter(cndevMLULinkCounter_t *count, int devId, int link);
 /**
- * @ brief reset the cclink counter
+ * @ brief reset the MLU-Link counter
  *
- * @ param setcount will stores a pointer to a structure which stores the cclink counter
+ * @ param setcount will stores a pointer to a structure which stores the MLU-Link counter
  * @ param devId the number of the card which the user selects, starting from 0
  * @ param link the number of the port which the user selects, starting from 0
  *
@@ -1400,11 +1542,11 @@ cndevRet_t cndevGetCclinkCounter(cndevCclinkCounter_t *count, int devId, int lin
  * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
  */
 EXPORT
-cndevRet_t cndevResetCclinkCounter(cndevCclinkSetCounter_t *setcount, int devId, int link);
+cndevRet_t cndevResetMLULinkCounter(cndevMLULinkSetCounter_t *setcount, int devId, int link);
 /**
- * @ brief get the cclink remote information
+ * @ brief get the MLU-Link remote information
  *
- * @ param remoteinfo will stores a pointer to a structure which stores the cclink remote information
+ * @ param remoteinfo will stores a pointer to a structure which stores the MLU-Link remote information
  * @ param devId the number of the card which the user selects, starting from 0
  * @ param link the number of the port which the user selects, starting from 0
  *
@@ -1417,28 +1559,11 @@ cndevRet_t cndevResetCclinkCounter(cndevCclinkSetCounter_t *setcount, int devId,
  * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
  */
 EXPORT
-cndevRet_t cndevGetCclinkRemoteInfo(cndevCclinkRemoteInfo_t *remoteinfo, int devId, int link);
+cndevRet_t cndevGetMLULinkRemoteInfo(cndevMLULinkRemoteInfo_t *remoteinfo, int devId, int link);
 /**
- * @ brief get the cclink bandwidth utilization
+ * @ brief get the MLU-Link devices' sn
  *
- * @ param bandwidth will stores a pointer to a structure which stores the cclink bandwidth utilization
- * @ param devId the number of the card which the user selects, starting from 0
- * @ param link the number of the port which the user selects, starting from 0
- *
- * @ return CNDEV_SUCCESS if success
- * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
- * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
- * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
- * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
- * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
- * @ return CNDEV_ERROR_INVALID_LINK if the number of link which the user selects is not available
- */
-EXPORT
-cndevRet_t cndevGetCclinkBandwidthUtil(cndevCclinkBandwidthUtil_t *bandwidth, int devId, int link);
-/**
- * @ brief get the cclink devices' sn
- *
- * @ param devinfo will stores a pointer to a structure which stores the cclink devices sn
+ * @ param devinfo will stores a pointer to a structure which stores the MLU-Link devices sn
  * @ param devId the number of the card which the user selects, starting from 0
  *
  * @ return CNDEV_SUCCESS if success
@@ -1449,7 +1574,7 @@ cndevRet_t cndevGetCclinkBandwidthUtil(cndevCclinkBandwidthUtil_t *bandwidth, in
  * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
  */
 EXPORT
-cndevRet_t cndevGetCclinkDevSN(cndevCclinkDevSN_t *devinfo, int devId);
+cndevRet_t cndevGetMLULinkDevSN(cndevMLULinkDevSN_t *devinfo, int devId);
 /**
  * @ brief get the NUMA node id of tree node by device ID
  *
@@ -1464,6 +1589,241 @@ cndevRet_t cndevGetCclinkDevSN(cndevCclinkDevSN_t *devinfo, int devId);
  */
 EXPORT
 cndevRet_t cndevGetNUMANodeIdByDevId(cndevNUMANodeId_t* numaNodeId, int devId);
+/**
+ * @ brief get the chassis information
+ *
+ * @ param chassisinfo will stores a pointer to a structure which stores the chassis information
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetChassisInfo(cndevChassisInfo_t* chassisinfo, int devId);
+/**
+ * @ brief get the PCIe firmware version information
+ *
+ * @ param version will stores a pointer to a structure which stores the PCIe firmware version information
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetPCIeFirmwareVersion(cndevPCIeFirmwareVersion_t *version, int devId);
+/**
+ * @ brief get the UUID information, the array of uuid don't end with '\0'
+ * 
+ * @ param uuidInfo will stores a pointer to a structure which stores the UUID information
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetUUID(cndevUUID_t *uuidInfo, int devId);
+/**
+ * @ brief get the device cpu utilizaion
+ * 
+ * @ param util will stores a pointer to a structure which stores the device cpu utilizaion
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetDeviceCPUUtilization(cndevDeviceCPUUtilization_t *util, int devId);
+/**
+ * @ brief get the device CPU refresh time
+ * 
+ * @ param time will stores a pointer to a structure which stores the device CPU refresh time
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetDeviceCPUSamplingInterval(cndevDeviceCPUSamplingInterval_t *time, int devId);
+/**
+ * @ brief set the device CPU refresh time
+ * 
+ * @ param time will stores a pointer to a structure which stores the device CPU refresh time
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevSetDeviceCPUSamplingInterval(cndevDeviceCPUSamplingInterval_t *time, int devId);
+/**
+ * @ brief return the calling thread's last-error code
+ * 
+ * @ return the value of the last error that occurred during the execution of this program
+ */
+EXPORT
+cndevRet_t cndevGetLastError();
+/**
+ * @ brief get retired pages info
+ *
+ * @ param retirepage will stores a pointer to a structure which stores the retired pages info
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetRetiredPages(cndevRetiredPageInfo_t *retirepage, int devId);
+/**
+ * @ brief get retired pages status
+ *
+ * @ param retirepagestatus will stores a pointer to a structure which stores the retired pages status
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetRetiredPagesStatus(cndevRetiredPageStatus_t *retirepagestatus, int devId);
+/**
+ * @ brief get the row remapping info
+ *
+ * @ param time will stores a pointer to a structure which stores the device CPU refresh time
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetRemappedRows(cndevRemappedRow_t *rows, int devId);
+/**
+ * @ brief get the retired pages operation
+ *
+ * @ param operation will stores a pointer to a structure which stores the the retired pages operation
+ * @ param devId the number of the card which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_NOT_SUPPORTED if devId is C10 device
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetRetiredPagesOperation(cndevRetiredPageOperation_t *operation, int devId);
+
+/**
+ * @ brief get card VF state
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param vfstate will stores the state of VF
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetCardVfState(cndevCardVfState_t *vfstate, int devId);
+/**
+ * @ brief get card MLULink port mode
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param mode will stores the mode of card
+ * @ param port the number of the port which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetMLULinkPortMode(cndevMLULinkPortMode_t *mode, int devId, int port);
+/**
+ * @ brief set card MLULink port mode
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param mode will stores the mode of card
+ * @ param port the number of the port which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevSetMLULinkPortMode(cndevMLULinkPortMode_t *mode, int devId, int port);
+/**
+ * @ brief get card MLULink port roce control information
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param ctrl will stores roce control information
+ * @ param port the number of the port which the user selects, starting from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetRoceCtrl(cndevMLULinkPortRoceCtrl_t *ctrl, int devId, int port);
+/**
+ * @ brief get card port number
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ *
+ */
+EXPORT
+int cndevGetMLULinkPortNumber(int devId);
+
+/**
+ * @ brief get card tinycore utilization
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param util will stores the tinycore utilization
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetTinyCoreUtilization(cndevTinyCoreUtilization_t *util, int devId);
 
 #if defined(__cplusplus)
 }

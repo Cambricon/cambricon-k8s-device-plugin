@@ -35,6 +35,7 @@ func TestLegacyConfigs(t *testing.T) {
 			args: []string{"-mode", "sriov"},
 			out: Options{
 				Mode:               sriov,
+				MLULinkPolicy:      bestEffort,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
 			},
@@ -43,6 +44,16 @@ func TestLegacyConfigs(t *testing.T) {
 			args: []string{"-mode=env-share"},
 			out: Options{
 				Mode:               envShare,
+				MLULinkPolicy:      bestEffort,
+				VirtualizationNum:  1,
+				DisableHealthCheck: true,
+			},
+		},
+		{
+			args: []string{"--mode=topology-aware"},
+			out: Options{
+				Mode:               topologyAware,
+				MLULinkPolicy:      bestEffort,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
 			},

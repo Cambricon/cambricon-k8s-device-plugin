@@ -35,4 +35,5 @@ spec:
           args: ["100000"]
           resources:
             limits:
-              cambricon.com/mlu: 1
+              cambricon.com/mlu: "1" #comment and set device bellow to use device with type info
+              #camrbricon.com/mlu270: "1" #uncomment to use device with type info, support mlu220, mlu270, mlu270-x5k, mlu290 and mlu370

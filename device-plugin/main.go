@@ -56,43 +56,41 @@ func main() {
 	log.Println("Starting OS watcher.")
 	sigs := startOSWatcher(syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	restart := true
 	var devicePlugin *CambriconDevicePlugin
 
-L:
+restart:
+	if devicePlugin != nil {
+		devicePlugin.Stop()
+	}
+	startErr := make(chan struct{})
+	devicePlugin = NewCambriconDevicePlugin(options)
+	if err := devicePlugin.Serve(); err != nil {
+		log.Printf("serve device plugin err: %v, restarting.", err)
+		close(startErr)
+		goto events
+	}
+
+events:
 	for {
-		if restart {
-			if devicePlugin != nil {
-				devicePlugin.Stop()
-			}
-
-			devicePlugin = NewCambriconDevicePlugin(options)
-			if err := devicePlugin.Serve(); err != nil {
-				log.Println("Could not contact Kubelet, retrying. Did you enable the device plugin feature gate?")
-			} else {
-				restart = false
-			}
-		}
-
 		select {
+		case <-startErr:
+			goto restart
 		case event := <-watcher.Events:
 			if event.Name == pluginapi.KubeletSocket && event.Op&fsnotify.Create == fsnotify.Create {
 				log.Printf("inotify: %s created, restarting.", pluginapi.KubeletSocket)
-				restart = true
+				goto restart
 			}
-
 		case err := <-watcher.Errors:
 			log.Printf("inotify: %s", err)
-
 		case s := <-sigs:
 			switch s {
 			case syscall.SIGHUP:
 				log.Println("Received SIGHUP, restarting.")
-				restart = true
+				goto restart
 			default:
 				log.Printf("Received signal \"%v\", shutting down.", s)
 				devicePlugin.Stop()
-				break L
+				break events
 			}
 		}
 	}

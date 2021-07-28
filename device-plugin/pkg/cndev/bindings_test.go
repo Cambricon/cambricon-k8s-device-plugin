@@ -44,11 +44,28 @@ func TestGetDeviceCount(t *testing.T) {
 	assert.Equal(t, uint(8), count)
 }
 
+func TestGetDeviceModel(t *testing.T) {
+	model := GetDeviceModel(uint(0))
+	assert.Equal(t, "MLU270", model)
+}
+
 func TestGetDeviceInfo(t *testing.T) {
-	uuid, path, err := getDeviceInfo(uint(1))
+	uuid, mb, path, err := getDeviceInfo(uint(1))
 	assert.NoError(t, err)
 	assert.Equal(t, "/dev/cambricon_dev1", path)
-	assert.Equal(t, fmt.Sprintf("MLU-%x", 2701112), uuid)
+	assert.Equal(t, "MLU-20001012-1916-0000-0000-000000000000\x00", uuid)
+	assert.Equal(t, fmt.Sprintf("%x", 1111111), mb)
+}
+
+func TestGetDeviceMLULinkDevs(t *testing.T) {
+	devs, err := getDeviceMLULinkDevs(uint(0))
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]int{
+		"MLU-20001012-1916-0000-0000-000000000000\x00": 1,
+		"MLU-30001012-1916-0000-0000-000000000000\x00": 2,
+		"MLU-40001012-1916-0000-0000-000000000000\x00": 1,
+		"MLU-50001012-1916-0000-0000-000000000000\x00": 1,
+	}, devs)
 }
 
 func TestGetDeviceHealthState(t *testing.T) {

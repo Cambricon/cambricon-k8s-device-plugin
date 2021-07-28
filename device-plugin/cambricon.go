@@ -26,24 +26,16 @@ import (
 )
 
 const (
-	mlu100MonitorDeviceName = "/dev/cnmon_dev"
-	mlu100CodecDeviceName   = "/dev/cncodec_dev"
-	mlu100DeviceName        = "/dev/cambricon_c10Dev"
-
 	mluMonitorDeviceName     = "/dev/cambricon_ctl"
+	mluDeviceName            = "/dev/cambricon_dev"
 	mluMsgqDeviceName        = "/dev/cambr-msgq"
 	mluRPCDeviceName         = "/dev/cambr-rpc"
 	mluCmsgDeviceName        = "/dev/cmsg_ctrl"
-	mluDeviceName            = "/dev/cambricon_dev"
 	mluCommuDeviceName       = "/dev/commu"
 	mluUARTConsoleDeviceName = "/dev/ttyMS"
 )
 
 type deviceList struct {
-	hasCnmonDev bool
-	hasCodecDev bool
-	hasC10Dev   bool
-
 	hasCtrlDev        bool
 	hasMsgqDev        bool
 	hasRPCDev         bool
@@ -54,9 +46,6 @@ type deviceList struct {
 
 func newDeviceList() *deviceList {
 	return &deviceList{
-		hasCnmonDev:       hostDeviceExistsWithPrefix(mlu100MonitorDeviceName),
-		hasCodecDev:       hostDeviceExistsWithPrefix(mlu100CodecDeviceName),
-		hasC10Dev:         hostDeviceExistsWithPrefix(mlu100DeviceName),
 		hasCtrlDev:        hostDeviceExistsWithPrefix(mluMonitorDeviceName),
 		hasMsgqDev:        hostDeviceExistsWithPrefix(mluMsgqDeviceName),
 		hasRPCDev:         hostDeviceExistsWithPrefix(mluRPCDeviceName),
@@ -114,7 +103,7 @@ func getDevices(mode string, fakeNum int) ([]*pluginapi.Device, map[string]*cnde
 	check(err)
 
 	for i := uint(0); i < num; i++ {
-		d, err := cndev.NewDeviceLite(i, mode == sriov)
+		d, err := cndev.NewDeviceLite(i, mode == topologyAware, mode == sriov)
 		check(err)
 		switch mode {
 		case envShare:

@@ -23,15 +23,24 @@ import (
 )
 
 const (
-	sriov    string = "sriov"
-	envShare string = "env-share"
+	sriov         string = "sriov"
+	envShare      string = "env-share"
+	topologyAware string = "topology-aware"
+
+	bestEffort string = "best-effort"
+	restricted string = "restricted"
+	guaranteed string = "guaranteed"
 )
 
 type Options struct {
-	Mode               string `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"sriov" choice:"env-share"`
+	Mode               string `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"sriov" choice:"env-share" choice:"topology-aware"`
+	MLULinkPolicy      string `long:"mlulink-policy" description:"MLULink topology policy" default:"best-effort" choice:"best-effort" choice:"restricted" choice:"guaranteed"`
 	VirtualizationNum  uint   `long:"virtualization-num" description:"the virtualization number for each MLU, used only in sriov mode or env-share mode" default:"1" env:"VIRTUALIZATION_NUM"`
 	DisableHealthCheck bool   `long:"disable-health-check" description:"disable MLU health check"`
+	NodeName           string `long:"node-name" description:"host node name" env:"NODE_NAME"`
 	EnableConsole      bool   `long:"enable-console" description:"enable UART console device(/dev/ttyMS) in container"`
+	EnableDeviceType   bool   `long:"enable-device-type" description:"enable device registration with type info"`
+	CnmonPath          string `long:"cnmon-path" description:"host cnmon path"`
 }
 
 func ParseFlags() Options {

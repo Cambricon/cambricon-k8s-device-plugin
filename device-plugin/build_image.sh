@@ -16,9 +16,17 @@
 curpath=$(dirname "$0")
 cd "$curpath" || exit 1
 
-: "${TAG:=v1.1.3}"
+: "${TAG:=v1.3.0}"
 : "${ARCH:=amd64}"
 : "${LIBCNDEV:=/usr/local/neuware/lib64/libcndev.so}"
+
+case $(awk -F= '/^NAME/{print $2}' /etc/os-release) in
+"CentOS Linux")
+	BASE_IMAGE=centos:7
+	;;
+esac
+
+: "${BASE_IMAGE:=ubuntu:18.04}"
 
 echo "Build environ (Can be overridden):"
 echo "TAG       = $TAG"
@@ -26,16 +34,18 @@ echo "ARCH      = $ARCH"
 echo "LIBCNDEV  = $LIBCNDEV"
 echo "APT_PROXY = $APT_PROXY"
 echo "GOPROXY   = $GOPROXY"
+echo "BASE_IMAGE   = $BASE_IMAGE"
 
 case $(uname -m) in
 x86_64)
-        build_arch=amd64
-        ;;
+	build_arch=amd64
+	;;
 aarch64*)
-        build_arch=arm64
-        ;;
+	build_arch=arm64
+	;;
 armv8*)
-        build_arch=arm64
+	build_arch=arm64
+	;;
 esac
 
 rm -rf "$curpath/image"
@@ -51,13 +61,14 @@ fi
 case $ARCH in
 amd64)
 	file_arch=x86-64
-;;
+	;;
 arm64)
 	file_arch=aarch64
 	;;
 *)
 	echo "Unknown arch $ARCH"
 	exit 1
+	;;
 esac
 
 if ! file "$LIBCNDEV" --dereference | grep -q "$file_arch"; then
@@ -74,6 +85,7 @@ echo "Building Cambricon device plugin docker image."
 [[ "$ARCH" == "$build_arch" ]] && docker build -t "cambricon-k8s-device-plugin:$TAG" \
 	--build-arg "GOPROXY=$GOPROXY" --build-arg "APT_PROXY=$APT_PROXY" \
 	--build-arg "BUILDPLATFORM=linux/$ARCH" \
+	--build-arg "BASE_IMAGE=$BASE_IMAGE" \
 	--build-arg "TARGETPLATFORM=linux/$ARCH" .
 
 [[ "$ARCH" == "$build_arch" ]] && docker save -o "image/cambricon-k8s-device-plugin-$ARCH.tar" \
@@ -87,6 +99,7 @@ fi
 [[ "$ARCH" != "$build_arch" ]] && DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build \
 	--platform="linux/$ARCH" -t "cambricon-k8s-device-plugin:$TAG" \
 	--build-arg "GOPROXY=$GOPROXY" --build-arg "APT_PROXY=$APT_PROXY" \
+	--build-arg "BASE_IMAGE=$BASE_IMAGE" \
 	--output type=docker,dest="./image/cambricon-k8s-device-plugin-$ARCH.tar" .
 
 echo "Image is saved at ./image/cambricon-k8s-device-plugin-$ARCH.tar"

@@ -34,18 +34,28 @@ type pcie struct {
 }
 
 type Device struct {
-	Slot uint
-	UUID string
-	Path string
-	pcie *pcie
+	Slot        uint
+	UUID        string
+	Path        string
+	MotherBoard string
+	MLULinkDevs map[string]int
+	pcie        *pcie
 }
 
-func NewDeviceLite(idx uint, pcieAware bool) (*Device, error) {
+func NewDeviceLite(idx uint, topologyAware bool, pcieAware bool) (*Device, error) {
+	var mluLinkDevs map[string]int
 	var pcie *pcie
 
-	uuid, path, err := getDeviceInfo(idx)
+	uuid, motherBoard, path, err := getDeviceInfo(idx)
 	if err != nil {
 		return nil, err
+	}
+
+	if topologyAware {
+		mluLinkDevs, err = getDeviceMLULinkDevs(idx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if pcieAware {
@@ -56,10 +66,12 @@ func NewDeviceLite(idx uint, pcieAware bool) (*Device, error) {
 	}
 
 	return &Device{
-		Slot: idx,
-		UUID: uuid,
-		Path: path,
-		pcie: pcie,
+		Slot:        idx,
+		UUID:        uuid,
+		Path:        path,
+		MotherBoard: motherBoard,
+		MLULinkDevs: mluLinkDevs,
+		pcie:        pcie,
 	}, nil
 }
 

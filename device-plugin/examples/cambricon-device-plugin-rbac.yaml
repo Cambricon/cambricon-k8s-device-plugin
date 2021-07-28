@@ -1,4 +1,4 @@
-# Copyright 2020 Cambricon, Inc.
+# Copyright 2021 Cambricon, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-linters:
-  enable:
-    - exportloopref
-    - gci
-    - gofmt
-    - goimports
-    - golint
-    - gosimple
-    - govet
-    - unused
-  disable-all: true
-issues:
-  exclude-use-default: false
-  exclude:
-    - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cambricon-device-plugin
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cambricon-device-plugin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cambricon-device-plugin
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: kube-system

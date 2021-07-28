@@ -13,136 +13,130 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-function mock_mlu100() {
-    sudo mknod /dev/cambricon_c10Dev0 c 239 0 || true
-    sudo mknod /dev/cambricon_c10Dev1 c 239 1 || true
-    sudo mknod /dev/cambricon_c10Dev2 c 239 2 || true
-    sudo mknod /dev/cambricon_c10Dev3 c 239 3 || true
-    sudo mknod /dev/cncodec_dev c 10 58 || true
-    sudo mknod /dev/cnmon_dev c 238 0 || true
-}
+set -e
 
-function mock_mlu270() {
-    sudo mknod /dev/cambricon_dev0 c 240 0 || true
-    sudo mknod /dev/cambricon_dev1 c 240 1 || true
-    sudo mknod /dev/cambricon_dev2 c 240 2 || true
-    sudo mknod /dev/cambricon_dev3 c 240 3 || true
-    sudo mknod /dev/cambricon_dev4 c 240 4 || true
-    sudo mknod /dev/cambricon_dev5 c 240 5 || true
-    sudo mknod /dev/cambricon_dev6 c 240 6 || true
-    sudo mknod /dev/cambricon_dev7 c 240 7 || true
+function mock_devices() {
+    sudo mknod /dev/cambricon_dev0 c 240 0
+    sudo mknod /dev/cambricon_dev1 c 240 1
+    sudo mknod /dev/cambricon_dev2 c 240 2
+    sudo mknod /dev/cambricon_dev3 c 240 3
+    sudo mknod /dev/cambricon_dev4 c 240 4
+    sudo mknod /dev/cambricon_dev5 c 240 5
+    sudo mknod /dev/cambricon_dev6 c 240 6
+    sudo mknod /dev/cambricon_dev7 c 240 7
 
-    sudo mknod /dev/cambr-msgq:0 c 241 0 || true
-    sudo mknod /dev/cambr-msgq:1 c 241 1 || true
-    sudo mknod /dev/cambr-msgq:2 c 241 2 || true
-    sudo mknod /dev/cambr-msgq:3 c 241 3 || true
-    sudo mknod /dev/cambr-msgq:4 c 241 4 || true
-    sudo mknod /dev/cambr-msgq:5 c 241 5 || true
-    sudo mknod /dev/cambr-msgq:6 c 241 6 || true
-    sudo mknod /dev/cambr-msgq:7 c 241 7 || true
+    sudo mknod /dev/cambr-msgq:0 c 241 0
+    sudo mknod /dev/cambr-msgq:1 c 241 1
+    sudo mknod /dev/cambr-msgq:2 c 241 2
+    sudo mknod /dev/cambr-msgq:3 c 241 3
+    sudo mknod /dev/cambr-msgq:4 c 241 4
+    sudo mknod /dev/cambr-msgq:5 c 241 5
+    sudo mknod /dev/cambr-msgq:6 c 241 6
+    sudo mknod /dev/cambr-msgq:7 c 241 7
 
-    sudo mknod /dev/cambr-rpc:0 c 242 0 || true
-    sudo mknod /dev/cambr-rpc:1 c 242 1 || true
-    sudo mknod /dev/cambr-rpc:2 c 242 2 || true
-    sudo mknod /dev/cambr-rpc:3 c 242 3 || true
-    sudo mknod /dev/cambr-rpc:4 c 242 4 || true
-    sudo mknod /dev/cambr-rpc:5 c 242 5 || true
-    sudo mknod /dev/cambr-rpc:6 c 242 6 || true
-    sudo mknod /dev/cambr-rpc:7 c 242 7 || true
+    sudo mknod /dev/cambr-rpc:0 c 242 0
+    sudo mknod /dev/cambr-rpc:1 c 242 1
+    sudo mknod /dev/cambr-rpc:2 c 242 2
+    sudo mknod /dev/cambr-rpc:3 c 242 3
+    sudo mknod /dev/cambr-rpc:4 c 242 4
+    sudo mknod /dev/cambr-rpc:5 c 242 5
+    sudo mknod /dev/cambr-rpc:6 c 242 6
+    sudo mknod /dev/cambr-rpc:7 c 242 7
 
-    sudo mknod /dev/cmsg_ctrl0 c 243 0 || true
-    sudo mknod /dev/cmsg_ctrl1 c 243 1 || true
-    sudo mknod /dev/cmsg_ctrl2 c 243 2 || true
-    sudo mknod /dev/cmsg_ctrl3 c 243 3 || true
-    sudo mknod /dev/cmsg_ctrl4 c 243 4 || true
-    sudo mknod /dev/cmsg_ctrl5 c 243 5 || true
-    sudo mknod /dev/cmsg_ctrl6 c 243 6 || true
-    sudo mknod /dev/cmsg_ctrl7 c 243 7 || true
+    sudo mknod /dev/cmsg_ctrl0 c 243 0
+    sudo mknod /dev/cmsg_ctrl1 c 243 1
+    sudo mknod /dev/cmsg_ctrl2 c 243 2
+    sudo mknod /dev/cmsg_ctrl3 c 243 3
+    sudo mknod /dev/cmsg_ctrl4 c 243 4
+    sudo mknod /dev/cmsg_ctrl5 c 243 5
+    sudo mknod /dev/cmsg_ctrl6 c 243 6
+    sudo mknod /dev/cmsg_ctrl7 c 243 7
 
-    sudo mknod /dev/commu0 c 244 0 || true
-    sudo mknod /dev/commu1 c 244 1 || true
-    sudo mknod /dev/commu2 c 244 2 || true
-    sudo mknod /dev/commu3 c 244 3 || true
-    sudo mknod /dev/commu4 c 244 4 || true
-    sudo mknod /dev/commu5 c 244 5 || true
-    sudo mknod /dev/commu6 c 244 6 || true
-    sudo mknod /dev/commu7 c 244 7 || true
+    sudo mknod /dev/commu0 c 244 0
+    sudo mknod /dev/commu1 c 244 1
+    sudo mknod /dev/commu2 c 244 2
+    sudo mknod /dev/commu3 c 244 3
+    sudo mknod /dev/commu4 c 244 4
+    sudo mknod /dev/commu5 c 244 5
+    sudo mknod /dev/commu6 c 244 6
+    sudo mknod /dev/commu7 c 244 7
 
-    sudo mknod /dev/cambricon_ctl c 245 0 || true
+    sudo mknod /dev/cambricon_ctl c 245 0
 
-    sudo mknod /dev/ttyMS0 c 246 0 || true
-    sudo mknod /dev/ttyMS1 c 246 1 || true
-    sudo mknod /dev/ttyMS2 c 246 2 || true
-    sudo mknod /dev/ttyMS3 c 246 3 || true
-    sudo mknod /dev/ttyMS4 c 246 4 || true
-    sudo mknod /dev/ttyMS5 c 246 5 || true
-    sudo mknod /dev/ttyMS6 c 246 6 || true
-    sudo mknod /dev/ttyMS7 c 246 7 || true
-
+    sudo mknod /dev/ttyMS0 c 246 0
+    sudo mknod /dev/ttyMS1 c 246 1
+    sudo mknod /dev/ttyMS2 c 246 2
+    sudo mknod /dev/ttyMS3 c 246 3
+    sudo mknod /dev/ttyMS4 c 246 4
+    sudo mknod /dev/ttyMS5 c 246 5
+    sudo mknod /dev/ttyMS6 c 246 6
+    sudo mknod /dev/ttyMS7 c 246 7
 }
 
 function remove_devices() {
-    sudo rm -f /dev/cambricon_c10Dev* || true
-    sudo rm -f /dev/cncodec_dev || true
-    sudo rm -f /dev/cnmon_dev || true
+    sudo rm -f /dev/cambricon_dev*
+    sudo rm -f /dev/cambr-msgq*
+    sudo rm -f /dev/cambr-rpc*
+    sudo rm -f /dev/cmsg_ctrl*
+    sudo rm -f /dev/commu*
+    sudo rm -f /dev/cambricon_ctl
+    sudo rm -f /dev/ttyMS*
+}
 
-    sudo rm -f /dev/cambricon_dev* || true
-    sudo rm -f /dev/cambr-msgq* || true
-    sudo rm -f /dev/cambr-rpc* || true
-    sudo rm -f /dev/cmsg_ctrl* || true
-    sudo rm -f /dev/commu* || true
-    sudo rm -f /dev/cambricon_ctl || true
-    sudo rm -f /dev/ttyMS* || true
+function prepare_image() {
+    tag=$(date +%s)
+    TAG=$tag LIBCNDEV=pkg/cndev/mock/libcndev.so ./build_image.sh
+    docker build --build-arg "BASE_IMAGE=cambricon-k8s-device-plugin:$tag" -t "cambricon-k8s-device-plugin:mock-$tag" test
+    sed "s|cambricon-k8s-device-plugin:[A-Za-z0-9\.]*|cambricon-k8s-device-plugin:mock-$tag|" examples/cambricon-device-plugin-daemonset.yaml >test/cambricon-device-plugin.yml
+}
+
+function remove_images() {
+    mapfile -t stopped < <(docker ps --filter status=exited -q)
+    for container in "${stopped[@]}"; do
+        docker rm "$container"
+    done
+    mapfile -t images < <(docker images -q cambricon-k8s-device-plugin)
+    mapfile -t -O "${#images[@]}" images < <(docker images -f "dangling=true" -q)
+    for image in "${images[@]}"; do
+        docker rmi "$image"
+    done
 }
 
 function do_recover() {
     echo "Recovering testing environments"
-
-    remove_devices
-
+    mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
     kubectl delete ds cambricon-device-plugin-daemonset -n kube-system || true
-    pod=$(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds) || true
-    kubectl wait --for=delete "$pod" -n kube-system --timeout=120s || true
-    rm -f test/mock.json || true
+    kubectl wait --for=delete "${pods[0]}" -n kube-system --timeout=120s || true
+    mapfile -t pods < <(kubectl get pods -o name -l app=binpack-1)
     kubectl delete deployment binpack-n1 || true
-    mapfile -t PODS < <(kubectl get pods -o name -l app=binpack-1) || true
-    kubectl wait --for=delete "${PODS[0]}" --timeout=120s || true
-    mapfile -t images < <(docker images -q cambricon-k8s-device-plugin) || true
-    mapfile -t -O "${#images[@]}" images < <(docker images -f "dangling=true" -q) || true
-    for image in "${images[@]}"; do
-        docker rmi "$image" || true
-    done
+    kubectl wait --for=delete "${pods[0]}" --timeout=120s || true
 }
 
 do_recover
+remove_devices
+remove_images
 
-mock_mlu100
-
-./test/do-test-device-plugin.sh MLU100 || {
-    echo "MLU100 Device Plugin Test Failed"
-    exit 1
-}
-
-echo "=================================="
-echo "MLU100 Device Plugin Test Passed"
-echo "=================================="
+mock_devices
+prepare_image
 
 do_recover
-
-mock_mlu270
-./test/do-test-device-plugin.sh MLU270 default || {
-    echo "MLU270 Device Plugin Test Default Mode Failed"
+./test/do-test-device-plugin.sh default || {
+    echo "Device Plugin Test Default Mode Failed"
     exit 1
 }
 
 do_recover
-
-mock_mlu270
-./test/do-test-device-plugin.sh MLU270 env_share || {
-    echo "MLU270 Device Plugin Test Env Share Mode Failed"
+./test/do-test-device-plugin.sh env_share || {
+    echo "Device Plugin Test Env Share Mode Failed"
     exit 1
 }
 
-echo "=================================="
-echo "MLU270 Device Plugin Test Passed"
-echo "=================================="
+do_recover
+./test/do-test-device-plugin.sh topology_aware || {
+    echo "Device Plugin Test Topology Aware Mode Failed"
+    exit 1
+}
+
+echo "============================="
+echo "MLU Device Plugin Test Passed"
+echo "============================="

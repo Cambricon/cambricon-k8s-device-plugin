@@ -27,8 +27,8 @@ tag=$1
 rm -rf image
 mkdir -p image
 TAG=$tag ./build_image.sh
-sed "s|v[0-9]\.[0-9].[0-9]|$tag|g" examples/cambricon-device-plugin-daemonset.yaml > image/cambricon-device-plugin-daemonset.yaml
-sed "s|v[0-9]\.[0-9].[0-9]|$tag|g" examples/cambricon-device-plugin-static-pod.yaml > image/cambricon-device-plugin-static-pod.yaml
+sed "s|v[0-9]\.[0-9].[0-9]|$tag|g" examples/cambricon-device-plugin-daemonset.yaml >image/cambricon-device-plugin-daemonset.yaml
+sed "s|v[0-9]\.[0-9].[0-9]|$tag|g" examples/cambricon-device-plugin-static-pod.yaml >image/cambricon-device-plugin-static-pod.yaml
 cp examples/pod.yaml image/
 
 tar -zcvf cambricon_k8s_device_plugin_packages_"$tag".tar.gz image

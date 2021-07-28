@@ -19,8 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-cJSON *readJsonFile()
-{
+cJSON *readJsonFile() {
 	FILE *f;
 	long len;
 	char *content;
@@ -33,130 +32,153 @@ cJSON *readJsonFile()
 	fread(content, 1, len, f);
 	fclose(f);
 	json = cJSON_Parse(content);
-	if (!json)
-	{
+	if (!json) {
 		printf("Error before: [%s]\n", cJSON_GetErrorPtr());
 	}
 	return json;
 }
-cndevRet_t cndevGetDeviceCount(cndevCardInfo_t *cardNum)
-{
+cndevRet_t cndevGetDeviceCount(cndevCardInfo_t *cardNum) {
 	cJSON *config;
 	unsigned numMLU;
 	config = readJsonFile();
 	cJSON *numObj = cJSON_GetObjectItem(config, "num");
 	numMLU = numObj->valueint;
-	cardNum->Number = numMLU;
+	cardNum->number = numMLU;
+
+	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
 }
-cndevRet_t cndevInit(int reserved)
-{
-	cJSON *config;
-	cndevRet_t result;
-	config = readJsonFile();
-	cJSON *ret = cJSON_GetObjectItem(config, "ret");
-	int result_int = ret->valueint;
-	result = CNDEV_SUCCESS;
-	for (int i = 0; i <= 9; i++)
-	{
-		if (i == result_int)
-		{
-			return result;
-		}
-		result++;
-	}
-}
-cndevRet_t cndevGetCardHealthState(cndevCardHealthState_t *cardHealthState, int devId)
-{
+cndevRet_t cndevInit(int reserved) { return CNDEV_SUCCESS; }
+cndevRet_t cndevGetCardHealthState(cndevCardHealthState_t *cardHealthState,
+				   int devId) {
 	cJSON *config;
 	cndevRet_t result;
 	config = readJsonFile();
 
 	cJSON *health_node = cJSON_GetObjectItem(config, "health");
-	int health_int = cJSON_GetArrayItem(health_node, devId)->valueint;
-	cardHealthState->health = health_int;
+	cardHealthState->health =
+	    cJSON_GetArrayItem(health_node, devId)->valueint;
 
-	cJSON *ret = cJSON_GetObjectItem(config, "health_ret");
-	int result_int = cJSON_GetArrayItem(ret, devId)->valueint;
-	result = CNDEV_SUCCESS;
-	for (int i = 0; i <= 9; i++)
-	{
-		if (i == result_int)
-		{
-			return result;
-		}
-		result++;
-	}
-}
-cndevRet_t cndevGetCardSN(cndevCardSN_t *cardSN, int devId)
-{
-	cJSON *config;
-	cndevRet_t result;
-	config = readJsonFile();
-
-	cJSON *sn_node = cJSON_GetObjectItem(config, "MLU");
-	__int64_t sn_int = cJSON_GetArrayItem(sn_node, devId)->valueint;
-	cardSN->sn = sn_int;
-
-	cJSON *ret = cJSON_GetObjectItem(config, "MLU_ret");
-	int result_int = cJSON_GetArrayItem(ret, devId)->valueint;
-	result = CNDEV_SUCCESS;
-	for (int i = 0; i <= 9; i++)
-	{
-		if (i == result_int)
-		{
-			return result;
-		}
-		result++;
-	}
-}
-cndevRet_t cndevRelease()
-{
+	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
 }
-cndevRet_t cndevGetCardName(cndevCardName_t *cardName, int devId)
-{
+cndevRet_t cndevGetCardSN(cndevCardSN_t *cardSN, int devId) {
 	cJSON *config;
 	cndevRet_t result;
 	config = readJsonFile();
 
-	cJSON *card_type_node = cJSON_GetObjectItem(config, "card_type");
+	cJSON *mb_sn_node = cJSON_GetObjectItem(config, "motherboard");
+	cardSN->motherBoardSn = cJSON_GetArrayItem(mb_sn_node, devId)->valueint;
+
+	cJSON_Delete(config);
+	return CNDEV_SUCCESS;
+}
+cndevRet_t cndevRelease() { return CNDEV_SUCCESS; }
+cndevRet_t cndevGetCardName(cndevCardName_t *cardName, int devId) {
+	cJSON *config;
+	cndevRet_t result;
+	config = readJsonFile();
+
+	cJSON *card_type_node = cJSON_GetObjectItem(config, "type");
 	int card_type = cJSON_GetArrayItem(card_type_node, devId)->valueint;
 
-	if (card_type == 0)
-	{
+	if (card_type == 0) {
 		cardName->id = MLU100;
-	}
-	else if (card_type == 1)
-	{
+	} else if (card_type == 1) {
 		cardName->id = MLU270;
-	}
-	else if (card_type == 16)
-	{
+	} else if (card_type == 16) {
 		cardName->id = MLU220_M2;
-	}
-	else if (card_type == 18)
-	{
+	} else if (card_type == 17) {
+		cardName->id = MLU220_EDGE;
+	} else if (card_type == 18) {
 		cardName->id = MLU220_EVB;
-	}
-	else if (card_type == 19)
-	{
+	} else if (card_type == 19) {
 		cardName->id = MLU220_M2i;
-	}
-	else if (card_type == 20)
-	{
+	} else if (card_type == 20) {
 		cardName->id = MLU290;
+	} else if (card_type == 23) {
+		cardName->id = MLU370;
 	}
+
+	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
 }
 
-const char *cndevGetErrorString(cndevRet_t errorId)
-{
+const char *getCardNameStringByDevId(int devId) {
+	cJSON *config;
+	cndevRet_t result;
+	config = readJsonFile();
+
+	cJSON *card_type_array = cJSON_GetObjectItem(config, "type");
+	int card_type = cJSON_GetArrayItem(card_type_array, devId)->valueint;
+
+	cJSON_Delete(config);
+
+	if (card_type == 0) {
+		return "MLU100";
+	} else if (card_type == 1) {
+		return "MLU270";
+	} else if (card_type == 16 || card_type == 17 || card_type == 18 ||
+		   card_type == 19) {
+		return "MLU220";
+	} else if (card_type == 20) {
+		return "MLU290";
+	} else if (card_type == 23) {
+		return "MLU370";
+	}
+}
+
+cndevRet_t cndevGetUUID(cndevUUID_t *uuidInfo, int devId) {
+	cJSON *config;
+	cndevRet_t result;
+	config = readJsonFile();
+
+	cJSON *uuid_info = cJSON_GetObjectItem(config, "uuid");
+	cJSON *uuid = cJSON_GetArrayItem(uuid_info, devId);
+	for (int i = 0; i < UUID_SIZE; ++i) {
+		uuidInfo->uuid[i] = cJSON_GetArrayItem(uuid, i)->valueint;
+	}
+	cJSON_Delete(config);
+	return CNDEV_SUCCESS;
+}
+
+cndevRet_t cndevGetMLULinkRemoteInfo(cndevMLULinkRemoteInfo_t *remoteinfo,
+				     int devId, int link) {
+	cJSON *config;
+	cndevRet_t result;
+	config = readJsonFile();
+
+	cJSON *remote_info = cJSON_GetObjectItem(config, "remote_info");
+	cJSON *info_array = cJSON_GetArrayItem(remote_info, devId);
+	cJSON *link_info = cJSON_GetArrayItem(info_array, link);
+
+	for (int i = 0; i < UUID_SIZE; ++i) {
+		remoteinfo->uuid[i] =
+		    cJSON_GetArrayItem(link_info, i)->valueint;
+	}
+	cJSON_Delete(config);
+	return CNDEV_SUCCESS;
+}
+
+cndevRet_t cndevGetMLULinkStatus(cndevMLULinkStatus_t *status, int devId,
+				 int link) {
+	cJSON *config;
+	cndevRet_t result;
+	config = readJsonFile();
+
+	cJSON *mlulink_status_array =
+	    cJSON_GetObjectItem(config, "mlulink_status");
+	cJSON *dev_info = cJSON_GetArrayItem(mlulink_status_array, devId);
+	status->isActive = cJSON_GetArrayItem(dev_info, link)->valueint;
+	cJSON_Delete(config);
+	return CNDEV_SUCCESS;
+}
+
+const char *cndevGetErrorString(cndevRet_t errorId) {
 	return "mock return value of cndev get error string";
 }
 
-cndevRet_t cndevGetPCIeInfo(cndevPCIeInfo_t *deviceInfo, int devId)
-{
+cndevRet_t cndevGetPCIeInfo(cndevPCIeInfo_t *deviceInfo, int devId) {
 	cJSON *config;
 	cndevRet_t result;
 	config = readJsonFile();
@@ -169,5 +191,15 @@ cndevRet_t cndevGetPCIeInfo(cndevPCIeInfo_t *deviceInfo, int devId)
 	deviceInfo->device = cJSON_GetArrayItem(pcie_node, 2)->valueint;
 	deviceInfo->function = cJSON_GetArrayItem(pcie_node, 3)->valueint;
 
+	cJSON_Delete(config);
+
 	return CNDEV_SUCCESS;
+}
+
+int cndevGetMLULinkPortNumber(int devId) {
+	cJSON *config;
+	int result;
+	config = readJsonFile();
+
+	return cJSON_GetObjectItem(config, "mlulink_port")->valueint;
 }

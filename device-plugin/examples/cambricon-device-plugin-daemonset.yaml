@@ -44,15 +44,23 @@ spec:
           operator: Exists
           effect: NoSchedule
       containers:
-        - image: cambricon-k8s-device-plugin:v1.1.3
+        - image: cambricon-k8s-device-plugin:v1.3.0
           name: cambricon-device-plugin-ctr
           command:
             - /usr/bin/k8s-device-plugin
           args:
-            - --mode=default #device plugin mode: default, sriov or env-share
+            - --mode=default #device plugin mode: default, sriov, env-share or topology-aware
             - --virtualization-num=1 #  virtualization number for each MLU, used only in sriov mode or env-share mode
+            - --mlulink-policy=best-effort # MLULink topology policy: best-effort, guaranteed or restricted, used only in topology-aware mode
+            - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line to avoid mounting cnmon.
             #- --enable-console #uncomment to enable UART console device(/dev/ttyMS) in container
             #- --disable-health-check #uncomment to disable health check
+            #- --enable-device-type #uncomment to enable device registration with type info
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           securityContext:
             privileged: true
           volumeMounts:

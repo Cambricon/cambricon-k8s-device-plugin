@@ -22,8 +22,12 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
+	"unsafe"
 )
+
+const version = 5
 
 func errorString(ret C.cndevRet_t) error {
 	if ret == C.CNDEV_SUCCESS {
@@ -48,43 +52,82 @@ func Release() error {
 
 func GetDeviceCount() (uint, error) {
 	var cardInfos C.cndevCardInfo_t
-	cardInfos.version = C.int(3)
+	cardInfos.version = C.int(version)
 	r := C.cndevGetDeviceCount(&cardInfos)
-	return uint(cardInfos.Number), errorString(r)
+	return uint(cardInfos.number), errorString(r)
 }
 
-func getDeviceInfo(idx uint) (string, string, error) {
+func GetDeviceModel(idx uint) string {
+	return C.GoString(C.getCardNameStringByDevId(C.int(idx)))
+}
+
+func getDeviceInfo(idx uint) (string, string, string, error) {
 	var cardName C.cndevCardName_t
 	var cardSN C.cndevCardSN_t
-	var path string
+	var uuidInfo C.cndevUUID_t
 
-	cardSN.version = C.int(3)
-	r := C.cndevGetCardSN(&cardSN, C.int(idx))
+	cardName.version = C.int(version)
+	r := C.cndevGetCardName(&cardName, C.int(idx))
 	err := errorString(r)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
-	uuid := fmt.Sprintf("MLU-%x", int(cardSN.sn))
 
-	cardName.version = C.int(3)
-	r = C.cndevGetCardName(&cardName, C.int(idx))
+	if cardName.id == C.MLU100 {
+		log.Panicln("MLU100 detected, there is no way to be here.")
+	}
+
+	cardSN.version = C.int(version)
+	r = C.cndevGetCardSN(&cardSN, C.int(idx))
 	err = errorString(r)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
-	if cardName.id == C.MLU100 {
-		path = fmt.Sprintf("/dev/cambricon_c10Dev%d", idx)
-	} else {
-		path = fmt.Sprintf("/dev/cambricon_dev%d", idx)
+
+	uuidInfo.version = C.int(version)
+	r = C.cndevGetUUID(&uuidInfo, C.int(idx))
+	err = errorString(r)
+	if err != nil {
+		return "", "", "", err
 	}
-	return uuid, path, nil
+	uuid := *(*[C.UUID_SIZE]C.uchar)(unsafe.Pointer(&uuidInfo.uuid))
+
+	return fmt.Sprintf("MLU-%s", uuid), fmt.Sprintf("%x", int(cardSN.motherBoardSn)), fmt.Sprintf("/dev/cambricon_dev%d", idx), nil
+}
+
+func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
+	devs := make(map[string]int)
+	portNum := C.cndevGetMLULinkPortNumber(C.int(idx))
+	for i := 0; i < int(portNum); i++ {
+		var status C.cndevMLULinkStatus_t
+		status.version = C.int(version)
+		r := C.cndevGetMLULinkStatus(&status, C.int(idx), C.int(i))
+		err := errorString(r)
+		if err != nil {
+			return nil, err
+		}
+		if status.isActive == C.CNDEV_FEATURE_DISABLED {
+			log.Printf("MLU %v port %v disabled", idx, i)
+			continue
+		}
+		var remoteinfo C.cndevMLULinkRemoteInfo_t
+		remoteinfo.version = C.int(version)
+		r = C.cndevGetMLULinkRemoteInfo(&remoteinfo, C.int(idx), C.int(i))
+		err = errorString(r)
+		if err != nil {
+			return nil, err
+		}
+		uuid := fmt.Sprintf("MLU-%s", *(*[C.UUID_SIZE]C.uchar)(unsafe.Pointer(&remoteinfo.uuid)))
+		devs[uuid]++
+	}
+	return devs, nil
 }
 
 func getDeviceHealthState(idx uint, delayTime int) (int, error) {
 	var ret C.cndevRet_t
 	var cardHealthState C.cndevCardHealthState_t
 	var healthCode int
-	cardHealthState.version = C.int(3)
+	cardHealthState.version = C.int(version)
 	// sleep for some seconds
 	time.Sleep(time.Duration(delayTime) * time.Second)
 	ret = C.cndevGetCardHealthState(&cardHealthState, C.int(idx))
@@ -94,7 +137,7 @@ func getDeviceHealthState(idx uint, delayTime int) (int, error) {
 
 func getDevicePCIeInfo(idx uint) (*pcie, error) {
 	var pcieInfo C.cndevPCIeInfo_t
-	pcieInfo.version = C.int(3)
+	pcieInfo.version = C.int(version)
 	r := C.cndevGetPCIeInfo(&pcieInfo, C.int(idx))
 	if err := errorString(r); err != nil {
 		return nil, err

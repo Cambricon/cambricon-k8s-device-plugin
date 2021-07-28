@@ -30,7 +30,7 @@ test: go-test mock-test
 
 go-test: pkg/cndev/mock/libcndev.so
 	LD_LIBRARY_PATH=$(CURDIR)/pkg/cndev/mock \
-		MOCK_JSON=$(CURDIR)/test/mockmlu270.json \
+		MOCK_JSON=$(CURDIR)/test/mock.json \
 		go test -v ./...
 
 integration-test: pkg/cndev/mock/libcndev.so
@@ -46,7 +46,7 @@ pkg/cndev/mock/mock_test: pkg/cndev/mock/main.c pkg/cndev/mock/libcndev.so
 		-o pkg/cndev/mock/mock_test
 
 mock-test: pkg/cndev/mock/mock_test
-	MOCK_JSON=$(CURDIR)/test/mockmlu270.json ./pkg/cndev/mock/mock_test
+	MOCK_JSON=$(CURDIR)/test/mock.json ./pkg/cndev/mock/mock_test
 
 addlicense:
 	# install with `go get github.com/google/addlicense`
