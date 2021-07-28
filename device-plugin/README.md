@@ -44,7 +44,7 @@ Set the following environment variables if you need.
 | LIBCNDEV   | absolute path of the libcndev.so binary, neuware installation path by default |
 | BASE_IMAGE | device plugin base image                                                      |
 
-If you want to cross build, make sure docker version >= 19.03.
+Docker should be >= 17.05.0 on your building machine. If you want to cross build, make sure docker version >= 19.03.
 
 For amd64:
 
