@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.1
+
+- Support allocating MLU370 ipcm devices
+
 ## v1.3.0
 
 **BREAKING CHANGE**: MLU driver must be equal or above 4.15.2

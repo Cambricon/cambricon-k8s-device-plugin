@@ -31,7 +31,7 @@ func main() {
 
 	log.Println("Loading CNDEV")
 	if err := cndev.Init(); err != nil {
-		log.Printf("Failed to initialize CNDEV: %s.", err)
+		log.Printf("Failed to initialize CNDEV, err: %v", err)
 
 		select {}
 	}
@@ -48,7 +48,7 @@ func main() {
 	log.Println("Starting FS watcher.")
 	watcher, err := startFSWatcher(pluginapi.DevicePluginPath)
 	if err != nil {
-		log.Println("Failed to created FS watcher.")
+		log.Printf("Failed to created FS watcher. err: %v", err)
 		os.Exit(1)
 	}
 	defer watcher.Close()
@@ -81,14 +81,14 @@ events:
 				goto restart
 			}
 		case err := <-watcher.Errors:
-			log.Printf("inotify: %s", err)
+			log.Printf("inotify err: %v", err)
 		case s := <-sigs:
 			switch s {
 			case syscall.SIGHUP:
 				log.Println("Received SIGHUP, restarting.")
 				goto restart
 			default:
-				log.Printf("Received signal \"%v\", shutting down.", s)
+				log.Printf("Received signal %v, shutting down.", s)
 				devicePlugin.Stop()
 				break events
 			}

@@ -71,6 +71,15 @@ function mock_devices() {
     sudo mknod /dev/ttyMS5 c 246 5
     sudo mknod /dev/ttyMS6 c 246 6
     sudo mknod /dev/ttyMS7 c 246 7
+
+    sudo mknod /dev/cambricon_ipcm0 c 247 0
+    sudo mknod /dev/cambricon_ipcm1 c 247 1
+    sudo mknod /dev/cambricon_ipcm2 c 247 2
+    sudo mknod /dev/cambricon_ipcm3 c 247 3
+    sudo mknod /dev/cambricon_ipcm4 c 247 4
+    sudo mknod /dev/cambricon_ipcm5 c 247 5
+    sudo mknod /dev/cambricon_ipcm6 c 247 6
+    sudo mknod /dev/cambricon_ipcm7 c 247 7
 }
 
 function remove_devices() {
@@ -81,6 +90,7 @@ function remove_devices() {
     sudo rm -f /dev/commu*
     sudo rm -f /dev/cambricon_ctl
     sudo rm -f /dev/ttyMS*
+    sudo rm -f /dev/cambricon_ipcm*
 }
 
 function prepare_image() {

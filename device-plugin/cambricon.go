@@ -31,6 +31,7 @@ const (
 	mluMsgqDeviceName        = "/dev/cambr-msgq"
 	mluRPCDeviceName         = "/dev/cambr-rpc"
 	mluCmsgDeviceName        = "/dev/cmsg_ctrl"
+	mluIpcmDeviceName        = "/dev/cambricon_ipcm"
 	mluCommuDeviceName       = "/dev/commu"
 	mluUARTConsoleDeviceName = "/dev/ttyMS"
 )
@@ -40,6 +41,7 @@ type deviceList struct {
 	hasMsgqDev        bool
 	hasRPCDev         bool
 	hasCmsgDev        bool
+	hasIpcmDev        bool
 	hasCommuDev       bool
 	hasUARTConsoleDev bool
 }
@@ -51,6 +53,7 @@ func newDeviceList() *deviceList {
 		hasRPCDev:         hostDeviceExistsWithPrefix(mluRPCDeviceName),
 		hasCmsgDev:        hostDeviceExistsWithPrefix(mluCmsgDeviceName),
 		hasCommuDev:       hostDeviceExistsWithPrefix(mluCommuDeviceName),
+		hasIpcmDev:        hostDeviceExistsWithPrefix(mluIpcmDeviceName),
 		hasUARTConsoleDev: hostDeviceExistsWithPrefix(mluUARTConsoleDeviceName),
 	}
 }

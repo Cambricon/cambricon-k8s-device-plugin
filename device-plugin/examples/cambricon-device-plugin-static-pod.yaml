@@ -19,7 +19,7 @@ metadata:
   namespace: kube-system
 spec:
   containers:
-    - image: cambricon-k8s-device-plugin:v1.3.0
+    - image: cambricon-k8s-device-plugin:v1.3.1
       name: cambricon-device-plugin-ctr
       command:
         - /usr/bin/k8s-device-plugin

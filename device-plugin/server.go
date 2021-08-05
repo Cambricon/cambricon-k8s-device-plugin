@@ -235,6 +235,9 @@ func (m *CambriconDevicePlugin) PrepareResponse(req *pluginapi.ContainerAllocate
 		if m.deviceList.hasCommuDev {
 			addDevice(&resp, fmt.Sprintf(mluCommuDeviceName+"%d", index), fmt.Sprintf(mluCommuDeviceName+"%d", id))
 		}
+		if m.deviceList.hasIpcmDev {
+			addDevice(&resp, fmt.Sprintf(mluIpcmDeviceName+"%d", index), fmt.Sprintf(mluIpcmDeviceName+"%d", id))
+		}
 		if m.deviceList.hasUARTConsoleDev && m.options.EnableConsole {
 			addDevice(&resp, fmt.Sprintf(mluUARTConsoleDeviceName+"%d", index), fmt.Sprintf(mluUARTConsoleDeviceName+"%d", id))
 		}

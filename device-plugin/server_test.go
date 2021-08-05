@@ -66,6 +66,7 @@ func TestCambriconDevicePluginAllocate(t *testing.T) {
 					hasRPCDev:   true,
 					hasCmsgDev:  true,
 					hasCommuDev: true,
+					hasIpcmDev:  true,
 				},
 			},
 			req: &pluginapi.AllocateRequest{
@@ -115,18 +116,20 @@ func TestCambriconDevicePluginAllocate(t *testing.T) {
 			assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)
 			switch i {
 			case 0:
-				assert.Equal(t, 11, len(devices))
+				assert.Equal(t, 13, len(devices))
 				assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)
 				assert.Equal(t, mluMsgqDeviceName+":0", devices[1].HostPath)
 				assert.Equal(t, mluRPCDeviceName+":0", devices[2].HostPath)
 				assert.Equal(t, mluCmsgDeviceName+"0", devices[3].HostPath)
 				assert.Equal(t, mluCommuDeviceName+"0", devices[4].HostPath)
-				assert.Equal(t, mluDeviceName+"0", devices[5].HostPath)
-				assert.Equal(t, mluMsgqDeviceName+":1", devices[6].HostPath)
-				assert.Equal(t, mluRPCDeviceName+":1", devices[7].HostPath)
-				assert.Equal(t, mluCmsgDeviceName+"1", devices[8].HostPath)
-				assert.Equal(t, mluCommuDeviceName+"1", devices[9].HostPath)
-				assert.Equal(t, mluDeviceName+"1", devices[10].HostPath)
+				assert.Equal(t, mluIpcmDeviceName+"0", devices[5].HostPath)
+				assert.Equal(t, mluDeviceName+"0", devices[6].HostPath)
+				assert.Equal(t, mluMsgqDeviceName+":1", devices[7].HostPath)
+				assert.Equal(t, mluRPCDeviceName+":1", devices[8].HostPath)
+				assert.Equal(t, mluCmsgDeviceName+"1", devices[9].HostPath)
+				assert.Equal(t, mluCommuDeviceName+"1", devices[10].HostPath)
+				assert.Equal(t, mluIpcmDeviceName+"1", devices[11].HostPath)
+				assert.Equal(t, mluDeviceName+"1", devices[12].HostPath)
 			case 1:
 				assert.Equal(t, 4, len(devices))
 				assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)
@@ -174,6 +177,7 @@ func TestCambriconDevicePluginAllocateSriov(t *testing.T) {
 					hasMsgqDev:  true,
 					hasRPCDev:   true,
 					hasCmsgDev:  true,
+					hasIpcmDev:  true,
 					hasCommuDev: true,
 				},
 			},
@@ -285,6 +289,7 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 					hasRPCDev:   true,
 					hasCmsgDev:  true,
 					hasCommuDev: true,
+					hasIpcmDev:  true,
 				},
 			},
 			req: req,
@@ -316,14 +321,14 @@ func TestCambriconDevicePluginAllocateEnvShare(t *testing.T) {
 			assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)
 			switch i {
 			case 0:
-				assert.Equal(t, 6, len(devices))
+				assert.Equal(t, 7, len(devices))
 				assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)
 				assert.Equal(t, mluMsgqDeviceName+":0", devices[1].HostPath)
 				assert.Equal(t, mluRPCDeviceName+":0", devices[2].HostPath)
 				assert.Equal(t, mluCmsgDeviceName+"0", devices[3].HostPath)
 				assert.Equal(t, mluCommuDeviceName+"0", devices[4].HostPath)
-				assert.Equal(t, mluDeviceName+"0", devices[5].HostPath)
-
+				assert.Equal(t, mluIpcmDeviceName+"0", devices[5].HostPath)
+				assert.Equal(t, mluDeviceName+"0", devices[6].HostPath)
 			case 1:
 				assert.Equal(t, 3, len(devices))
 				assert.Equal(t, mluMonitorDeviceName, devices[0].HostPath)

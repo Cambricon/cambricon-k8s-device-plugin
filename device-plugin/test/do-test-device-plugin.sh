@@ -38,6 +38,7 @@ function test_mlu_default() {
         test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cmsg_ctrl -c)" -eq 2
         test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep commu -c)" -eq 2
         test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_ctl -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_ipcm -c)" -eq 2
     done
     sed -i "s|- --enable-device-type|#- --enable-device-type|" test/cambricon-device-plugin.yml
 }
@@ -51,6 +52,7 @@ function test_mlu_env_share() {
     sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 1|" test/mock-deployment.yaml
     sed -i "s|virtualization-num=1|virtualization-num=2|" test/cambricon-device-plugin.yml
     sed -i "s|#- --enable-console|- --enable-console|" test/cambricon-device-plugin.yml
+    sudo rm -f /dev/cambricon_ipcm*
     kubectl create -f test/cambricon-device-plugin.yml
     mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
     for pod in "${pods[@]}"; do
