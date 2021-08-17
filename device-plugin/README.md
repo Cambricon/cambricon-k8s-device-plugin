@@ -14,8 +14,9 @@ This repository contains Cambricon's official implementation of the Kubernetes d
 
 The prerequisites for running the Cambricon Device Plugin:
 
-- MLU270, MLU270-X5K, MLU220, MLU290, MLU370 devices
+- MLU270, MLU270-X5K, MLU220, MLU290, MLU370, MLU365-D2 devices
 - MLU driver >= 4.15.2
+- cntoolkit on your building machine >= 2.4.0
 
 For MLU driver version < 4.15.2, please use [release v1.1.3].
 

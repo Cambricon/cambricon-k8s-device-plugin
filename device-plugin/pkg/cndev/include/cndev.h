@@ -77,7 +77,9 @@ typedef enum {
   MLU220_EVB = 18,   /**< MLU220_EVB */
   MLU220_M2i = 19,   /**< MLU220_M2i */
   MLU290 = 20,       /**< MLU290 */
-  MLU370 = 23        /**< MLU370 */
+  MLU370 = 23,       /**< MLU370 */
+  MLU365 = 24,       /**< MLU365 */
+  CE3226 = 25,       /**< CE3226 */
 } cndevNameEnum_t;
 
 typedef enum {
@@ -208,6 +210,9 @@ typedef struct {
   int chip;          /**< MLU Chip temperature, unit:℃ */
   int airInlet;      /**< MLU air inlet temperature, unit:℃ */
   int airOutlet;     /**< MLU air outlet temperature, unit:℃ */
+  int memory;        /**< MLU external memory temperature, unit:℃ */
+  int videoInput;    /**< MLU video input temperature, unit:℃ */
+  int cpu;           /**< MLU cpu temperature, unit:℃ */
 } cndevTemperatureInfo_t;
 
 /**< Fan speed information */
@@ -617,18 +622,25 @@ typedef struct {
 } cndevMLULinkPortMode_t;
 
 typedef enum {
-  MLULINK_ROCE_FIELD_NONE,
-  /* 6:IPV6,   4:IPV4*/
   MLULINK_ROCE_FIELD_IP_VERSION,
-  MLULINK_ROCE_FIELD_VLAN_TAG,
-  NCS_ROCE_FILED_VLAN_EN,
-  MLULINK_ROCE_FIELD_DSCP,
-  /* ONLY WORK WITH IPV4 */
+  MLULINK_ROCE_FIELD_VLAN_TPID,
+  MLULINK_ROCE_FIELD_VLAN_CFI,
+  MLULINK_ROCE_FIELD_VLAN_VID,
+  MLULINK_ROCE_FIELD_VLAN_EN,
   MLULINK_ROCE_FIELD_IP_TTL,
-  /* ONLY WORK WITH IPV6 */
   MLULINK_ROCE_FIELD_FLOW_LABLE,
-  /* ONLY WORK WITH IPV6 */
   MLULINK_ROCE_FIELD_HOP_LIMIT,
+  MLULINK_ROCE_FIELD_PFC_XON,
+  MLULINK_ROCE_FIELD_PFC_XOFF,
+  MLULINK_ROCE_FIELD_PFC_PERIOD,
+  MLULINK_ROCE_FIELD_PFC_EN,
+  MLULINK_ROCE_FIELD_QOS_TRUST,
+  MLULINK_ROCE_FIELD_HAT_DATA_DOT1P,
+  MLULINK_ROCE_FIELD_HAT_CTRL_DOT1P,
+  MLULINK_ROCE_FIELD_MAC_DOT1P,
+  MLULINK_ROCE_FIELD_HAT_DATA_DSCP,
+  MLULINK_ROCE_FIELD_HAT_CTRL_DSCP,
+  MLULINK_ROCE_FIELD_MAC_DSCP,
   MLULINK_ROCE_FIELD_NUM,
 }  cndevRoceFieldEnum_t;
 
@@ -643,6 +655,21 @@ typedef struct {
   int tinyCoreCount;
   int tinyCoreUtilization[TINYCOREMAXCOUNT];
 } cndevTinyCoreUtilization_t;
+
+typedef struct {
+  int version;
+  __int64_t armOsMemoryTotal;  /**< ARM OS total memory, unit:KB */
+  __int64_t armOsMemoryUsed;   /**< ARM os used memory, unit:KB */
+} cndevArmOsMemoryInfo_t;
+
+typedef struct {
+  int version;
+  __uint8_t chipId;
+} cndevChipId_t;
+typedef struct {
+  int version;
+  __uint8_t mluFrequencyLockStatus;
+} cndevMLUFrequencyStatus_t;
 
 typedef int (*CNDEV_TRAVERSE_CALLBACK)(cndevTopologyNode_t *current, void *userdata);
 /**
@@ -1824,6 +1851,64 @@ int cndevGetMLULinkPortNumber(int devId);
  */
 EXPORT
 cndevRet_t cndevGetTinyCoreUtilization(cndevTinyCoreUtilization_t *util, int devId);
+/**
+ * @ brief get card arm os memory usage information
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param mem will stores arm os memory usage
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetArmOsMemoryUsage(cndevArmOsMemoryInfo_t *mem, int devId);
+
+/**
+ * @ brief get card chip id information
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param chipid will stores card chip id
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetChipId(cndevChipId_t *chipid, int devId);
+/**
+ * @ brief get card MLU frequency status
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ * @ param status will stores  MLU frequency status
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_INVALID_ARGUMENT if the parameter is NULL
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ * @ return CNDEV_UNSUPPORTED_API_VERSION if the API version is too low to be support by the cndev library
+ */
+EXPORT
+cndevRet_t cndevGetMLUFrequencyStatus(cndevMLUFrequencyStatus_t *status, int devId);
+/**
+ * @ brief unlock MLU frequency
+ *
+ * @ param devId the number of the card which the user selects, staring from 0
+ *
+ * @ return CNDEV_SUCCESS if success
+ * @ return CNDEV_ERROR_UNINITIALIZED if the user don't call the function named cndevInit beforehand
+ * @ return CNDEV_ERROR_UNKNOWN if some fault occurs, when the function calls some system function
+ * @ return CNDEV_ERROR_INVALID_DEVICE_ID if the number of card which the user selects is not available
+ */
+EXPORT
+cndevRet_t cndevUnlockMLUFrequency(int devId);
 
 #if defined(__cplusplus)
 }

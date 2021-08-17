@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.2
+
+- Support MLU365-D2 devices
+
 ## v1.3.1
 
 - Support allocating MLU370 ipcm devices

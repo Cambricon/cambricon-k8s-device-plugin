@@ -44,7 +44,7 @@ spec:
           operator: Exists
           effect: NoSchedule
       containers:
-        - image: cambricon-k8s-device-plugin:v1.3.1
+        - image: cambricon-k8s-device-plugin:v1.3.2
           name: cambricon-device-plugin-ctr
           command:
             - /usr/bin/k8s-device-plugin

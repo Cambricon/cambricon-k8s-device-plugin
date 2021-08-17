@@ -16,7 +16,7 @@
 curpath=$(dirname "$0")
 cd "$curpath" || exit 1
 
-: "${TAG:=v1.3.1}"
+: "${TAG:=v1.3.2}"
 : "${ARCH:=amd64}"
 : "${LIBCNDEV:=/usr/local/neuware/lib64/libcndev.so}"
 
