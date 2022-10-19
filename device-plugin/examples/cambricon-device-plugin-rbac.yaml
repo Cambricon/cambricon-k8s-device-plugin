@@ -24,6 +24,17 @@ rules:
   verbs:
   - get
   - update
+  - list
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - update
+  - patch
+  - get
+  - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -35,5 +46,11 @@ roleRef:
   name: cambricon-device-plugin
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: cambricon-device-plugin
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cambricon-device-plugin
   namespace: kube-system

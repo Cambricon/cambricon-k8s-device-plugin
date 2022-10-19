@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package mlu
 
 import (
 	"context"
@@ -25,17 +25,6 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
-const (
-	mluMonitorDeviceName     = "/dev/cambricon_ctl"
-	mluDeviceName            = "/dev/cambricon_dev"
-	mluMsgqDeviceName        = "/dev/cambr-msgq"
-	mluRPCDeviceName         = "/dev/cambr-rpc"
-	mluCmsgDeviceName        = "/dev/cmsg_ctrl"
-	mluIpcmDeviceName        = "/dev/cambricon_ipcm"
-	mluCommuDeviceName       = "/dev/commu"
-	mluUARTConsoleDeviceName = "/dev/ttyMS"
-)
-
 type deviceList struct {
 	hasCtrlDev        bool
 	hasMsgqDev        bool
@@ -44,6 +33,7 @@ type deviceList struct {
 	hasIpcmDev        bool
 	hasCommuDev       bool
 	hasUARTConsoleDev bool
+	hasSplitDev       bool
 }
 
 func newDeviceList() *deviceList {
@@ -55,6 +45,7 @@ func newDeviceList() *deviceList {
 		hasCommuDev:       hostDeviceExistsWithPrefix(mluCommuDeviceName),
 		hasIpcmDev:        hostDeviceExistsWithPrefix(mluIpcmDeviceName),
 		hasUARTConsoleDev: hostDeviceExistsWithPrefix(mluUARTConsoleDeviceName),
+		hasSplitDev:       hostDeviceExistsWithPrefix(mluSplitDeviceName),
 	}
 }
 
@@ -106,7 +97,7 @@ func getDevices(mode string, fakeNum int) ([]*pluginapi.Device, map[string]*cnde
 	check(err)
 
 	for i := uint(0); i < num; i++ {
-		d, err := cndev.NewDeviceLite(i, mode == topologyAware, mode == sriov)
+		d, err := cndev.NewDeviceLite(i, mode == sriov)
 		check(err)
 		switch mode {
 		case envShare:
@@ -122,6 +113,15 @@ func getDevices(mode string, fakeNum int) ([]*pluginapi.Device, map[string]*cnde
 			err = d.EnableSriov(fakeNum)
 			check(err)
 			devices, infos := generateFakeDevs(d, fakeNum, true)
+			devs = append(devs, devices...)
+			for k, v := range infos {
+				devsInfo[k] = v
+			}
+		case mluShare:
+			mem, err := cndev.GetDeviceMemory(i)
+			check(err)
+			count := mem / 1024
+			devices, infos := generateFakeDevs(d, int(count), false)
 			devs = append(devs, devices...)
 			for k, v := range infos {
 				devsInfo[k] = v
@@ -146,32 +146,39 @@ func deviceExists(devs []*pluginapi.Device, id string) bool {
 	return false
 }
 
-func watchUnhealthy(ctx context.Context, devs []*pluginapi.Device, devsInfo map[string]*cndev.Device, unhealthy chan<- *pluginapi.Device) {
-	healthCheck := true
+func watchUnhealthy(ctx context.Context, devsInfo map[string]*cndev.Device, health chan<- *pluginapi.Device) {
+	unhealthy := make(map[string]bool)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-		if healthCheck {
-			for _, dm := range devsInfo {
-				ret, err := dm.GetGeviceHealthState(1)
-				if err != nil {
-					healthCheck = false
-					log.Printf("Failed to get Device %s healthy status, stop the healthy check", dm.UUID)
+
+		for _, dm := range devsInfo {
+			ret, err := dm.GetGeviceHealthState(1)
+			if err != nil {
+				log.Printf("Failed to get Device %s healthy status, set it as unhealthy", dm.UUID)
+				ret = 0
+			}
+			if ret == 0 && !unhealthy[dm.UUID] {
+				unhealthy[dm.UUID] = true
+				dev := pluginapi.Device{
+					ID:     dm.UUID,
+					Health: pluginapi.Unhealthy,
 				}
-				if ret == 0 {
-					for _, d := range devs {
-						if d.ID == dm.UUID {
-							log.Printf("Unhealthy device :%s\n", d.ID)
-							unhealthy <- d
-							break
-						}
-					}
+				health <- &dev
+			} else if unhealthy[dm.UUID] {
+				delete(unhealthy, dm.UUID)
+				dev := pluginapi.Device{
+					ID:     dm.UUID,
+					Health: pluginapi.Healthy,
 				}
+				health <- &dev
 			}
 		}
+
 		//Sleep 1 second between two health checks
 		time.Sleep(time.Second)
 	}

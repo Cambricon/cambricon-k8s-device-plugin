@@ -12,36 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package mlu
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/allocator"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
 	"google.golang.org/grpc"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
-
-const (
-	serverSock               = pluginapi.DevicePluginPath + "cambricon.sock"
-	mluLinkPolicyUnsatisfied = "mluLinkPolicyUnsatisfied"
-	nodeUpdateRetry          = 5
-)
-
-var errMLULinkPolicyUnsatisfied = errors.New("mluLink policy unsatisfied")
 
 // CambriconDevicePlugin implements the Kubernetes device plugin API
 type CambriconDevicePlugin struct {
@@ -52,19 +49,17 @@ type CambriconDevicePlugin struct {
 	health       chan *pluginapi.Device
 	server       *grpc.Server
 	deviceList   *deviceList
-	topology     map[int]string
+	allocator    allocator.Allocator
 	nodeHostname string
 	clientset    kubernetes.Interface
 	options      Options
+	sync.RWMutex
+	containerIndex uint
 }
 
 // NewCambriconDevicePlugin returns an initialized CambriconDevicePlugin
 func NewCambriconDevicePlugin(o Options) *CambriconDevicePlugin {
 	devs, devsInfo := getDevices(o.Mode, int(o.VirtualizationNum))
-	var c kubernetes.Interface
-	if o.Mode == topologyAware {
-		c = initClientSet()
-	}
 	return &CambriconDevicePlugin{
 		devs:         devs,
 		devsInfo:     devsInfo,
@@ -73,7 +68,6 @@ func NewCambriconDevicePlugin(o Options) *CambriconDevicePlugin {
 		health:       make(chan *pluginapi.Device),
 		deviceList:   newDeviceList(),
 		nodeHostname: o.NodeName,
-		clientset:    c,
 		options:      o,
 	}
 }
@@ -124,7 +118,9 @@ func (m *CambriconDevicePlugin) Start() error {
 	}
 	conn.Close()
 
-	go m.healthcheck()
+	if !m.options.DisableHealthCheck {
+		go m.healthcheck()
+	}
 
 	return nil
 }
@@ -176,32 +172,48 @@ func (m *CambriconDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Dev
 		case <-m.stop:
 			return nil
 		case d := <-m.health:
-			// FIXME: there is no way to recover from the Unhealthy state.
-			d.Health = pluginapi.Unhealthy
+			for i, dev := range m.devs {
+				if dev.ID == d.ID {
+					m.devs[i].Health = d.Health
+					break
+				}
+			}
 			s.Send(&pluginapi.ListAndWatchResponse{Devices: m.devs})
 		}
 	}
 }
 
-func (m *CambriconDevicePlugin) unhealthy(dev *pluginapi.Device) {
-	m.health <- dev
-}
-
-func (m *CambriconDevicePlugin) PrepareResponse(req *pluginapi.ContainerAllocateRequest) pluginapi.ContainerAllocateResponse {
+func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.ContainerAllocateResponse {
 
 	resp := pluginapi.ContainerAllocateResponse{}
 
+	resp.Mounts = []*pluginapi.Mount{
+		{
+			ContainerPath: mluRPMsgDir,
+			HostPath:      mluRPMsgDir,
+		},
+	}
+
 	if m.options.CnmonPath != "" {
-		resp.Mounts = []*pluginapi.Mount{
-			{
-				ContainerPath: m.options.CnmonPath,
-				HostPath:      m.options.CnmonPath,
-				ReadOnly:      true,
-			},
+		resp.Mounts = append(resp.Mounts, &pluginapi.Mount{
+			ContainerPath: m.options.CnmonPath,
+			HostPath:      m.options.CnmonPath,
+			ReadOnly:      true,
+		})
+	}
+
+	if m.options.Mode == mluShare {
+		resp.Mounts = append(resp.Mounts, &pluginapi.Mount{
+			ContainerPath: mluMemBinaryPath,
+			HostPath:      mluMemBinaryPath,
+			ReadOnly:      true,
+		})
+		if m.deviceList.hasSplitDev {
+			addDevice(&resp, mluSplitDeviceName, mluSplitDeviceName)
 		}
 	}
 
-	devpaths := m.uuidToPath(req.DevicesIDs)
+	devpaths := m.uuidToPath(uuids)
 
 	if m.deviceList.hasCtrlDev {
 		addDevice(&resp, mluMonitorDeviceName, mluMonitorDeviceName)
@@ -246,20 +258,117 @@ func (m *CambriconDevicePlugin) PrepareResponse(req *pluginapi.ContainerAllocate
 	return resp
 }
 
+func (m *CambriconDevicePlugin) GetDeviceUUIDByIndex(index uint) (uuid string, found bool) {
+	for uuid, info := range m.devsInfo {
+		if info.Slot == index {
+			return uuid, true
+		}
+	}
+	return "", false
+}
+
+func (m *CambriconDevicePlugin) allocateMLUShare(ctx context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+
+	m.Lock()
+	defer m.Unlock()
+
+	pods, err := m.getCandidatePods(ctx)
+	if err != nil {
+		log.Printf("Failed to get candidate pods, err %v", err)
+		m.containerIndex = 0
+		return nil, fmt.Errorf("getCandidatePods %v", err)
+	}
+
+	var assumePod *v1.Pod
+	if len(pods) != 1 {
+		m.containerIndex = 0
+		log.Printf("Number of candidate Pods %d", len(pods))
+		return nil, fmt.Errorf("Number of candidate Pods %d", len(pods))
+	}
+
+	assumePod = pods[0]
+	counts := podContainerCountWithMlu(assumePod)
+
+	index, err := getIndexFromAnnotation(assumePod)
+	if err != nil {
+		m.containerIndex = 0
+		log.Printf("Failed to get index from annotation, err %v", err)
+		return nil, fmt.Errorf("getIndexFromAnnotation %v", err)
+	}
+	uuid, ok := m.GetDeviceUUIDByIndex(index)
+	if !ok {
+		m.containerIndex = 0
+		log.Printf("Failed to get uuid by index %d", index)
+		return nil, fmt.Errorf("failed GetDeviceUUIDByIndex %d", index)
+	}
+
+	responses := pluginapi.AllocateResponse{}
+	for _, req := range reqs.ContainerRequests {
+		reqMem := len(req.DevicesIDs)
+		resp := m.PrepareResponse([]string{uuid})
+		resp.Envs = map[string]string{
+			mluMemSplitEnable: "1",
+			mluMemSplitIndex:  fmt.Sprintf("%d", index),
+			mluMemSplitLimit:  fmt.Sprintf("%d", reqMem),
+		}
+		responses.ContainerResponses = append(responses.ContainerResponses, &resp)
+	}
+
+	if m.containerIndex < counts-1 {
+		m.containerIndex++
+		log.Printf("Pod %s has %d containers, creating %d container", assumePod.Name, counts, m.containerIndex)
+	} else {
+		log.Printf("Creating last container in pod %s", assumePod.Name)
+		m.containerIndex = 0
+		err = m.releaseNodeLock()
+		for i := 0; i < retries && err != nil; i++ {
+			log.Printf("Failed to release node lock, err %v, retried %d times", err, i)
+			time.Sleep(100 * time.Millisecond)
+			err = m.releaseNodeLock()
+		}
+		if err != nil {
+			log.Printf("releaseNodeLock exceeds retry count %d", retries)
+		}
+
+		patchedAnnotation, err := json.Marshal(
+			map[string]interface{}{
+				"metadata": map[string]map[string]string{"annotations": {
+					mluMemResourceAssigned: "true",
+				}}})
+		if err != nil {
+			log.Printf("Failed to patch pod annotation. err: %v", err)
+			return nil, fmt.Errorf("patchPodAnnotation %v", err)
+		}
+		_, err = m.clientset.CoreV1().Pods(assumePod.Namespace).Patch(ctx, assumePod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
+		for i := 0; i < retries && err != nil; i++ {
+			log.Printf("patchPodAnnotation err: %v, retried times: %d", err, i)
+			time.Sleep(100 * time.Millisecond)
+			_, err = m.clientset.CoreV1().Pods(assumePod.Namespace).Patch(ctx, assumePod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
+		}
+		if err != nil {
+			return nil, fmt.Errorf("patchPodAnnotation exceeds retry count %d", retries)
+		}
+	}
+
+	return &responses, nil
+}
+
 // Allocate which return list of devices.
 func (m *CambriconDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-	devs := m.devs
+
+	if m.options.Mode == mluShare {
+		return m.allocateMLUShare(ctx, reqs)
+	}
+
 	responses := pluginapi.AllocateResponse{}
-
 	for _, req := range reqs.ContainerRequests {
-
-		car := m.PrepareResponse(req)
-		responses.ContainerResponses = append(responses.ContainerResponses, &car)
 		for _, id := range req.DevicesIDs {
-			if !deviceExists(devs, id) {
+			if !deviceExists(m.devs, id) {
 				return nil, fmt.Errorf("invalid allocation request: unknown device: %s", id)
 			}
 		}
+		car := m.PrepareResponse(req.DevicesIDs)
+		responses.ContainerResponses = append(responses.ContainerResponses, &car)
 	}
 	return &responses, nil
 }
@@ -286,19 +395,17 @@ func (m *CambriconDevicePlugin) cleanup() error {
 
 func (m *CambriconDevicePlugin) healthcheck() {
 	ctx, cancel := context.WithCancel(context.Background())
-	var unhealthy chan *pluginapi.Device
-	if !m.options.DisableHealthCheck {
-		unhealthy = make(chan *pluginapi.Device)
-		go watchUnhealthy(ctx, m.devs, m.devsInfo, unhealthy)
-	}
+	health := make(chan *pluginapi.Device)
+
+	go watchUnhealthy(ctx, m.devsInfo, health)
 
 	for {
 		select {
 		case <-m.stop:
 			cancel()
 			return
-		case dev := <-unhealthy:
-			m.unhealthy(dev)
+		case dev := <-health:
+			m.health <- dev
 		}
 	}
 }
@@ -310,13 +417,25 @@ func (m *CambriconDevicePlugin) Serve() error {
 	}
 
 	if m.options.Mode == topologyAware {
-		m.constructTopologyMap()
-		log.Printf("topology index info %v \n", m.topology)
+		m.allocator = allocator.New(m.options.MLULinkPolicy, m.devsInfo)
+		m.clientset = initClientSet()
 
-		if m.options.MLULinkPolicy != bestEffort {
+		if m.options.MLULinkPolicy != common.BestEffort {
 			if err := m.updateNodeMLULinkAnnotation(0); err != nil {
 				return err
 			}
+		}
+	}
+
+	if m.options.Mode == mluShare {
+		m.clientset = initClientSet()
+		if num, err := cndev.GetDeviceCount(); err != nil {
+			return err
+		} else if err = m.patchMLUCount(int(num)); err != nil {
+			return err
+		}
+		if err := m.releaseNodeLock(); err != nil {
+			return err
 		}
 	}
 
@@ -325,7 +444,6 @@ func (m *CambriconDevicePlugin) Serve() error {
 	}
 
 	log.Printf("Starting to serve on socket %v", m.socket)
-
 	resourceName := "cambricon.com/mlu"
 	if m.options.EnableDeviceType {
 		model := cndev.GetDeviceModel(uint(0))
@@ -339,6 +457,9 @@ func (m *CambriconDevicePlugin) Serve() error {
 			resourceName = "cambricon.com/" + strings.Split(strings.ToLower(model), "-")[0]
 		}
 	}
+	if m.options.Mode == mluShare {
+		resourceName = mluMemResourceName
+	}
 	if err := m.Register(pluginapi.KubeletSocket, resourceName); err != nil {
 		m.Stop()
 		return fmt.Errorf("register resource %s err: %v", resourceName, err)
@@ -350,9 +471,11 @@ func (m *CambriconDevicePlugin) Serve() error {
 func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
 	response := &pluginapi.PreferredAllocationResponse{}
 	for _, req := range r.ContainerRequests {
-		allocated, err := m.GetPreferredAllocatedDeviceUUIDs(req.AvailableDeviceIDs, req.MustIncludeDeviceIDs, int(req.AllocationSize))
+		available := m.getSlots(req.AvailableDeviceIDs)
+		required := m.getSlots(req.MustIncludeDeviceIDs)
+		allocated, err := m.GetPreferredAllocatedDeviceUUIDs(available, required, int(req.AllocationSize))
 		if err != nil {
-			log.Printf("failed to get preferred allocated devices, err: %v \n", err)
+			log.Printf("failed to get preferred allocated devices, available: %v, size: %d, err: %v \n", available, req.AllocationSize, err)
 			return response, err
 		}
 		resp := &pluginapi.ContainerPreferredAllocationResponse{
@@ -363,190 +486,37 @@ func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *p
 	return response, nil
 }
 
-func (m *CambriconDevicePlugin) GetPreferredAllocatedDeviceUUIDs(available []string, required []string, size int) ([]string, error) {
+func (m *CambriconDevicePlugin) GetPreferredAllocatedDeviceUUIDs(available []uint, required []uint, size int) ([]string, error) {
 
 	// todo: consider required list for init containers and numa. ignore it for now.
 	if len(required) != 0 {
 		log.Printf("required device slice not empty, ignore it. %v \n", required)
 	}
 
-	if size == 4 {
-		policy := map[string][][]int{
-			bestEffort: {{0, 1, 2, 3}, {4, 5, 6, 7}, {0, 2, 4, 6}, {1, 3, 5, 7}, {0, 1, 4, 5}, {0, 3, 4, 7}, {2, 3, 6, 7}, {1, 2, 5, 6}},
-			guaranteed: {{0, 1, 2, 3}, {4, 5, 6, 7}, {0, 2, 4, 6}, {1, 3, 5, 7}, {0, 1, 4, 5}, {0, 3, 4, 7}, {2, 3, 6, 7}, {1, 2, 5, 6}},
-			restricted: {{0, 1, 2, 3}, {4, 5, 6, 7}},
+	log.Println("=== Start GetPreferredAllocatedDeviceUUIDs ===")
+	log.Printf("available devs: %v, size %d", available, size)
+
+	devs, err := m.allocator.Allocate(available, required, size)
+	if err != nil {
+		if e := m.updateNodeMLULinkAnnotation(size); e != nil {
+			log.Printf("updateNodeMLULinkAnnotation err: %v", e)
 		}
-		preferred := policy[m.options.MLULinkPolicy]
-		for _, set := range preferred {
-			ids := m.getMLUIDsByTopo(set)
-			if mluSetContainsAll(available, ids) {
-				log.Printf("use preferred topo %v, devices %v, slots: %v\n", set, ids, m.getSlots(ids))
-				return ids, nil
-			}
+		return nil, err
+	}
+
+	log.Printf("preferred devices %v", devs)
+
+	uuids := []string{}
+	for _, dev := range devs {
+		uuid, found := m.GetDeviceUUIDByIndex(dev)
+		if !found {
+			return nil, fmt.Errorf("uuid not found for dev %d", dev)
 		}
-		if m.options.MLULinkPolicy != bestEffort {
-			if err := m.updateNodeMLULinkAnnotation(size); err != nil {
-				log.Printf("update node annotation err: %v", err)
-			}
-			return nil, fmt.Errorf("%v %w for required size %d, available: %v", m.options.MLULinkPolicy, errMLULinkPolicyUnsatisfied, size, available)
-		}
-	}
-	needed := size
-	allocated := []string{}
-
-	allocateRemainingFrom := func(devices []string) bool {
-		for _, device := range devices {
-			if mluSetContains(allocated, device) {
-				continue
-			}
-			allocated = append(allocated, device)
-			needed--
-			if needed == 0 {
-				return true
-			}
-		}
-		return false
+		uuids = append(uuids, uuid)
 	}
 
-	motherBoards := make(map[string][]string)
-	for _, dev := range available {
-		raw := m.devsInfo[dev]
-		motherBoards[raw.MotherBoard] = append(motherBoards[raw.MotherBoard], dev)
-	}
-	log.Printf("available devices seperated by mother board %v, request size: %d\n", motherBoards, size)
-
-	mbs := [][]string{}
-	for mb, v := range motherBoards {
-		mbs = append(mbs, v)
-		log.Printf("available devices slots for motherboard %s: %v", mb, m.getSlots(v))
-	}
-	sort.Slice(mbs, func(i int, j int) bool {
-		return len(mbs[i]) < len(mbs[j])
-	})
-
-	if size == 2 {
-		preferred := [][]int{{0, 2}, {1, 3}, {4, 6}, {5, 7}}
-		for _, mb := range mbs {
-			for _, set := range preferred {
-				ids := m.getMLUIDsByTopo(set)
-				if mluSetContainsAll(mb, ids) {
-					return ids, nil
-				}
-			}
-		}
-		if m.options.MLULinkPolicy == restricted {
-			if err := m.updateNodeMLULinkAnnotation(size); err != nil {
-				log.Printf("update node annotation err: %v", err)
-			}
-			return nil, fmt.Errorf("%v %w for required size %d, available: %v", m.options.MLULinkPolicy, errMLULinkPolicyUnsatisfied, size, available)
-		}
-	}
-
-	if len(mbs[0]) >= size {
-		log.Printf("allocate from devices %v \n", mbs[0])
-		allocateRemainingFrom(mbs[0])
-		return allocated, nil
-	}
-
-	if allocateRemainingFrom(mbs[1]) {
-		log.Printf("allocate from devices %v \n", mbs[1])
-		return allocated, nil
-	}
-
-	log.Printf("allocated %v, allocate from another motherboard with linked devices\n", allocated)
-
-	for _, dev := range mbs[1] {
-		raw := m.devsInfo[dev]
-		for k := range raw.MLULinkDevs {
-			if !mluSetContains(available, k) {
-				continue
-			}
-			if allocateRemainingFrom([]string{k}) {
-				log.Printf("allocate linked device %s of device %s \n", k, dev)
-				return allocated, nil
-			}
-		}
-	}
-
-	log.Printf("allocated %v, allocate from another motherboard with unlinked devices\n", allocated)
-
-	if size == 2 && m.options.MLULinkPolicy == guaranteed {
-		if err := m.updateNodeMLULinkAnnotation(size); err != nil {
-			log.Printf("update node annotation err: %v", err)
-		}
-		return nil, fmt.Errorf("%v %w for required size %d, available: %v", m.options.MLULinkPolicy, errMLULinkPolicyUnsatisfied, size, available)
-	}
-
-	allocateRemainingFrom(mbs[0])
-	return allocated, nil
-}
-
-func (m *CambriconDevicePlugin) constructTopologyMap() {
-	if len(m.devsInfo) != 8 {
-		err := fmt.Errorf("the number of known devices is %d, should be 8", len(m.devsInfo))
-		panic(err)
-	}
-	motherBoards := make(map[string][]*cndev.Device)
-	for _, dev := range m.devsInfo {
-		motherBoards[dev.MotherBoard] = append(motherBoards[dev.MotherBoard], dev)
-	}
-	boards := []string{}
-	for mb := range motherBoards {
-		boards = append(boards, mb)
-	}
-	sort.Slice(boards, func(i int, j int) bool {
-		return boards[i] < boards[j]
-	})
-	var dev0 *cndev.Device
-	for _, dev := range motherBoards[boards[0]] {
-		if dev0 == nil || dev0.UUID > dev.UUID {
-			dev0 = dev
-		}
-	}
-	topo := make(map[int]string)
-	topo[0] = dev0.UUID
-	for d, num := range dev0.MLULinkDevs {
-		raw, ok := m.devsInfo[d]
-		if !ok || raw.MotherBoard != dev0.MotherBoard {
-			continue
-		}
-		if num == 2 {
-			topo[2] = raw.UUID
-			continue
-		}
-		dev1, ok := topo[1]
-		if !ok {
-			topo[1] = raw.UUID
-			continue
-		}
-		if dev1 > raw.UUID {
-			topo[1] = raw.UUID
-			topo[3] = dev1
-			continue
-		}
-		topo[3] = raw.UUID
-	}
-
-	for index := 0; index < 4; index++ {
-		device := topo[index]
-		for d := range m.devsInfo[device].MLULinkDevs {
-			raw, ok := m.devsInfo[d]
-			if !ok || raw.MotherBoard == m.devsInfo[device].MotherBoard {
-				continue
-			}
-			topo[index+4] = raw.UUID
-		}
-	}
-
-	m.topology = topo
-}
-
-func (m *CambriconDevicePlugin) getMLUIDsByTopo(topo []int) []string {
-	res := []string{}
-	for _, t := range topo {
-		res = append(res, m.topology[t])
-	}
-	return res
+	log.Println("=== Finish GetPreferredAllocatedDeviceUUIDs ===")
+	return uuids, nil
 }
 
 func (m *CambriconDevicePlugin) createAnnotationWithTimestamp(size int) error {
@@ -571,15 +541,13 @@ func (m *CambriconDevicePlugin) createAnnotationWithTimestamp(size int) error {
 }
 
 func (m *CambriconDevicePlugin) updateNodeMLULinkAnnotation(size int) error {
-	for i := 0; i < nodeUpdateRetry; i++ {
-		if err := m.createAnnotationWithTimestamp(size); err != nil {
-			log.Printf("createAnnotationWithTimestamp err: %v, retried times: %d", err, i)
-			time.Sleep(100 * time.Millisecond)
-		} else {
-			return nil
-		}
+	err := m.createAnnotationWithTimestamp(size)
+	for i := 0; i < retries && err != nil; i++ {
+		log.Printf("createAnnotationWithTimestamp err: %v, retried times: %d", err, i+1)
+		time.Sleep(100 * time.Millisecond)
+		err = m.createAnnotationWithTimestamp(size)
 	}
-	return fmt.Errorf("update node annotation with size %d exceeds retry count %d", size, nodeUpdateRetry)
+	return err
 }
 
 func (m *CambriconDevicePlugin) getSlots(ids []string) []uint {
@@ -589,24 +557,6 @@ func (m *CambriconDevicePlugin) getSlots(ids []string) []uint {
 		slots = append(slots, mlu.Slot)
 	}
 	return slots
-}
-
-func mluSetContains(set []string, dev string) bool {
-	for i := range set {
-		if set[i] == dev {
-			return true
-		}
-	}
-	return false
-}
-
-func mluSetContainsAll(set []string, devs []string) bool {
-	for _, dev := range devs {
-		if !mluSetContains(set, dev) {
-			return false
-		}
-	}
-	return true
 }
 
 func addDevice(car *pluginapi.ContainerAllocateResponse, hostPath string, containerPath string) {

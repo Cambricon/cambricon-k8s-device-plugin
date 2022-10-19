@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,26 +47,21 @@ func TestGetDeviceCount(t *testing.T) {
 
 func TestGetDeviceModel(t *testing.T) {
 	model := GetDeviceModel(uint(0))
-	assert.Equal(t, "MLU270", model)
+	assert.Equal(t, "MLU290", model)
+}
+
+func TestGetDeviceMemory(t *testing.T) {
+	memory, err := GetDeviceMemory(uint(0))
+	assert.NoError(t, err)
+	assert.Equal(t, uint(16*1024), memory)
 }
 
 func TestGetDeviceInfo(t *testing.T) {
-	uuid, mb, path, err := getDeviceInfo(uint(1))
+	uuid, _, mb, path, err := getDeviceInfo(uint(1))
 	assert.NoError(t, err)
 	assert.Equal(t, "/dev/cambricon_dev1", path)
-	assert.Equal(t, "MLU-20001012-1916-0000-0000-000000000000\x00", uuid)
+	assert.Equal(t, "MLU-20001012-1916-0000-0000-000000000000", uuid)
 	assert.Equal(t, fmt.Sprintf("%x", 1111111), mb)
-}
-
-func TestGetDeviceMLULinkDevs(t *testing.T) {
-	devs, err := getDeviceMLULinkDevs(uint(0))
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]int{
-		"MLU-20001012-1916-0000-0000-000000000000\x00": 1,
-		"MLU-30001012-1916-0000-0000-000000000000\x00": 2,
-		"MLU-40001012-1916-0000-0000-000000000000\x00": 1,
-		"MLU-50001012-1916-0000-0000-000000000000\x00": 1,
-	}, devs)
 }
 
 func TestGetDeviceHealthState(t *testing.T) {
@@ -81,4 +77,27 @@ func TestGetDevicePCIeInfo(t *testing.T) {
 	assert.Equal(t, 12, pcie.bus)
 	assert.Equal(t, 13, pcie.device)
 	assert.Equal(t, 1, pcie.function)
+}
+
+func TestGetDeviceMLULinkDevs(t *testing.T) {
+	devs, err := getDeviceMLULinkDevs(uint(0))
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]int{
+		"MLU-20001012-1916-0000-0000-000000000000": 1,
+		"MLU-30001012-1916-0000-0000-000000000000": 2,
+		"MLU-40001012-1916-0000-0000-000000000000": 1,
+		"MLU-50001012-1916-0000-0000-000000000000": 1,
+		"MLU-d0001012-1916-0000-0000-000000000000": 1,
+	}, devs)
+}
+
+func TestGetMLULinkGroups(t *testing.T) {
+	groups, err := GetMLULinkGroups()
+	assert.NoError(t, err)
+	for i := range groups {
+		sort.Slice(groups[i], func(x, y int) bool {
+			return groups[i][x] < groups[i][y]
+		})
+	}
+	assert.Equal(t, [][]uint{{0, 1, 2, 3, 4, 5, 6, 7}}, groups)
 }

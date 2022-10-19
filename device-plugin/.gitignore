@@ -3,3 +3,5 @@ k8s-device-plugin
 mock_test
 image
 *.tar*
+cntopo
+!cntopo/

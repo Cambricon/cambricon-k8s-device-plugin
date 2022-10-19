@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package mlu
 
 import (
 	"log"
@@ -22,18 +22,8 @@ import (
 	flags "github.com/jessevdk/go-flags"
 )
 
-const (
-	sriov         string = "sriov"
-	envShare      string = "env-share"
-	topologyAware string = "topology-aware"
-
-	bestEffort string = "best-effort"
-	restricted string = "restricted"
-	guaranteed string = "guaranteed"
-)
-
 type Options struct {
-	Mode               string `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"sriov" choice:"env-share" choice:"topology-aware"`
+	Mode               string `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"sriov" choice:"env-share" choice:"topology-aware" choice:"mlu-share"`
 	MLULinkPolicy      string `long:"mlulink-policy" description:"MLULink topology policy" default:"best-effort" choice:"best-effort" choice:"restricted" choice:"guaranteed"`
 	VirtualizationNum  uint   `long:"virtualization-num" description:"the virtualization number for each MLU, used only in sriov mode or env-share mode" default:"1" env:"VIRTUALIZATION_NUM"`
 	DisableHealthCheck bool   `long:"disable-health-check" description:"disable MLU health check"`

@@ -14,13 +14,14 @@ This repository contains Cambricon's official implementation of the Kubernetes d
 
 The prerequisites for running the Cambricon Device Plugin:
 
-- MLU270, MLU270-X5K, MLU220, MLU290, MLU370, MLU365-D2 devices
-- MLU driver >= 4.15.2
-- cntoolkit on your building machine >= 2.4.0
+- MLU270, MLU270-X5K, MLU220, MLU290, MLU370 devices
+- MLU driver >= 4.15.11
+- cntoolkit on your building machine >= 2.7.0
+- cncl on your building machine >= 1.0.1
 
-For MLU driver version < 4.15.2, please use [release v1.1.3].
+For MLU driver version 4.9.x, please use [release v1.1.3].
 
-For Kubernetes version < 1.19.0, MLU290 mlulink topology awareness can not be used. If you want to use this feature, make sure your Kubernetes version >= 1.19.0.
+For Kubernetes version < 1.19.0, mlulink topology-aware mode can not be used. If you want to use this feature, make sure your Kubernetes version >= 1.19.0.
 
 ## Quick Start
 
@@ -44,6 +45,7 @@ Set the following environment variables if you need.
 | ARCH       | target platform architecture, amd64 or arm64, amd64 by default                |
 | LIBCNDEV   | absolute path of the libcndev.so binary, neuware installation path by default |
 | BASE_IMAGE | device plugin base image                                                      |
+| CNTOPO     | absolute path of the cntopo binary, neuware installation path by default      |
 
 Docker should be >= 17.05.0 on your building machine. If you want to cross build, make sure docker version >= 19.03.
 
@@ -59,8 +61,8 @@ For arm64:
 ARCH=arm64 GOPROXY=https://goproxy.cn ./build_image.sh
 ```
 
-Please make sure Cambricon neuware is installed in your compiling environment.
-It uses **libcndev.so** binary on your compiling machine and generates docker image in folder `./image`.
+Please make sure Cambricon neuware and cncl is installed in your compiling environment.
+It uses **libcndev.so** and **cntopo** binary on your compiling machine and generates docker image in folder `./image`.
 
 ### Enabling MLU Support in Kubernetes
 
@@ -76,7 +78,7 @@ It uses **libcndev.so** binary on your compiling machine and generates docker im
 
    ```yaml
    args:
-     - --mode=default #device plugin mode: default, sriov, env-share or topology-aware
+     - --mode=default #device plugin mode: default, sriov, env-share, mlu-share or topology-aware
      - --virtualization-num=1 #  virtualization number for each MLU, used only in sriov mode or env-share mode
      - --mlulink-policy=best-effort # MLULink topology policy: best-effort, guaranteed or restricted, used only in topology-aware mode
      - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line to avoid mounting cnmon.
@@ -91,13 +93,14 @@ It uses **libcndev.so** binary on your compiling machine and generates docker im
    - sriov: supports SR-IOV. Set `virtualization-num` as number of VFs on host.
    - env-share: a whole card can be allocated into multiple containers. A container should use only one card in this mode.
      Set `virtualization-num` as maximum number of containers one MLU can be allocated into.
-   - topology-aware: device plugin is aware of MLULink topology and tries to allocate MLUs forming a cycle. Set `mlulink-policy` as described below. **Only supports MLU290 for now.**
+   - mlu-share: mlu resources are allocated by memory. **Only works when deployed along with Cambricon MLU Scheduler Extender.**
+   - topology-aware: device plugin is aware of MLULink topology and tries to allocate MLUs forming a ring. Set `mlulink-policy` as described below.
 
    MLULink topology policies, guaranteed and restricted only works for 1,2,4,8 requested MLUs:
 
-   - best-effort: allocate devices forming maximum number of cycles whenever possible
-   - guaranteed: allocated devices must form at least one cycle, otherwise returns an error
-   - restricted: for 2 MLUs, allocated devices must have 2 mlulinks, and for 4 MLUs, allocated devices must on one mother board, otherwise returns an error
+   - best-effort: allocate devices forming maximum number of rings whenever possible
+   - guaranteed: allocated devices must form at least one ring, otherwise return error
+   - restricted: for 2 MLUs and MLU290/MLU370-M8 4 MLUs, allocated devices must have 2 mlulink rings, otherwise return error
 
    ```shell
    kubectl create -f examples/cambricon-device-plugin-daemonset.yaml
@@ -106,10 +109,16 @@ It uses **libcndev.so** binary on your compiling machine and generates docker im
    (Optional) If you do not want the daemonset way of deployment, edit the static pod template in examples folder and
    put the file into your configured static pod folder (`/etc/kubernetes/manifests` by default).
 
-3. If you want to use MLU290 topology-aware mode under guaranteed or restricted policy, enable device plugin to get and update nodes.
+3. If you want to use topology-aware mode or mlu-share mode, enable device plugin to get and update nodes.
 
    ```shell
    kubectl create -f examples/cambricon-device-plugin-rbac.yaml
+   ```
+
+   And add service account for device plugin as the example
+
+   ```yaml
+   serviceAccount: cambricon-device-plugin
    ```
 
 ### Running MLU Jobs

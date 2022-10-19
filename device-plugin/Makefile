@@ -20,11 +20,14 @@ ifeq ($(GOARCH), arm64)
 export CC=aarch64-linux-gnu-gcc
 endif
 
+generate:
+	mockgen -package mock -destination pkg/cntopo/mock/cntopo.go -mock_names=Cntopo=Cntopo github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo Cntopo
+
 lint:
 	golangci-lint run -v
 
 build:
-	go build -trimpath -ldflags="-s -w" -o k8s-device-plugin .
+	go build -trimpath -ldflags="-s -w" -o k8s-device-plugin cmd/main.go
 
 test: go-test mock-test
 

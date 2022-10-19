@@ -22,7 +22,7 @@ function test_mlu_default() {
     sed -i "s|--mode=.*|--mode=default|" test/cambricon-device-plugin.yml
     sed -i "s|#- --enable-device-type|- --enable-device-type|" test/cambricon-device-plugin.yml
     sed "s|replicas: .*|replicas: 2|" examples/deployment.yaml >test/mock-deployment.yaml
-    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu270: 2|" test/mock-deployment.yaml
+    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu290: 2|" test/mock-deployment.yaml
     kubectl create -f test/cambricon-device-plugin.yml
     mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
     for pod in "${pods[@]}"; do
@@ -101,8 +101,8 @@ function test_mlu_topology() {
         done
     done
     echo "${allocated[@]}"
-    set1=("/dev/cambricon_dev0" "/dev/cambricon_dev1" "/dev/cambricon_dev2" "/dev/cambricon_dev3")
-    set2=("/dev/cambricon_dev4" "/dev/cambricon_dev5" "/dev/cambricon_dev6" "/dev/cambricon_dev7")
+    set1=("/dev/cambricon_dev0" "/dev/cambricon_dev1" "/dev/cambricon_dev4" "/dev/cambricon_dev5")
+    set2=("/dev/cambricon_dev2" "/dev/cambricon_dev3" "/dev/cambricon_dev6" "/dev/cambricon_dev7")
     diff1=$(echo "${set1[@]}" "${allocated[@]}" | tr ' ' '\n' | sort | uniq -u | wc -l)
     diff2=$(echo "${set2[@]}" "${allocated[@]}" | tr ' ' '\n' | sort | uniq -u | wc -l)
     test "$diff1" -eq 0 -o "$diff2" -eq 0

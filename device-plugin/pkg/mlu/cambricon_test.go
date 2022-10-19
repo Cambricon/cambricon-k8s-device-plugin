@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package mlu
 
 import (
 	"fmt"
@@ -43,23 +43,23 @@ func TestGetDevices(t *testing.T) {
 
 	devs, devsInfo := getDevices("default", 0)
 	assert.Equal(t, 8, len(devs))
-	assert.Equal(t, "MLU-40001012-1916-0000-0000-000000000000\x00", devs[3].ID)
+	assert.Equal(t, "MLU-40001012-1916-0000-0000-000000000000", devs[3].ID)
 	assert.Equal(t, 8, len(devsInfo))
-	assert.Equal(t, uint(3), devsInfo["MLU-40001012-1916-0000-0000-000000000000\x00"].Slot)
-	assert.Equal(t, "/dev/cambricon_dev3", devsInfo["MLU-40001012-1916-0000-0000-000000000000\x00"].Path)
+	assert.Equal(t, uint(3), devsInfo["MLU-40001012-1916-0000-0000-000000000000"].Slot)
+	assert.Equal(t, "/dev/cambricon_dev3", devsInfo["MLU-40001012-1916-0000-0000-000000000000"].Path)
 
 	devs, devsInfo = getDevices(envShare, 2)
 	assert.Equal(t, 16, len(devs))
-	assert.Equal(t, "MLU-20001012-1916-0000-0000-000000000000\x00-_-2", devs[3].ID)
+	assert.Equal(t, "MLU-20001012-1916-0000-0000-000000000000-_-2", devs[3].ID)
 	assert.Equal(t, 16, len(devsInfo))
-	assert.Equal(t, uint(1), devsInfo["MLU-20001012-1916-0000-0000-000000000000\x00-_-2"].Slot)
-	assert.Equal(t, "/dev/cambricon_dev1", devsInfo["MLU-20001012-1916-0000-0000-000000000000\x00-_-2"].Path)
+	assert.Equal(t, uint(1), devsInfo["MLU-20001012-1916-0000-0000-000000000000-_-2"].Slot)
+	assert.Equal(t, "/dev/cambricon_dev1", devsInfo["MLU-20001012-1916-0000-0000-000000000000-_-2"].Path)
 }
 
 func TestGenerateFakeDevs(t *testing.T) {
 	d := &cndev.Device{
 		Slot: 1,
-		UUID: "MLU-20001012-1916-0000-0000-000000000000\x00",
+		UUID: "MLU-20001012-1916-0000-0000-000000000000",
 		Path: "/dev/cambricon_dev1",
 	}
 	devs, devsInfo := generateFakeDevs(d, 4, true)

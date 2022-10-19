@@ -95,7 +95,7 @@ function remove_devices() {
 
 function prepare_image() {
     tag=$(date +%s)
-    TAG=$tag LIBCNDEV=pkg/cndev/mock/libcndev.so ./build_image.sh
+    TAG=$tag LIBCNDEV=pkg/cndev/mock/libcndev.so CNTOPO=pkg/cndev/mock/libcndev.so ./build_image.sh
     docker build --build-arg "BASE_IMAGE=cambricon-k8s-device-plugin:$tag" -t "cambricon-k8s-device-plugin:mock-$tag" test
     sed "s|cambricon-k8s-device-plugin:[A-Za-z0-9\.]*|cambricon-k8s-device-plugin:mock-$tag|" examples/cambricon-device-plugin-daemonset.yaml >test/cambricon-device-plugin.yml
 }
@@ -120,6 +120,7 @@ function do_recover() {
     mapfile -t pods < <(kubectl get pods -o name -l app=binpack-1)
     kubectl delete deployment binpack-n1 || true
     kubectl wait --for=delete "${pods[0]}" --timeout=120s || true
+    sleep 30
 }
 
 do_recover

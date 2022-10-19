@@ -50,21 +50,6 @@ void Test_cndevGetCardSN(int id) {
 	printf("=== Test cndevGetCardSN ===\nmotherBoard:%ld\nret:%d\n",
 	       cardSN->motherBoardSn, result);
 }
-void Test_cndevGetMLULinkRemoteInfo(int id) {
-	cndevMLULinkRemoteInfo_t *remoteinfo;
-	remoteinfo = (cndevMLULinkRemoteInfo_t *)malloc(
-	    sizeof(cndevMLULinkRemoteInfo_t));
-	remoteinfo->version = 5;
-	cndevRet_t result;
-	printf("=== Test cndevGetMLULinkRemoteInfo ===\n");
-	int num;
-	num = cndevGetMLULinkPortNumber(id);
-	for (int i = 0; i < num; ++i) {
-		result = cndevGetMLULinkRemoteInfo(remoteinfo, id, i);
-		printf("port:%d remote uuid:%s, ret:%d\n", i, remoteinfo->uuid,
-		       result);
-	}
-}
 
 void Test_cndevGetPCIeInfo(int id) {
 	cndevPCIeInfo_t *cardPcie;
@@ -88,6 +73,42 @@ void Test_cndevGetUUID(int id) {
 	       result);
 }
 
+void Test_cndevGetCardName(int id) {
+	cndevCardName_t *cardName;
+	cardName = (cndevCardName_t *)malloc(sizeof(cndevCardName_t));
+	cardName->version = 5;
+	cndevRet_t result;
+	result = cndevGetCardName(cardName, id);
+	printf("=== Test cndevGetCardName ===\nid:%d\nret:%d\n", cardName->id,
+	       result);
+}
+
+void Test_cndevGetMemoryUsage(int id) {
+	cndevMemoryInfo_t *memInfo;
+	memInfo = (cndevMemoryInfo_t *)malloc(sizeof(cndevMemoryInfo_t));
+	memInfo->version = 5;
+	cndevRet_t result;
+	result = cndevGetMemoryUsage(memInfo, id);
+	printf("=== Test cndevGetMemoryUsage ===\nid:%d\nmemory:%ld\nret:%d\n",
+	       id, memInfo->physicalMemoryTotal, result);
+}
+
+void Test_cndevGetMLULinkRemoteInfo(int id) {
+	cndevMLULinkRemoteInfo_t *remoteinfo;
+	remoteinfo = (cndevMLULinkRemoteInfo_t *)malloc(
+	    sizeof(cndevMLULinkRemoteInfo_t));
+	remoteinfo->version = 5;
+	cndevRet_t result;
+	printf("=== Test cndevGetMLULinkRemoteInfo ===\n");
+	int num;
+	num = cndevGetMLULinkPortNumber(id);
+	for (int i = 0; i < num; ++i) {
+		result = cndevGetMLULinkRemoteInfo(remoteinfo, id, i);
+		printf("port:%d remote uuid:%s, ret:%d\n", i, remoteinfo->uuid,
+		       result);
+	}
+}
+
 void Test_cndevGetMLULinkStatus(int id) {
 	cndevMLULinkStatus_t *status;
 	status = (cndevMLULinkStatus_t *)malloc(sizeof(cndevMLULinkStatus_t));
@@ -101,16 +122,6 @@ void Test_cndevGetMLULinkStatus(int id) {
 		printf("port:%d mlulink status:%d, ret:%d\n", i,
 		       status->isActive, result);
 	}
-}
-
-void Test_cndevGetCardName(int id) {
-	cndevCardName_t *cardName;
-	cardName = (cndevCardName_t *)malloc(sizeof(cndevCardName_t));
-	cardName->version = 5;
-	cndevRet_t result;
-	result = cndevGetCardName(cardName, id);
-	printf("=== Test cndevGetCardName ===\nid:%d\nret:%d\n", cardName->id,
-	       result);
 }
 
 void Test_cndevGetMLULinkPortNumber(int id) {
@@ -130,9 +141,11 @@ int main() {
 		Test_cndevGetCardSN(i);
 		Test_cndevGetPCIeInfo(i);
 		Test_cndevGetUUID(i);
+		Test_cndevGetMemoryUsage(i);
 		Test_cndevGetMLULinkRemoteInfo(i);
 		Test_cndevGetMLULinkStatus(i);
 		Test_cndevGetMLULinkPortNumber(i);
+
 	}
 	return 0;
 }

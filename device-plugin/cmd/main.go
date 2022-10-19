@@ -21,13 +21,14 @@ import (
 	"syscall"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/mlu"
 	"github.com/fsnotify/fsnotify"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 func main() {
 
-	options := ParseFlags()
+	options := mlu.ParseFlags()
 
 	log.Println("Loading CNDEV")
 	if err := cndev.Init(); err != nil {
@@ -39,7 +40,9 @@ func main() {
 
 	log.Println("Fetching devices.")
 	n, err := cndev.GetDeviceCount()
-	check(err)
+	if err != nil {
+		log.Panicf("Failed to get device count. err: %v", err)
+	}
 	if n == 0 {
 		log.Println("No devices found. Waiting indefinitely.")
 		select {}
@@ -56,14 +59,14 @@ func main() {
 	log.Println("Starting OS watcher.")
 	sigs := startOSWatcher(syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	var devicePlugin *CambriconDevicePlugin
+	var devicePlugin *mlu.CambriconDevicePlugin
 
 restart:
 	if devicePlugin != nil {
 		devicePlugin.Stop()
 	}
 	startErr := make(chan struct{})
-	devicePlugin = NewCambriconDevicePlugin(options)
+	devicePlugin = mlu.NewCambriconDevicePlugin(options)
 	if err := devicePlugin.Serve(); err != nil {
 		log.Printf("serve device plugin err: %v, restarting.", err)
 		close(startErr)

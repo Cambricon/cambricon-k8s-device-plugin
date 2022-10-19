@@ -14,9 +14,8 @@
 
 package cndev
 
-// #cgo LDFLAGS: -ldl
+// #cgo LDFLAGS: -ldl -Wl,--unresolved-symbols=ignore-in-object-files
 // #include "include/cndev.h"
-// #include "cndev_dl.h"
 import "C"
 
 import (
@@ -38,7 +37,7 @@ func errorString(ret C.cndevRet_t) error {
 }
 
 func Init() error {
-	r := C.cndevInit_dl()
+	r := dl.cndevInit()
 	if r == C.CNDEV_ERROR_UNINITIALIZED {
 		return errors.New("could not load CNDEV library")
 	}
@@ -46,7 +45,7 @@ func Init() error {
 }
 
 func Release() error {
-	r := C.cndevRelease_dl()
+	r := dl.cndevRelease()
 	return errorString(r)
 }
 
@@ -61,38 +60,62 @@ func GetDeviceModel(idx uint) string {
 	return C.GoString(C.getCardNameStringByDevId(C.int(idx)))
 }
 
-func getDeviceInfo(idx uint) (string, string, string, error) {
-	var cardName C.cndevCardName_t
-	var cardSN C.cndevCardSN_t
-	var uuidInfo C.cndevUUID_t
+func GetDeviceMemory(idx uint) (uint, error) {
+	var cardMemInfo C.cndevMemoryInfo_t
+	cardMemInfo.version = C.int(version)
+	r := C.cndevGetMemoryUsage(&cardMemInfo, C.int(idx))
+	return uint(cardMemInfo.physicalMemoryTotal), errorString(r)
+}
 
-	cardName.version = C.int(version)
-	r := C.cndevGetCardName(&cardName, C.int(idx))
-	err := errorString(r)
+func GetMLULinkGroups() ([][]uint, error) {
+	num, err := GetDeviceCount()
 	if err != nil {
-		return "", "", "", err
+		return nil, err
 	}
-
-	if cardName.id == C.MLU100 {
-		log.Panicln("MLU100 detected, there is no way to be here.")
+	slots := map[string]uint{}
+	for i := uint(0); i < num; i++ {
+		uuid, _, _, _, err := getDeviceInfo(i)
+		if err != nil {
+			return nil, err
+		}
+		slots[uuid] = i
 	}
-
-	cardSN.version = C.int(version)
-	r = C.cndevGetCardSN(&cardSN, C.int(idx))
-	err = errorString(r)
-	if err != nil {
-		return "", "", "", err
+	group := map[uint]bool{}
+	queue := []uint{0}
+	visited := map[uint]bool{}
+	for len(queue) != 0 {
+		slot := queue[0]
+		queue = queue[1:]
+		visited[slot] = true
+		devs, err := getDeviceMLULinkDevs(slot)
+		if err != nil {
+			return nil, err
+		}
+		for dev := range devs {
+			if _, ok := slots[dev]; !ok {
+				continue
+			}
+			if !visited[slots[dev]] {
+				queue = append(queue, slots[dev])
+			}
+		}
+		group[slot] = true
 	}
-
-	uuidInfo.version = C.int(version)
-	r = C.cndevGetUUID(&uuidInfo, C.int(idx))
-	err = errorString(r)
-	if err != nil {
-		return "", "", "", err
+	// We assume there are at most 2 groups.
+	group1 := []uint{}
+	group2 := []uint{}
+	for idx := range group {
+		group1 = append(group1, idx)
 	}
-	uuid := *(*[C.UUID_SIZE]C.uchar)(unsafe.Pointer(&uuidInfo.uuid))
-
-	return fmt.Sprintf("MLU-%s", uuid), fmt.Sprintf("%x", int(cardSN.motherBoardSn)), fmt.Sprintf("/dev/cambricon_dev%d", idx), nil
+	for slot := uint(0); slot < num; slot++ {
+		if !group[slot] {
+			group2 = append(group2, slot)
+		}
+	}
+	if len(group2) != 0 {
+		return [][]uint{group1, group2}, nil
+	}
+	return [][]uint{group1}, nil
 }
 
 func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
@@ -117,10 +140,44 @@ func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
 		if err != nil {
 			return nil, err
 		}
-		uuid := fmt.Sprintf("MLU-%s", *(*[C.UUID_SIZE]C.uchar)(unsafe.Pointer(&remoteinfo.uuid)))
+		uuid := fmt.Sprintf("MLU-%s", C.GoString((*C.char)(unsafe.Pointer(&remoteinfo.uuid))))
 		devs[uuid]++
 	}
 	return devs, nil
+}
+
+func getDeviceInfo(idx uint) (string, string, string, string, error) {
+	var cardName C.cndevCardName_t
+	var cardSN C.cndevCardSN_t
+	var uuidInfo C.cndevUUID_t
+
+	cardName.version = C.int(version)
+	r := C.cndevGetCardName(&cardName, C.int(idx))
+	err := errorString(r)
+	if err != nil {
+		return "", "", "", "", err
+	}
+
+	if cardName.id == C.MLU100 {
+		log.Panicln("MLU100 detected, there is no way to be here.")
+	}
+
+	cardSN.version = C.int(version)
+	r = C.cndevGetCardSN(&cardSN, C.int(idx))
+	err = errorString(r)
+	if err != nil {
+		return "", "", "", "", err
+	}
+
+	uuidInfo.version = C.int(version)
+	r = C.cndevGetUUID(&uuidInfo, C.int(idx))
+	err = errorString(r)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	uuid := C.GoString((*C.char)(unsafe.Pointer(&uuidInfo.uuid)))
+
+	return fmt.Sprintf("MLU-%s", uuid), fmt.Sprintf("%x", int(cardSN.sn)), fmt.Sprintf("%x", int(cardSN.motherBoardSn)), fmt.Sprintf("/dev/cambricon_dev%d", idx), nil
 }
 
 func getDeviceHealthState(idx uint, delayTime int) (int, error) {

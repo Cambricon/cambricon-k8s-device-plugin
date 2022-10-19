@@ -16,9 +16,10 @@
 curpath=$(dirname "$0")
 cd "$curpath" || exit 1
 
-: "${TAG:=v1.3.2}"
+: "${TAG:=v1.3.6}"
 : "${ARCH:=amd64}"
 : "${LIBCNDEV:=/usr/local/neuware/lib64/libcndev.so}"
+: "${CNTOPO:=/usr/local/neuware/bin/cntopo}"
 
 case $(awk -F= '/^NAME/{print $2}' /etc/os-release) in
 "CentOS Linux")
@@ -35,6 +36,7 @@ echo "LIBCNDEV  = $LIBCNDEV"
 echo "APT_PROXY = $APT_PROXY"
 echo "GOPROXY   = $GOPROXY"
 echo "BASE_IMAGE   = $BASE_IMAGE"
+echo "CNTOPO = $CNTOPO"
 
 case $(uname -m) in
 x86_64)
@@ -58,6 +60,12 @@ if [[ ! -f "$LIBCNDEV" ]]; then
 	exit 1
 fi
 
+if [[ ! -f "$CNTOPO" ]]; then
+	echo "Can't find cntopo at $CNTOPO."
+	echo "Please install Cambricon cncl, or set CNTOPO environ to path of cntopo"
+	exit 1
+fi
+
 case $ARCH in
 amd64)
 	file_arch=x86-64
@@ -75,8 +83,13 @@ if ! file "$LIBCNDEV" --dereference | grep -q "$file_arch"; then
 	echo "$LIBCNDEV is not for $ARCH"
 	exit 1
 fi
+if ! file "$CNTOPO" --dereference | grep -q "$file_arch"; then
+	echo "$CNTOPO is not for $ARCH"
+	exit 1
+fi
 
 cp "$LIBCNDEV" "$curpath/libs/linux/$ARCH/libcndev.so"
+cp "$CNTOPO" "$curpath/libs/linux/$ARCH/cntopo"
 
 echo "Building Cambricon device plugin docker image."
 
@@ -104,3 +117,4 @@ fi
 
 echo "Image is saved at ./image/cambricon-k8s-device-plugin-$ARCH.tar"
 rm -f "$curpath/libs/linux/$ARCH/libcndev.so"
+rm -f "$curpath/libs/linux/$ARCH/cntopo"

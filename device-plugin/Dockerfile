@@ -30,4 +30,5 @@ FROM $BASE_IMAGE
 ARG TARGETPLATFORM
 COPY --from=build /work/k8s-device-plugin /usr/bin/
 COPY libs/$TARGETPLATFORM/libcndev.so /usr/lib
+COPY libs/$TARGETPLATFORM/cntopo /usr/bin
 CMD ["/usr/bin/k8s-device-plugin"]

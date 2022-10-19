@@ -42,7 +42,7 @@ run-device-plugin-test:
 run-device-plugin-integration:
   extends: .run-device-plugin-mr
   variables:
-    APT_PROXY: http://192.168.100.44:3142
+    APT_PROXY: http://10.3.68.2:3142
   stage: test
   tags:
     - shell47

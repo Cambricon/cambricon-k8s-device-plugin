@@ -142,6 +142,42 @@ cndevRet_t cndevGetUUID(cndevUUID_t *uuidInfo, int devId) {
 	return CNDEV_SUCCESS;
 }
 
+const char *cndevGetErrorString(cndevRet_t errorId) {
+	return "mock return value of cndev get error string";
+}
+
+cndevRet_t cndevGetPCIeInfo(cndevPCIeInfo_t *deviceInfo, int devId) {
+	cJSON *config;
+	cndevRet_t result;
+	config = readJsonFile();
+
+	cJSON *pcie_info = cJSON_GetObjectItem(config, "pcie_info");
+	cJSON *pcie_node = cJSON_GetArrayItem(pcie_info, devId);
+
+	deviceInfo->domain = cJSON_GetArrayItem(pcie_node, 0)->valueint;
+	deviceInfo->bus = cJSON_GetArrayItem(pcie_node, 1)->valueint;
+	deviceInfo->device = cJSON_GetArrayItem(pcie_node, 2)->valueint;
+	deviceInfo->function = cJSON_GetArrayItem(pcie_node, 3)->valueint;
+
+	cJSON_Delete(config);
+
+	return CNDEV_SUCCESS;
+}
+
+cndevRet_t cndevGetMemoryUsage(cndevMemoryInfo_t *memInfo, int devId) {
+	cJSON *config;
+	cndevRet_t result;
+	__int64_t memory;
+	config = readJsonFile();
+
+	cJSON *memoryObj = cJSON_GetObjectItem(config, "memory");
+	memory = memoryObj->valueint;
+	memInfo->physicalMemoryTotal = memory;
+
+	cJSON_Delete(config);
+	return CNDEV_SUCCESS;
+}
+
 cndevRet_t cndevGetMLULinkRemoteInfo(cndevMLULinkRemoteInfo_t *remoteinfo,
 				     int devId, int link) {
 	cJSON *config;
@@ -174,27 +210,6 @@ cndevRet_t cndevGetMLULinkStatus(cndevMLULinkStatus_t *status, int devId,
 	return CNDEV_SUCCESS;
 }
 
-const char *cndevGetErrorString(cndevRet_t errorId) {
-	return "mock return value of cndev get error string";
-}
-
-cndevRet_t cndevGetPCIeInfo(cndevPCIeInfo_t *deviceInfo, int devId) {
-	cJSON *config;
-	cndevRet_t result;
-	config = readJsonFile();
-
-	cJSON *pcie_info = cJSON_GetObjectItem(config, "pcie_info");
-	cJSON *pcie_node = cJSON_GetArrayItem(pcie_info, devId);
-
-	deviceInfo->domain = cJSON_GetArrayItem(pcie_node, 0)->valueint;
-	deviceInfo->bus = cJSON_GetArrayItem(pcie_node, 1)->valueint;
-	deviceInfo->device = cJSON_GetArrayItem(pcie_node, 2)->valueint;
-	deviceInfo->function = cJSON_GetArrayItem(pcie_node, 3)->valueint;
-
-	cJSON_Delete(config);
-
-	return CNDEV_SUCCESS;
-}
 
 int cndevGetMLULinkPortNumber(int devId) {
 	cJSON *config;

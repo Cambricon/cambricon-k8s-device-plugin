@@ -1,8 +1,29 @@
 # Changelog
 
+## v1.3.6
+
+- Bump cntoolkit to 2.7.0
+
+## v1.3.5
+
+- Use cntopo to implement topology-aware mode
+- Turn device to healthy when it recovers from unhealthy
+- Refactor cndev dl implementation from c to go
+- Bump cntoolkit to 2.6.0
+
+## v1.3.4
+
+- Add mlu-share mode
+- Refactor code to mlu pkg
+
+## v1.3.3
+
+- Fix uuid \x00 suffix
+- Support cncodec device dynamic mount
+
 ## v1.3.2
 
-- Support MLU365-D2 devices
+- Support new devices
 
 ## v1.3.1
 

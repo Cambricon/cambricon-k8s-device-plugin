@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package mlu
 
 import (
 	"os"
 	"testing"
 
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +36,7 @@ func TestLegacyConfigs(t *testing.T) {
 			args: []string{"-mode", "sriov"},
 			out: Options{
 				Mode:               sriov,
-				MLULinkPolicy:      bestEffort,
+				MLULinkPolicy:      common.BestEffort,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
 			},
@@ -44,7 +45,7 @@ func TestLegacyConfigs(t *testing.T) {
 			args: []string{"-mode=env-share"},
 			out: Options{
 				Mode:               envShare,
-				MLULinkPolicy:      bestEffort,
+				MLULinkPolicy:      common.BestEffort,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
 			},
@@ -53,7 +54,7 @@ func TestLegacyConfigs(t *testing.T) {
 			args: []string{"--mode=topology-aware"},
 			out: Options{
 				Mode:               topologyAware,
-				MLULinkPolicy:      bestEffort,
+				MLULinkPolicy:      common.BestEffort,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
 			},
