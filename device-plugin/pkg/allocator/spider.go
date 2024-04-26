@@ -17,12 +17,11 @@ package allocator
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
-	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
+	log "github.com/sirupsen/logrus"
 )
 
 type spiderAllocator struct {
@@ -53,7 +52,7 @@ func (a *spiderAllocator) Allocate(available []uint, required []uint, size int) 
 
 	if len(rings) == 0 {
 		log.Println("found no rings")
-		if a.policy != common.BestEffort && !a.sizeAlwaysFailsToFormRing(size) {
+		if a.policy != bestEffort && !a.sizeAlwaysFailsToFormRing(size) {
 			return nil, fmt.Errorf("mode %s found no rings", a.policy)
 		}
 
@@ -81,11 +80,11 @@ func (a *spiderAllocator) Allocate(available []uint, required []uint, size int) 
 		return nil, errors.New("finished allocateRemainingFrom, should not be here")
 	}
 
-	if a.policy == common.Restricted && size == 4 && rings[0].NonConflictRingNum < 4 {
+	if a.policy == restricted && size == 4 && rings[0].NonConflictRingNum < 4 {
 		return nil, fmt.Errorf("mode %s, max non-conflict ring num %d", a.policy, rings[0].NonConflictRingNum)
 	}
 
-	if a.policy == common.Restricted && size == 2 && rings[0].NonConflictRingNum < 2 {
+	if a.policy == restricted && size == 2 && rings[0].NonConflictRingNum < 2 {
 		return nil, fmt.Errorf("mode %s, max non-conflict ring num %d", a.policy, rings[0].NonConflictRingNum)
 	}
 

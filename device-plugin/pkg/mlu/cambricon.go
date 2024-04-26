@@ -17,42 +17,45 @@ package mlu
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
+	log "github.com/sirupsen/logrus"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 type deviceList struct {
+	hasCmsgDev        bool
+	hasCommuDev       bool
 	hasCtrlDev        bool
+	hasGdrDev         bool
+	hasIpcmDev        bool
 	hasMsgqDev        bool
 	hasRPCDev         bool
-	hasCmsgDev        bool
-	hasIpcmDev        bool
-	hasCommuDev       bool
-	hasUARTConsoleDev bool
 	hasSplitDev       bool
+	hasUARTConsoleDev bool
 }
 
 func newDeviceList() *deviceList {
 	return &deviceList{
-		hasCtrlDev:        hostDeviceExistsWithPrefix(mluMonitorDeviceName),
-		hasMsgqDev:        hostDeviceExistsWithPrefix(mluMsgqDeviceName),
-		hasRPCDev:         hostDeviceExistsWithPrefix(mluRPCDeviceName),
 		hasCmsgDev:        hostDeviceExistsWithPrefix(mluCmsgDeviceName),
 		hasCommuDev:       hostDeviceExistsWithPrefix(mluCommuDeviceName),
+		hasCtrlDev:        hostDeviceExistsWithPrefix(mluMonitorDeviceName),
+		hasGdrDev:         hostDeviceExistsWithPrefix(mluGdrDeviceName),
 		hasIpcmDev:        hostDeviceExistsWithPrefix(mluIpcmDeviceName),
-		hasUARTConsoleDev: hostDeviceExistsWithPrefix(mluUARTConsoleDeviceName),
+		hasMsgqDev:        hostDeviceExistsWithPrefix(mluMsgqDeviceName),
+		hasRPCDev:         hostDeviceExistsWithPrefix(mluRPCDeviceName),
 		hasSplitDev:       hostDeviceExistsWithPrefix(mluSplitDeviceName),
+		hasUARTConsoleDev: hostDeviceExistsWithPrefix(mluUARTConsoleDeviceName),
 	}
 }
 
 func hostDeviceExistsWithPrefix(prefix string) bool {
 	matches, err := filepath.Glob(prefix + "*")
 	if err != nil {
-		log.Printf("failed to know if host device with prefix exists, err: %v \n", err)
+		log.Printf("failed to know if host device with prefix exists, err: %v", err)
 		return false
 	}
 	return len(matches) > 0
@@ -64,68 +67,119 @@ func check(err error) {
 	}
 }
 
-func generateFakeDevs(origin *cndev.Device, num int, sriovEnabled bool) ([]*pluginapi.Device, map[string]*cndev.Device) {
+func generateFakeDevs(origin *cndev.Device, num int, mode pluginMode) ([]*pluginapi.Device, map[string]*cndev.Device) {
 	devs := []*pluginapi.Device{}
 	devsInfo := make(map[string]*cndev.Device)
 	var uuid string
 	path := origin.Path
 	for i := 0; i < num; i++ {
-		if sriovEnabled {
-			path = fmt.Sprintf("%svf%d", origin.Path, i+1)
-			uuid = fmt.Sprintf("%s--fake--%d", origin.UUID, i+1)
-		} else {
+		switch mode {
+		case EnvShare:
 			uuid = fmt.Sprintf("%s-_-%d", origin.UUID, i+1)
+		case DynamicSmlu:
+			uuid = fmt.Sprintf("%s-%s-%d", origin.UUID, origin.Profile, i+1)
 		}
 		devsInfo[uuid] = &cndev.Device{
-			Slot: origin.Slot,
-			UUID: uuid,
-			Path: path,
+			Slot:    origin.Slot,
+			UUID:    uuid,
+			Path:    path,
+			Profile: origin.Profile,
 		}
 		devs = append(devs, &pluginapi.Device{
 			ID:     uuid,
 			Health: pluginapi.Healthy,
 		})
 	}
+
+	log.Debugf("generate devices devs: %+v\n devsinfo: %+v", devs, devsInfo)
 	return devs, devsInfo
 }
 
-func getDevices(mode string, fakeNum int) ([]*pluginapi.Device, map[string]*cndev.Device) {
+func scanMimDevs(origin *cndev.Device, idx uint) ([]*pluginapi.Device, map[string]*cndev.Device) {
 	devs := []*pluginapi.Device{}
 	devsInfo := make(map[string]*cndev.Device)
+	infos, err := cndev.GetAllMluInstanceInfo(idx)
+	check(err)
+	for _, info := range infos {
+		uid := origin.UUID + "-mim-" + info.UUID
+		devsInfo[uid] = &cndev.Device{
+			Slot:    origin.Slot,
+			UUID:    info.UUID,
+			Path:    fmt.Sprintf("%s%d", mluDeviceName, origin.Slot) + "," + info.IpcmDevNodeName + "," + info.DevNodeName, // device name should never contain ","
+			Profile: strings.ReplaceAll(info.Name, "+", "-"),
+		}
+		devs = append(devs, &pluginapi.Device{
+			ID:     uid,
+			Health: pluginapi.Healthy,
+		})
+	}
 
+	log.Debugf("scanMimDevs devs: %+v\n devsinfo: %+v", devs, devsInfo)
+	return devs, devsInfo
+}
+
+func GetDevices(o Options) (map[string][]*pluginapi.Device, map[string]map[string]*cndev.Device) {
+	devs := []*pluginapi.Device{}
+	devsInfo := make(map[string]*cndev.Device)
 	num, err := cndev.GetDeviceCount()
 	check(err)
 
 	for i := uint(0); i < num; i++ {
-		d, err := cndev.NewDeviceLite(i, mode == sriov)
+		d, err := cndev.NewDeviceLite(i)
 		check(err)
-		switch mode {
-		case envShare:
-			if fakeNum < 1 {
-				check(fmt.Errorf("invalid env-share number %d", fakeNum))
+
+		realCountDevice := *d
+		realCountDevice.Profile = realCounts
+		devsInfo[realCounts+"-"+realCountDevice.UUID] = &realCountDevice
+		devs = append(devs, &pluginapi.Device{
+			ID:     realCounts + "-" + realCountDevice.UUID,
+			Health: pluginapi.Healthy,
+		})
+
+		switch o.Mode {
+		case EnvShare:
+			if o.VirtualizationNum < 1 {
+				check(fmt.Errorf("invalid env-share number %d", o.VirtualizationNum))
 			}
-			devices, infos := generateFakeDevs(d, fakeNum, false)
+			devices, infos := generateFakeDevs(d, o.VirtualizationNum, o.Mode)
 			devs = append(devs, devices...)
 			for k, v := range infos {
 				devsInfo[k] = v
 			}
-		case sriov:
-			err = d.EnableSriov(fakeNum)
+		case DynamicSmlu:
+			dev := *d
+			// fake ipu uuid
+			dev.Profile = "vcore"
+			num := 100
+			devices, infos := generateFakeDevs(&dev, num, o.Mode)
+			devs = append(devs, devices...)
+			for k, v := range infos {
+				devsInfo[k] = v
+			}
+			// fake memory uuid
+			dev.Profile = "vmemory"
+			if o.MinDsmluUnit > 0 {
+				mem, err := cndev.GetDeviceMemory(i)
+				check(err)
+				num = int(mem) / o.MinDsmluUnit
+			}
+			devices, infos = generateFakeDevs(&dev, num, o.Mode)
+			devs = append(devs, devices...)
+			for k, v := range infos {
+				devsInfo[k] = v
+			}
+		case Mim:
+			enabled, err := cndev.DeviceMimModeEnabled(i)
 			check(err)
-			devices, infos := generateFakeDevs(d, fakeNum, true)
-			devs = append(devs, devices...)
-			for k, v := range infos {
-				devsInfo[k] = v
+			if enabled {
+				devices, infos := scanMimDevs(d, i)
+				devs = append(devs, devices...)
+				for k, v := range infos {
+					devsInfo[k] = v
+				}
+				break
 			}
-		case mluShare:
-			mem, err := cndev.GetDeviceMemory(i)
-			check(err)
-			count := mem / 1024
-			devices, infos := generateFakeDevs(d, int(count), false)
-			devs = append(devs, devices...)
-			for k, v := range infos {
-				devsInfo[k] = v
-			}
+			fallthrough
 		default:
 			devsInfo[d.UUID] = d
 			devs = append(devs, &pluginapi.Device{
@@ -134,7 +188,8 @@ func getDevices(mode string, fakeNum int) ([]*pluginapi.Device, map[string]*cnde
 			})
 		}
 	}
-	return devs, devsInfo
+	log.Debugf("GetDevices devs: %+v\n devsinfo: %+v", devs, devsInfo)
+	return classifyByProfile(devs, devsInfo)
 }
 
 func deviceExists(devs []*pluginapi.Device, id string) bool {
@@ -157,17 +212,22 @@ func watchUnhealthy(ctx context.Context, devsInfo map[string]*cndev.Device, heal
 		}
 
 		for _, dm := range devsInfo {
-			ret, err := dm.GetGeviceHealthState(1)
+			ret, err := cndev.GetDeviceHealthState(dm, 1)
 			if err != nil {
-				log.Printf("Failed to get Device %s healthy status, set it as unhealthy", dm.UUID)
+				log.Warnf("Failed to get Device %s healthy status with err %v, set it as unhealthy", dm.UUID, err)
 				ret = 0
 			}
-			if ret == 0 && !unhealthy[dm.UUID] {
+			if ret == 0 {
+				if unhealthy[dm.UUID] {
+					continue
+				}
 				unhealthy[dm.UUID] = true
 				dev := pluginapi.Device{
 					ID:     dm.UUID,
 					Health: pluginapi.Unhealthy,
 				}
+				t := time.Now()
+				log.Debugf("health state changes from health to unhealth in time %s", t)
 				health <- &dev
 			} else if unhealthy[dm.UUID] {
 				delete(unhealthy, dm.UUID)
@@ -175,6 +235,8 @@ func watchUnhealthy(ctx context.Context, devsInfo map[string]*cndev.Device, heal
 					ID:     dm.UUID,
 					Health: pluginapi.Healthy,
 				}
+				t := time.Now()
+				log.Debugf("health state changes from unhealth to health in time %s", t)
 				health <- &dev
 			}
 		}
@@ -182,4 +244,24 @@ func watchUnhealthy(ctx context.Context, devsInfo map[string]*cndev.Device, heal
 		//Sleep 1 second between two health checks
 		time.Sleep(time.Second)
 	}
+}
+
+func classifyByProfile(devs []*pluginapi.Device, devsInfo map[string]*cndev.Device) (
+	map[string][]*pluginapi.Device, map[string]map[string]*cndev.Device) {
+	devsM := map[string][]*pluginapi.Device{}
+	devsInfoM := map[string]map[string]*cndev.Device{}
+	for _, d := range devs {
+		profile := devsInfo[d.ID].Profile
+		if profile == "" {
+			profile = normalMlu
+		}
+		devsM[profile] = append(devsM[profile], d)
+		if _, ok := devsInfoM[profile]; !ok {
+			devsInfoM[profile] = map[string]*cndev.Device{}
+		}
+		devsInfoM[profile][d.ID] = devsInfo[d.ID]
+	}
+
+	log.Debugf("classifyByProfile devs: %+v\n devsinfo: %+v", devsM, devsInfoM)
+	return devsM, devsInfoM
 }

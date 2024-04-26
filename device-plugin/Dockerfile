@@ -13,12 +13,13 @@
 # limitations under the License.
 
 ARG BUILDPLATFORM=linux/amd64
-ARG BASE_IMAGE=ubuntu:18.04
+ARG BASE_IMAGE=ubuntu:22.04
 
-FROM --platform=$BUILDPLATFORM golang:1.13 as build
+FROM --platform=$BUILDPLATFORM golang:1.19 as build
 ARG APT_PROXY
 ARG GOPROXY
 ARG TARGETPLATFORM
+ARG VERSION
 RUN set -ex && export http_proxy=$APT_PROXY && \
   apt-get update && \
   apt-get install -y build-essential gcc-aarch64-linux-gnu ca-certificates make
@@ -30,5 +31,5 @@ FROM $BASE_IMAGE
 ARG TARGETPLATFORM
 COPY --from=build /work/k8s-device-plugin /usr/bin/
 COPY libs/$TARGETPLATFORM/libcndev.so /usr/lib
-COPY libs/$TARGETPLATFORM/cntopo /usr/bin
+COPY libs/$TARGETPLATFORM/libcntopo.so /usr/lib
 CMD ["/usr/bin/k8s-device-plugin"]

@@ -16,12 +16,11 @@ package allocator
 
 import (
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
-	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
+	log "github.com/sirupsen/logrus"
 )
 
 type defaultAllocator struct {
@@ -50,7 +49,7 @@ func (a *defaultAllocator) Allocate(available []uint, required []uint, size int)
 
 	if len(rings) == 0 {
 		log.Println("found no rings")
-		if a.policy != common.BestEffort && !a.sizeAlwaysFailsToFormRing(size) {
+		if a.policy != bestEffort && !a.sizeAlwaysFailsToFormRing(size) {
 			return nil, fmt.Errorf("mode %s found no rings", a.policy)
 		}
 		return available[0:size], nil

@@ -36,4 +36,12 @@ spec:
           resources:
             limits:
               cambricon.com/mlu: "1" #comment and set device bellow to use device with type info
-              #camrbricon.com/mlu270: "1" #uncomment to use device with type info, support mlu220, mlu270, mlu270-x5k, mlu290 and mlu370
+              #cambricon.com/mlu.share: "1" #uncomment to use device with env-share mode
+              #cambricon.com/mlu.mim-2m.8gb: "1" #uncomment to use device with mim mode
+              #cambricon.com/mlu.smlu.vcore: "10" #uncomment to use device with dsmlu mode
+              #cambricon.com/mlu.smlu.vmemory: "20" #uncomment to use device with dsmlu mode
+              #camrbricon.com/mlu370: "1" #uncomment to use device with type info
+              #cambricon.com/mlu370.share: "1" #uncomment to use device with type info with env-share mode
+              #cambricon.com/mlu370.mim-2m.8gb: "1" #uncomment to use device with type info with mim mode
+              #cambricon.com/mlu370.smlu.vcore: "10" #uncomment to use device with type info with dynamic-smlu mode
+              #cambricon.com/mlu370.smlu.vmemory: "20" #uncomment to use device with type info with dynamic-smlu mode

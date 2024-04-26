@@ -95,9 +95,10 @@ function remove_devices() {
 
 function prepare_image() {
     tag=$(date +%s)
-    TAG=$tag LIBCNDEV=pkg/cndev/mock/libcndev.so CNTOPO=pkg/cndev/mock/libcndev.so ./build_image.sh
-    docker build --build-arg "BASE_IMAGE=cambricon-k8s-device-plugin:$tag" -t "cambricon-k8s-device-plugin:mock-$tag" test
-    sed "s|cambricon-k8s-device-plugin:[A-Za-z0-9\.]*|cambricon-k8s-device-plugin:mock-$tag|" examples/cambricon-device-plugin-daemonset.yaml >test/cambricon-device-plugin.yml
+    TAG=$tag LIBCNDEV=pkg/cndev/mock/libcndev.so LIBCNTOPO=pkg/cntopo/test/libcntopo.so ./build_image.sh
+    docker build --build-arg "BASE_IMAGE=cambricon-device-plugin:$tag" -t "cambricon-device-plugin:mock-$tag" test
+    sed "s|cambricon-device-plugin:[A-Za-z0-9\.]*|cambricon-device-plugin:mock-$tag|" examples/cambricon-device-plugin-daemonset.yaml >test/cambricon-device-plugin.yml
+    cp examples/cambricon-device-plugin-config.yaml test/
 }
 
 function remove_images() {
@@ -105,7 +106,7 @@ function remove_images() {
     for container in "${stopped[@]}"; do
         docker rm "$container"
     done
-    mapfile -t images < <(docker images -q cambricon-k8s-device-plugin)
+    mapfile -t images < <(docker images -q cambricon-device-plugin)
     mapfile -t -O "${#images[@]}" images < <(docker images -f "dangling=true" -q)
     for image in "${images[@]}"; do
         docker rmi "$image"

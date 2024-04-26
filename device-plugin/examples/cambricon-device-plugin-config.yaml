@@ -17,24 +17,25 @@ kind: ClusterRole
 metadata:
   name: cambricon-device-plugin
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - update
-  - list
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
-  - update
-  - patch
-  - get
-  - list
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - update
+      - list
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - update
+      - patch
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -45,12 +46,32 @@ roleRef:
   kind: ClusterRole
   name: cambricon-device-plugin
 subjects:
-- kind: ServiceAccount
-  name: cambricon-device-plugin
-  namespace: kube-system
+  - kind: ServiceAccount
+    name: cambricon-device-plugin
+    namespace: kube-system
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cambricon-device-plugin
   namespace: kube-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cambricon-device-plugin
+  namespace: kube-system
+data:
+  config.yaml: |
+    abnormalXIDErrorList:
+      - CNDEV_XID_DBE_ECC_ERROR
+      - CNDEV_XID_FALLEN_OFF_ERROR
+      - CNDEV_XID_HBM_ERROR
+      - CNDEV_XID_HEARTBEAT_ERROR
+      - CNDEV_XID_IPU_RESET_ERROR
+      - CNDEV_XID_MCU_ERROR
+      - CNDEV_XID_MLULINK_FATAL_ERROR
+      - CNDEV_XID_OVER_TEMP_ERROR
+      - CNDEV_XID_PAGE_RETIREMENT_ERROR
+      - CNDEV_XID_PCIE_DMA_ERROR
+      - CNDEV_XID_RPC_ERROR

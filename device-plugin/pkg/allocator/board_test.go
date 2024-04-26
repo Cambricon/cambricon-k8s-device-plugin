@@ -19,7 +19,6 @@ import (
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
-	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -140,14 +139,14 @@ var _ = Describe("Board Allocator", func() {
 				}
 			},
 			Entry("Should Succeed Case 1",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 5},
 				1,
 				[]cntopo.Ring{},
 				[]uint{5},
 			),
 			Entry("Should Succeed Case 2",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 4},
 				2,
 				[]cntopo.Ring{
@@ -167,7 +166,7 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1},
 			),
 			Entry("Should Succeed Case 3",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 2, 3, 14, 15},
 				2,
 				[]cntopo.Ring{
@@ -195,7 +194,7 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{14, 15},
 			),
 			Entry("Should Succeed Case 4",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 2, 3, 14, 11},
 				2,
 				[]cntopo.Ring{
@@ -219,7 +218,7 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1},
 			),
 			Entry("Should Succeed Case 5",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 4, 6},
 				2,
 				[]cntopo.Ring{
@@ -239,14 +238,14 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1},
 			),
 			Entry("Should Succeed Case 6",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 14},
 				2,
 				[]cntopo.Ring{},
 				[]uint{0, 14},
 			),
 			Entry("Should Succeed Case 7",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 2, 3, 8, 9, 10},
 				4,
 				[]cntopo.Ring{
@@ -258,7 +257,7 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1, 2, 3},
 			),
 			Entry("Should Succeed Case 8",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
 				8,
 				[]cntopo.Ring{
@@ -270,7 +269,7 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1, 2, 3, 4, 5, 6, 7},
 			),
 			Entry("Should Succeed Case 9",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 2, 3, 8, 9, 10},
 				4,
 				[]cntopo.Ring{
@@ -282,14 +281,14 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1, 2, 3},
 			),
 			Entry("Should Succeed Case 10",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 3, 6},
 				4,
 				[]cntopo.Ring{},
 				nil,
 			),
 			Entry("Should Succeed Case 11",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 4},
 				2,
 				[]cntopo.Ring{
@@ -309,14 +308,14 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1},
 			),
 			Entry("Should Succeed Case 12",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 7, 15},
 				2,
 				[]cntopo.Ring{},
 				nil,
 			),
 			Entry("Should Succeed Case 13",
-				common.Restricted,
+				restricted,
 				[]uint{0, 1, 4},
 				2,
 				[]cntopo.Ring{
@@ -336,7 +335,7 @@ var _ = Describe("Board Allocator", func() {
 				[]uint{0, 1},
 			),
 			Entry("Should Succeed Case 14",
-				common.Restricted,
+				restricted,
 				[]uint{1, 4},
 				2,
 				[]cntopo.Ring{

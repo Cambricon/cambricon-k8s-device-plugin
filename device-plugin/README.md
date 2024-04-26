@@ -14,12 +14,12 @@ This repository contains Cambricon's official implementation of the Kubernetes d
 
 The prerequisites for running the Cambricon Device Plugin:
 
-- MLU270, MLU270-X5K, MLU220, MLU290, MLU370 devices
-- MLU driver >= 4.15.11
-- cntoolkit on your building machine >= 2.7.0
-- cncl on your building machine >= 1.0.1
+- Support MLU3xx devices
+- For MLU 3xx needs driver >= 4.20.9
+- For MLU 3xx needs cntoolkit >= 2.8.2 on your building machine
+- For SMLU needs driver >= 5.10.27 and cntoolkit >= 3.9.0
 
-For MLU driver version 4.9.x, please use [release v1.1.3].
+For MLU driver version before 4.9.13, and need to support MLU2xx please use [release v1.1.3].
 
 For Kubernetes version < 1.19.0, mlulink topology-aware mode can not be used. If you want to use this feature, make sure your Kubernetes version >= 1.19.0.
 
@@ -69,7 +69,7 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
 1. Push the docker image to the docker repo of your cluster or load the docker image on all your MLU nodes by:
 
    ```shell
-   docker load -i image/cambricon-k8s-device-plugin-amd64.tar
+   docker load -i image/cambricon-device-plugin-amd64.tar
    ```
 
 2. Enable MLU support in your cluster by deploying the daemonset in [examples](examples) folder:
@@ -78,29 +78,29 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
 
    ```yaml
    args:
-     - --mode=default #device plugin mode: default, sriov, env-share, mlu-share or topology-aware
-     - --virtualization-num=1 #  virtualization number for each MLU, used only in sriov mode or env-share mode
+     - --mode=default #device plugin mode: default, dynamic-smlu, env-share, mim and topology-aware
+     - --virtualization-num=1 #  virtualization number for each MLU, used only in env-share mode, set to 110 to support multi cards per container in env-share mode
      - --mlulink-policy=best-effort # MLULink topology policy: best-effort, guaranteed or restricted, used only in topology-aware mode
      - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line to avoid mounting cnmon.
+     - --enable-device-type #comment to enable device registration with type info
      #- --enable-console #uncomment to enable UART console device(/dev/ttyMS) in container
      #- --disable-health-check #uncomment to disable health check
-     #- --enable-device-type #uncomment to enable device registration with type info
+     #- --mount-rpmsg #uncomment to mount RPMsg directory, will be deprecated in the near future
    ```
 
    supported features:
 
    - default: default mode
-   - sriov: supports SR-IOV. Set `virtualization-num` as number of VFs on host.
-   - env-share: a whole card can be allocated into multiple containers. A container should use only one card in this mode.
-     Set `virtualization-num` as maximum number of containers one MLU can be allocated into.
-   - mlu-share: mlu resources are allocated by memory. **Only works when deployed along with Cambricon MLU Scheduler Extender.**
-   - topology-aware: device plugin is aware of MLULink topology and tries to allocate MLUs forming a ring. Set `mlulink-policy` as described below.
+   - dynamic-smlu: supports `dynamic-smlu` mode, now only 370 support `dynamic-smlu`, need to use accompony with scheduler extender
+   - env-share: a whole card can be allocated into multiple containers, should set `virtualization-num` as maximum number of containers one MLU can be allocated into.
+   - mim: supports `mim` mode, need to preset `mim` in the host before device plugin starting
+   - topology-aware: device plugin is aware of MLULink topology and tries to allocate MLUs forming a ring. Set `mlulink-policy` as described below
 
    MLULink topology policies, guaranteed and restricted only works for 1,2,4,8 requested MLUs:
 
    - best-effort: allocate devices forming maximum number of rings whenever possible
    - guaranteed: allocated devices must form at least one ring, otherwise return error
-   - restricted: for 2 MLUs and MLU290/MLU370-M8 4 MLUs, allocated devices must have 2 mlulink rings, otherwise return error
+   - restricted: allocated devices must form the best rings, otherwise return error
 
    ```shell
    kubectl create -f examples/cambricon-device-plugin-daemonset.yaml
@@ -109,16 +109,10 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
    (Optional) If you do not want the daemonset way of deployment, edit the static pod template in examples folder and
    put the file into your configured static pod folder (`/etc/kubernetes/manifests` by default).
 
-3. If you want to use topology-aware mode or mlu-share mode, enable device plugin to get and update nodes.
+3. Create rbac role and config.
 
    ```shell
-   kubectl create -f examples/cambricon-device-plugin-rbac.yaml
-   ```
-
-   And add service account for device plugin as the example
-
-   ```yaml
-   serviceAccount: cambricon-device-plugin
+   kubectl create -f examples/cambricon-device-plugin-config.yaml
    ```
 
 ### Running MLU Jobs
@@ -140,7 +134,11 @@ spec:
       resources:
         limits:
           cambricon.com/mlu: "1" # use this when device type is not enabled, else delete this line.
-          #camrbricon.com/mlu270: "1" # use this when device type is enabled, supports mlu220, mlu270, mlu270-x5k, mlu290 and mlu370
+          #cambricon.com/mlu370: "1" #uncomment to use when device type is enabled
+          #cambricon.com/mlu370.share: "1" #uncomment to use device with env-share mode
+          #cambricon.com/mlu370.mim-2m.8gb: "1" #uncomment to use device with mim mode
+          #cambricon.com/mlu370.smlu.vcore: "1" #uncomment to use device with dynamic-smlu mode
+          #cambricon.com/mlu370.smlu.vmemory: "1" #uncomment to use device with dynamic-smlu mode
 ```
 
 ## Upgrade Notice

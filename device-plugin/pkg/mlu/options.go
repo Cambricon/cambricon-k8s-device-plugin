@@ -15,25 +15,45 @@
 package mlu
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"strings"
 
 	flags "github.com/jessevdk/go-flags"
+	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/yaml"
 )
 
 type Options struct {
-	Mode               string `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"sriov" choice:"env-share" choice:"topology-aware" choice:"mlu-share"`
-	MLULinkPolicy      string `long:"mlulink-policy" description:"MLULink topology policy" default:"best-effort" choice:"best-effort" choice:"restricted" choice:"guaranteed"`
-	VirtualizationNum  uint   `long:"virtualization-num" description:"the virtualization number for each MLU, used only in sriov mode or env-share mode" default:"1" env:"VIRTUALIZATION_NUM"`
-	DisableHealthCheck bool   `long:"disable-health-check" description:"disable MLU health check"`
-	NodeName           string `long:"node-name" description:"host node name" env:"NODE_NAME"`
-	EnableConsole      bool   `long:"enable-console" description:"enable UART console device(/dev/ttyMS) in container"`
-	EnableDeviceType   bool   `long:"enable-device-type" description:"enable device registration with type info"`
-	CnmonPath          string `long:"cnmon-path" description:"host cnmon path"`
+	CnmonPath            string     `long:"cnmon-path" description:"host cnmon path" json:"cnmonPath,omitempty"`
+	DisableHealthCheck   bool       `long:"disable-health-check" description:"disable MLU health check" json:"disableHealthCheck,omitempty"`
+	EnableConsole        bool       `long:"enable-console" description:"enable UART console device(/dev/ttyMS) in container" json:"enableConsole,omitempty"`
+	EnableDeviceType     bool       `long:"enable-device-type" description:"enable device registration with type info" json:"enableDeviceType,omitempty"`
+	LogLevel             string     `long:"log-level" description:"set log level: trace/debug/info/warn/error/fatal/panic" default:"info" json:"logLevel,omitempty"`
+	MinDsmluUnit         int        `long:"min-dsmlu-unit" description:"minimum unit for dsmu, used only in dynamic-smlu mode" default:"0" env:"MIN-DSMLU-UNIT" json:"minDsmluUnit,omitempty"`
+	MLULinkPolicy        string     `long:"mlulink-policy" description:"MLULink topology policy" default:"best-effort" choice:"best-effort" choice:"restricted" choice:"guaranteed" json:"mluLinkPolicy,omitempty"`
+	Mode                 pluginMode `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"dynamic-smlu" choice:"env-share" choice:"mim" choice:"topology-aware" json:"mode,omitempty"`
+	MountRPMsg           bool       `long:"mount-rpmsg" description:"mount RPMsg directory, will be deprecated in the near future" json:"mountRPMsg,omitempty"`
+	NodeName             string     `long:"node-name" description:"host node name" env:"NODE_NAME" json:"nodeName,omitempty"`
+	Version              bool       `long:"version" description:"print out version"`
+	VirtualizationNum    int        `long:"virtualization-num" description:"the virtualization number for each MLU, used only in env-share mode" default:"1" env:"VIRTUALIZATION_NUM" json:"virtualizationNum,omitempty"`
+	AbnormalXIDErrorList []string   `long:"abnormal-xid-error-list" description:"When a card encounters an xid error in the list, the card will be considered abnormal" env:"ABNORMAL_XID_ERROR_LIST" json:"abnormalXIDErrorList,omitempty"`
+	ConfigFile           string     `long:"config-file" description:"config file" env:"CONFIG_FILE"`
 }
 
-func ParseFlags() Options {
+func LoadConfig() Options {
+	opt := parseFlags()
+
+	final, err := updateWithConfigFile(opt)
+	if err != nil {
+		log.Printf("update option with config file failed: %v", err)
+		os.Exit(1)
+	}
+	log.Printf("Final options: %v", final)
+	return final
+}
+
+func parseFlags() Options {
 	for index, arg := range os.Args {
 		if strings.HasPrefix(arg, "-mode") {
 			os.Args[index] = strings.Replace(arg, "-mode", "--mode", 1)
@@ -54,6 +74,30 @@ func ParseFlags() Options {
 		}
 		os.Exit(code)
 	}
-	log.Printf("Parsed options: %v\n", options)
+	log.Printf("Parsed options: %v", options)
 	return options
+}
+
+func updateWithConfigFile(opt Options) (Options, error) {
+	if opt.ConfigFile == "" {
+		return opt, nil
+	}
+
+	final := &Options{}
+	f, err := os.ReadFile(opt.ConfigFile)
+	if err != nil {
+		return Options{}, fmt.Errorf("error read config file: %v", err)
+	}
+	if err := yaml.UnmarshalStrict(f, final); err != nil {
+		return Options{}, err
+	}
+
+	flagCfg, err := yaml.Marshal(opt)
+	if err != nil {
+		return Options{}, err
+	}
+	if err := yaml.UnmarshalStrict(flagCfg, final); err != nil {
+		return Options{}, err
+	}
+	return *final, nil
 }

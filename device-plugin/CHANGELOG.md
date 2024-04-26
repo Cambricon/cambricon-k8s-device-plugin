@@ -1,5 +1,72 @@
 # Changelog
 
+## v2.0.11
+
+- Support cambricon_gdr
+- Remove SR_IOV、mlu-share
+
+## v2.0.10
+
+- Support read configuration from file
+- Remove device remapping
+
+## v2.0.9
+
+- Add host ipc and pid config
+- Support dsmlu restore
+- bump cndev to 3.9.0
+- Rename dynamic-mim
+
+## v2.0.8
+
+- Support dynamic smlu
+- Support xid errors check in health check
+- Add dynamic smlu readme
+- Support print out version
+
+## v2.0.7
+
+- Support use new cndev api to get mim devpath
+- Support smlu2.0
+
+## v2.0.6
+
+- Support mlu type in all virtual mode
+
+## v2.0.5
+
+- Support to report topology in topologyaware mode
+- Support to report real mlu counts to kubelet
+- support multi cards per container in env-share mode
+- Replace ioutil with os package
+- Upgrade dependence to cndev 3.4.2
+
+## v2.0.4
+
+- Add log level config
+- Upgrade dependence to cndev 3.4.1
+- Bump go to 1.19 and baseimage to ubuntu:20.04
+
+## v2.0.3
+
+- Add liveness probe
+- Support mlu share for volcano scheduler
+- Support cntopo lib
+
+## v2.0.2
+
+- Upgrade dependence to cntopo 0.7.0
+
+## v2.0.1
+
+- Upgrade dependence to cndev 3.0.1
+- Add MountRPMsg in flags
+
+## v2.0.0
+
+- Upgrade dependence to cndev 3.0.0
+- **Not support SR-IOV since cndev 3.0.0**
+
 ## v1.3.6
 
 - Bump cntoolkit to 2.7.0

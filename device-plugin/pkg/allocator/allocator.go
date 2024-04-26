@@ -20,6 +20,12 @@ import (
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 )
 
+const (
+	bestEffort string = "best-effort"
+	restricted string = "restricted"
+	guaranteed string = "guaranteed"
+)
+
 type Allocator interface {
 	Allocate(available []uint, required []uint, size int) ([]uint, error)
 }
@@ -29,7 +35,7 @@ func New(policy string, devs map[string]*cndev.Device) Allocator {
 	if strings.Contains(model, "MLU290") || model == "MLU370-M8" {
 		return NewSpiderAllocator(policy, devs)
 	}
-	if model == "MLU370-X8" {
+	if model == "MLU370-X8" || model == "MLU590-H8" {
 		return NewBoardAllocator(policy, devs)
 	}
 	return NewDefaultAllocator(policy, devs)

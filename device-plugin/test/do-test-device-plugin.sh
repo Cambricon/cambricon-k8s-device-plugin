@@ -20,9 +20,10 @@ function test_mlu_default() {
     echo "Test MLU Device Plugin Default Mode"
     echo "==================================="
     sed -i "s|--mode=.*|--mode=default|" test/cambricon-device-plugin.yml
-    sed -i "s|#- --enable-device-type|- --enable-device-type|" test/cambricon-device-plugin.yml
+    sed -i "s|# - --enable-device-type|- --enable-device-type|" test/cambricon-device-plugin.yml
     sed "s|replicas: .*|replicas: 2|" examples/deployment.yaml >test/mock-deployment.yaml
     sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu290: 2|" test/mock-deployment.yaml
+    kubectl apply -f test/cambricon-device-plugin-config.yaml || true
     kubectl create -f test/cambricon-device-plugin.yml
     mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
     for pod in "${pods[@]}"; do
@@ -48,10 +49,9 @@ function test_mlu_env_share() {
     echo "Test MLU Device Plugin Env Share Mode"
     echo "====================================="
     sed -i "s|--mode=.*|--mode=env-share|" test/cambricon-device-plugin.yml
-    sed "s|replicas: .*|replicas: 16|" examples/deployment.yaml >test/mock-deployment.yaml
-    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 1|" test/mock-deployment.yaml
-    sed -i "s|virtualization-num=1|virtualization-num=2|" test/cambricon-device-plugin.yml
-    sed -i "s|#- --enable-console|- --enable-console|" test/cambricon-device-plugin.yml
+    sed "s|replicas: .*|replicas: 2|" examples/deployment.yaml >test/mock-deployment.yaml
+    sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu.share: 2|" test/mock-deployment.yaml
+    sed -i "s|virtualization-num=1|virtualization-num=110|" test/cambricon-device-plugin.yml
     sudo rm -f /dev/cambricon_ipcm*
     kubectl create -f test/cambricon-device-plugin.yml
     mapfile -t pods < <(kubectl get pods -n kube-system -o name -l name=cambricon-device-plugin-ds)
@@ -62,13 +62,7 @@ function test_mlu_env_share() {
     mapfile -t pods < <(kubectl get pods -o name -l app=binpack-1)
     for pod in "${pods[@]}"; do
         kubectl wait --for=condition=Ready "$pod" --timeout=120s
-        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 1
-        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambr-msgq -c)" -eq 1
-        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambr-rpc -c)" -eq 1
-        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cmsg_ctrl -c)" -eq 1
-        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep commu -c)" -eq 1
-        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_ctl -c)" -eq 1
-        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep ttyMS -c)" -eq 1
+        test "$(kubectl exec "${pod:4}" -- ls -l /dev | grep cambricon_dev -c)" -eq 2
     done
 }
 
@@ -78,6 +72,7 @@ function test_mlu_topology() {
     echo "=========================================="
     sed -i "s|--mode=.*|--mode=topology-aware|" test/cambricon-device-plugin.yml
     sed -i "s|--mlulink-policy=.*|--mlulink-policy=guaranteed|" test/cambricon-device-plugin.yml
+    sed -i "s|# - --disable-health-check|- --disable-health-check|" test/cambricon-device-plugin.yml
     sed "s|replicas: .*|replicas: 2|" examples/deployment.yaml >test/mock-deployment.yaml
     sed -i "s|cambricon.com/mlu: .*|cambricon.com/mlu: 2|" test/mock-deployment.yaml
     kubectl create -f test/cambricon-device-plugin.yml

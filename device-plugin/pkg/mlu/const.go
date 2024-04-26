@@ -16,34 +16,46 @@ package mlu
 
 import pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
+type pluginMode string
+
 const (
-	serverSock               = pluginapi.DevicePluginPath + "cambricon.sock"
+	DsmluLockTime           = "cambricon.com/dsmlu.lock"
+	DsmluProfile            = "CAMBRICON_DSMLU_PROFILE"
+	DsmluProfileAndInstance = "CAMBRICON_DSMLU_PROFILE_INSTANCE"
+	DsmluResourceAssigned   = "CAMBRICON_DSMLU_ASSIGHED"
+
 	mluLinkPolicyUnsatisfied = "mluLinkPolicyUnsatisfied"
-	retries                  = 5
 
-	sriov         string = "sriov"
-	envShare      string = "env-share"
-	topologyAware string = "topology-aware"
-	mluShare      string = "mlu-share"
+	normalMlu  = "mlu"
+	realCounts = "real-mlu-counts"
+	retries    = 5
+	serverSock = pluginapi.DevicePluginPath + "cambricon.sock"
+)
 
-	mluMonitorDeviceName     = "/dev/cambricon_ctl"
+const (
+	Default       pluginMode = "default"
+	DynamicSmlu   pluginMode = "dynamic-smlu"
+	EnvShare      pluginMode = "env-share"
+	Mim           pluginMode = "mim"
+	TopologyAware pluginMode = "topology-aware"
+)
+
+const (
+	mluCmsgDeviceName        = "/dev/cmsg_ctrl"
+	mluCommuDeviceName       = "/dev/commu"
 	mluDeviceName            = "/dev/cambricon_dev"
+	mluGdrDeviceName         = "/dev/cambricon_gdr"
+	mluIpcmDeviceName        = "/dev/cambricon_ipcm"
+	mluMonitorDeviceName     = "/dev/cambricon_ctl"
 	mluMsgqDeviceName        = "/dev/cambr-msgq"
 	mluRPCDeviceName         = "/dev/cambr-rpc"
-	mluCmsgDeviceName        = "/dev/cmsg_ctrl"
-	mluIpcmDeviceName        = "/dev/cambricon_ipcm"
-	mluCommuDeviceName       = "/dev/commu"
-	mluUARTConsoleDeviceName = "/dev/ttyMS"
 	mluRPMsgDir              = "/dev/cambricon/"
 	mluSplitDeviceName       = "/dev/cambricon-split"
+	mluUARTConsoleDeviceName = "/dev/ttyMS"
+)
 
-	mluMemResourceName       = "cambricon.com/mlu-mem"
-	mluResourceCount         = "cambricon.com/mlu-count"
-	mluMemResourceAssumeTime = "CAMBRICON_MEM_ASSUME_TIME"
-	mluMemResourceAssigned   = "CAMBRICON_MEM_ASSIGHED"
-	mluMemSplitLimit         = "CAMBRICON_SPLIT_MEMS"
-	mluMemSplitIndex         = "CAMBRICON_SPLIT_VISIBLE_DEVICES"
-	mluMemSplitEnable        = "CAMBRICON_SPLIT_ENABLE"
-	mluMemLock               = "cambricon.com/mlu-mem.lock"
-	mluMemBinaryPath         = "/usr/bin/smlu-containerd"
+const (
+	bestEffort string = "best-effort"
+	restricted string = "restricted"
+	guaranteed string = "guaranteed"
 )

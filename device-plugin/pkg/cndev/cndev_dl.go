@@ -14,13 +14,14 @@
 
 package cndev
 
-import (
-	"unsafe"
-)
-
 // #include <dlfcn.h>
 // #include "include/cndev.h"
 import "C"
+
+import (
+	"log"
+	"unsafe"
+)
 
 type dlhandles struct{ handles []unsafe.Pointer }
 
@@ -28,8 +29,12 @@ var dl dlhandles
 
 // Initialize CNDEV, open a dynamic reference to the CNDEV library in the process.
 func (dl *dlhandles) cndevInit() C.cndevRet_t {
-	handle := C.dlopen(C.CString("libcndev.so"), C.RTLD_LAZY|C.RTLD_GLOBAL)
+	lib := C.CString("libcndev.so")
+	defer C.free(unsafe.Pointer(lib))
+
+	handle := C.dlopen(lib, C.RTLD_LAZY|C.RTLD_GLOBAL)
 	if handle == C.NULL {
+		log.Printf("Open libcndev with err:%s", C.GoString(C.dlerror()))
 		return C.CNDEV_ERROR_UNINITIALIZED
 	}
 	dl.handles = append(dl.handles, handle)

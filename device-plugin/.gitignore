@@ -1,7 +1,12 @@
 libcndev.so
+libcntopo.so
 k8s-device-plugin
 mock_test
 image
 *.tar*
+.vscode/
 cntopo
 !cntopo/
+_build/
+__pycache__/
+*-workspace

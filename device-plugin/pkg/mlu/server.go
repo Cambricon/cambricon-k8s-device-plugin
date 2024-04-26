@@ -19,10 +19,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"math/rand"
 	"net"
 	"os"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,9 +31,9 @@ import (
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/allocator"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
-	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	v1 "k8s.io/api/core/v1"
+	"google.golang.org/grpc/credentials/insecure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -42,56 +43,65 @@ import (
 
 // CambriconDevicePlugin implements the Kubernetes device plugin API
 type CambriconDevicePlugin struct {
+	allocator    allocator.Allocator
+	clientset    kubernetes.Interface
+	deviceList   *deviceList
 	devs         []*pluginapi.Device
 	devsInfo     map[string]*cndev.Device
+	health       chan *pluginapi.Device
+	nodeHostname string
+	options      Options
+	profile      string
+	server       *grpc.Server
 	socket       string
 	stop         chan interface{}
-	health       chan *pluginapi.Device
-	server       *grpc.Server
-	deviceList   *deviceList
-	allocator    allocator.Allocator
-	nodeHostname string
-	clientset    kubernetes.Interface
-	options      Options
 	sync.RWMutex
-	containerIndex uint
 }
 
+// Use global variables to synchronize information between goroutines, should always add lock and clean when finished
+var dynamicSmlu map[string]*pluginapi.AllocateResponse
+var profileAndInstance map[string]string
+
 // NewCambriconDevicePlugin returns an initialized CambriconDevicePlugin
-func NewCambriconDevicePlugin(o Options) *CambriconDevicePlugin {
-	devs, devsInfo := getDevices(o.Mode, int(o.VirtualizationNum))
+func NewCambriconDevicePlugin(o Options, profile string, devs []*pluginapi.Device, devsInfo map[string]*cndev.Device) *CambriconDevicePlugin {
+	sock := serverSock
+	if profile != normalMlu {
+		sock = pluginapi.DevicePluginPath + profile + ".sock"
+	}
 	return &CambriconDevicePlugin{
 		devs:         devs,
 		devsInfo:     devsInfo,
-		socket:       serverSock,
+		socket:       sock,
 		stop:         make(chan interface{}),
 		health:       make(chan *pluginapi.Device),
 		deviceList:   newDeviceList(),
 		nodeHostname: o.NodeName,
 		options:      o,
+		profile:      profile,
 	}
 }
 
 func (m *CambriconDevicePlugin) GetDevicePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
 	return &pluginapi.DevicePluginOptions{
-		GetPreferredAllocationAvailable: m.options.Mode == topologyAware,
+		GetPreferredAllocationAvailable: m.options.Mode == TopologyAware || m.options.Mode == EnvShare,
 	}, nil
 }
 
 // dial establishes the gRPC communication with the registered device plugin.
-func dial(unixSocketPath string, timeout time.Duration) (*grpc.ClientConn, error) {
-	c, err := grpc.Dial(unixSocketPath, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithTimeout(timeout),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
-		}),
-	)
+func dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
+	conn, err := grpc.DialContext(ctx, socket, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+		dialer := net.Dialer{
+			Timeout: timeout,
+		}
+		return dialer.DialContext(ctx, "unix", addr)
+	}), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failure connecting to %s: %v", socket, err)
 	}
-
-	return c, nil
+	return conn, nil
 }
 
 // Start starts the gRPC server of the device plugin
@@ -152,7 +162,7 @@ func (m *CambriconDevicePlugin) Register(kubeletEndpoint, resourceName string) e
 		Endpoint:     path.Base(m.socket),
 		ResourceName: resourceName,
 		Options: &pluginapi.DevicePluginOptions{
-			GetPreferredAllocationAvailable: m.options.Mode == topologyAware,
+			GetPreferredAllocationAvailable: m.options.Mode == TopologyAware || m.options.Mode == EnvShare,
 		},
 	}
 
@@ -187,11 +197,11 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 
 	resp := pluginapi.ContainerAllocateResponse{}
 
-	resp.Mounts = []*pluginapi.Mount{
-		{
+	if m.options.MountRPMsg {
+		resp.Mounts = append(resp.Mounts, &pluginapi.Mount{
 			ContainerPath: mluRPMsgDir,
 			HostPath:      mluRPMsgDir,
-		},
+		})
 	}
 
 	if m.options.CnmonPath != "" {
@@ -202,30 +212,34 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 		})
 	}
 
-	if m.options.Mode == mluShare {
-		resp.Mounts = append(resp.Mounts, &pluginapi.Mount{
-			ContainerPath: mluMemBinaryPath,
-			HostPath:      mluMemBinaryPath,
-			ReadOnly:      true,
-		})
-		if m.deviceList.hasSplitDev {
-			addDevice(&resp, mluSplitDeviceName, mluSplitDeviceName)
-		}
-	}
-
 	devpaths := m.uuidToPath(uuids)
+	log.Debugf("prepareresponse devicepaths %v", devpaths)
 
 	if m.deviceList.hasCtrlDev {
-		addDevice(&resp, mluMonitorDeviceName, mluMonitorDeviceName)
+		addDevice(&resp, mluMonitorDeviceName)
 	}
 
-	for id, devpath := range devpaths {
-		if m.options.Mode == sriov {
-			vfid := strings.Split(devpath, mluDeviceName)[1]
-			if m.deviceList.hasCommuDev {
-				addDevice(&resp, mluCommuDeviceName+vfid, mluCommuDeviceName+strconv.Itoa(id))
+	if m.deviceList.hasGdrDev {
+		addDevice(&resp, mluGdrDeviceName)
+	}
+
+	omitDup := map[string]struct{}{}
+	for _, devpath := range devpaths {
+		if (m.options.Mode == Mim || m.options.Mode == DynamicSmlu) && m.profile != normalMlu {
+			// devpath is like "/dev/cambricon_dev0,/dev/cambricon_ipcm0,/dev/cambricon-caps/cap_dev0_mi1"
+			pathSets := strings.Split(devpath, ",")
+			if len(pathSets) != 3 {
+				log.Printf("invalid devpath %s", devpath)
+				continue
 			}
-			addDevice(&resp, devpath, mluDeviceName+strconv.Itoa(id))
+			if _, ok := omitDup[pathSets[0]]; !ok {
+				addDevice(&resp, pathSets[0])
+				if m.deviceList.hasIpcmDev {
+					addDevice(&resp, pathSets[1])
+				}
+				omitDup[pathSets[0]] = struct{}{}
+			}
+			addDevice(&resp, pathSets[2])
 			continue
 		}
 
@@ -236,24 +250,24 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 			continue
 		}
 		if m.deviceList.hasMsgqDev {
-			addDevice(&resp, fmt.Sprintf(mluMsgqDeviceName+":%d", index), fmt.Sprintf(mluMsgqDeviceName+":%d", id))
+			addDevice(&resp, fmt.Sprintf(mluMsgqDeviceName+":%d", index))
 		}
 		if m.deviceList.hasRPCDev {
-			addDevice(&resp, fmt.Sprintf(mluRPCDeviceName+":%d", index), fmt.Sprintf(mluRPCDeviceName+":%d", id))
+			addDevice(&resp, fmt.Sprintf(mluRPCDeviceName+":%d", index))
 		}
 		if m.deviceList.hasCmsgDev {
-			addDevice(&resp, fmt.Sprintf(mluCmsgDeviceName+"%d", index), fmt.Sprintf(mluCmsgDeviceName+"%d", id))
+			addDevice(&resp, fmt.Sprintf(mluCmsgDeviceName+"%d", index))
 		}
 		if m.deviceList.hasCommuDev {
-			addDevice(&resp, fmt.Sprintf(mluCommuDeviceName+"%d", index), fmt.Sprintf(mluCommuDeviceName+"%d", id))
+			addDevice(&resp, fmt.Sprintf(mluCommuDeviceName+"%d", index))
 		}
 		if m.deviceList.hasIpcmDev {
-			addDevice(&resp, fmt.Sprintf(mluIpcmDeviceName+"%d", index), fmt.Sprintf(mluIpcmDeviceName+"%d", id))
+			addDevice(&resp, fmt.Sprintf(mluIpcmDeviceName+"%d", index))
 		}
 		if m.deviceList.hasUARTConsoleDev && m.options.EnableConsole {
-			addDevice(&resp, fmt.Sprintf(mluUARTConsoleDeviceName+"%d", index), fmt.Sprintf(mluUARTConsoleDeviceName+"%d", id))
+			addDevice(&resp, fmt.Sprintf(mluUARTConsoleDeviceName+"%d", index))
 		}
-		addDevice(&resp, devpath, mluDeviceName+strconv.Itoa(id))
+		addDevice(&resp, devpath)
 	}
 	return resp
 }
@@ -267,97 +281,148 @@ func (m *CambriconDevicePlugin) GetDeviceUUIDByIndex(index uint) (uuid string, f
 	return "", false
 }
 
-func (m *CambriconDevicePlugin) allocateMLUShare(ctx context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+func (m *CambriconDevicePlugin) allocateDynamicSmlu(ctx context.Context) (*pluginapi.AllocateResponse, error) {
 
 	m.Lock()
 	defer m.Unlock()
 
-	pods, err := m.getCandidatePods(ctx)
+	pod, err := m.getDynamicSmluCandidatePod(ctx)
 	if err != nil {
-		log.Printf("Failed to get candidate pods, err %v", err)
-		m.containerIndex = 0
-		return nil, fmt.Errorf("getCandidatePods %v", err)
+		log.Errorf("Failed to get dynamic smlu candidate pods, err %v", err)
+		cleanDsmluRecord()
+		return nil, fmt.Errorf("failed to get dynamic smlu candidate pods, err %v", err)
 	}
+	log.Debugf("Handling pod %s allocation", pod.Name)
 
-	var assumePod *v1.Pod
-	if len(pods) != 1 {
-		m.containerIndex = 0
-		log.Printf("Number of candidate Pods %d", len(pods))
-		return nil, fmt.Errorf("Number of candidate Pods %d", len(pods))
-	}
+	if resp, ok := dynamicSmlu[pod.Name]; ok {
+		log.Debugf("Creating container in pod %s", pod.Name)
+		defer cleanDsmluRecord()
 
-	assumePod = pods[0]
-	counts := podContainerCountWithMlu(assumePod)
-
-	index, err := getIndexFromAnnotation(assumePod)
-	if err != nil {
-		m.containerIndex = 0
-		log.Printf("Failed to get index from annotation, err %v", err)
-		return nil, fmt.Errorf("getIndexFromAnnotation %v", err)
-	}
-	uuid, ok := m.GetDeviceUUIDByIndex(index)
-	if !ok {
-		m.containerIndex = 0
-		log.Printf("Failed to get uuid by index %d", index)
-		return nil, fmt.Errorf("failed GetDeviceUUIDByIndex %d", index)
-	}
-
-	responses := pluginapi.AllocateResponse{}
-	for _, req := range reqs.ContainerRequests {
-		reqMem := len(req.DevicesIDs)
-		resp := m.PrepareResponse([]string{uuid})
-		resp.Envs = map[string]string{
-			mluMemSplitEnable: "1",
-			mluMemSplitIndex:  fmt.Sprintf("%d", index),
-			mluMemSplitLimit:  fmt.Sprintf("%d", reqMem),
+		patchedAnnotation, err := json.Marshal(
+			map[string]interface{}{
+				"metadata": map[string]map[string]string{"annotations": {
+					DsmluResourceAssigned:   "true",
+					DsmluProfileAndInstance: profileAndInstance[pod.Name],
+				}}})
+		if err != nil {
+			log.Errorf("Failed to patch pod annotation. err: %v", err)
+			return nil, fmt.Errorf("patchPodAnnotation %v", err)
 		}
-		responses.ContainerResponses = append(responses.ContainerResponses, &resp)
-	}
-
-	if m.containerIndex < counts-1 {
-		m.containerIndex++
-		log.Printf("Pod %s has %d containers, creating %d container", assumePod.Name, counts, m.containerIndex)
-	} else {
-		log.Printf("Creating last container in pod %s", assumePod.Name)
-		m.containerIndex = 0
+		_, err = m.clientset.CoreV1().Pods(pod.Namespace).Patch(ctx, pod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
+		for i := 0; i < retries && err != nil; i++ {
+			log.Warnf("patchPodAnnotation err: %v, retried times: %d", err, i)
+			time.Sleep(time.Duration(rand.Intn(i)) * 10 * time.Millisecond)
+			_, err = m.clientset.CoreV1().Pods(pod.Namespace).Patch(ctx, pod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
+		}
+		if err != nil {
+			return nil, fmt.Errorf("patchPodAnnotation exceeds retry count %d", retries)
+		}
 		err = m.releaseNodeLock()
 		for i := 0; i < retries && err != nil; i++ {
 			log.Printf("Failed to release node lock, err %v, retried %d times", err, i)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Duration(rand.Intn(i)) * 10 * time.Millisecond)
 			err = m.releaseNodeLock()
 		}
 		if err != nil {
 			log.Printf("releaseNodeLock exceeds retry count %d", retries)
 		}
+		return resp, nil
+	}
 
-		patchedAnnotation, err := json.Marshal(
-			map[string]interface{}{
-				"metadata": map[string]map[string]string{"annotations": {
-					mluMemResourceAssigned: "true",
-				}}})
-		if err != nil {
-			log.Printf("Failed to patch pod annotation. err: %v", err)
-			return nil, fmt.Errorf("patchPodAnnotation %v", err)
+	pl, err := GetProfileFromAnnotation(pod)
+	if err != nil {
+		log.Errorf("Failed to get vcore and vmemory from annotation, err %v", err)
+		return nil, fmt.Errorf("get profile from annotation %v", err)
+	}
+	log.Debugf("Get profile %v from pod %s", pl, pod.Name)
+
+	var profileID int
+	var dsmluInfo cndev.SmluInfo
+	memUnit := m.options.MinDsmluUnit
+	if m.options.MinDsmluUnit <= 0 {
+		mem, err := cndev.GetDeviceMemory(uint(pl.Slot))
+		check(err)
+		memUnit = int(mem) / 100
+	}
+	if info, ok := cndev.GetExistProfile(pl, memUnit); ok {
+		if info.Remain < 1 {
+			log.Errorf("Found exist profile %d for device %d but its remain %d is invaild", info.ProfileID, pl.Slot, info.Remain)
+			return nil, fmt.Errorf("found exist profile %d for device %d but its remain %d is invaild", info.ProfileID, pl.Slot, info.Remain)
 		}
-		_, err = m.clientset.CoreV1().Pods(assumePod.Namespace).Patch(ctx, assumePod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
-		for i := 0; i < retries && err != nil; i++ {
-			log.Printf("patchPodAnnotation err: %v, retried times: %d", err, i)
-			time.Sleep(100 * time.Millisecond)
-			_, err = m.clientset.CoreV1().Pods(assumePod.Namespace).Patch(ctx, assumePod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
-		}
+		log.Debugf("Get exist profile %v", info.ProfileID)
+		profileID = info.ProfileID
+	} else {
+		prof, err := cndev.CreateSmluProfile(pl, memUnit)
 		if err != nil {
-			return nil, fmt.Errorf("patchPodAnnotation exceeds retry count %d", retries)
+			log.Errorf("Failed to create smlu profile %v err %v", pl, err)
+			return nil, fmt.Errorf("failed to create smlu profile %v err %v", pl, err)
+		}
+		log.Debugf("Created smlu profile %d", prof)
+		profileID = int(prof)
+	}
+
+	mluIntance, err := cndev.CreateSmluProfileInstance(uint(profileID), uint(pl.Slot))
+	if err != nil {
+		log.Errorf("Failed to create smlu profile %d for device %d err %v", profileID, pl.Slot, err)
+		return nil, fmt.Errorf("failed to create smlu profile %d for device %d err %v", profileID, pl.Slot, err)
+	}
+
+	infos, err := cndev.GetAllSmluInfo(uint(pl.Slot))
+	if err == nil {
+		err = fmt.Errorf("allSmluInfos %v", infos)
+		for _, info := range infos {
+			if (info.InstanceID<<8 | pl.Slot) == mluIntance {
+				dsmluInfo = info
+				err = nil
+				break
+			}
 		}
 	}
+	if err != nil {
+		log.Errorf("Failed to get smlu info for slot %d to match instance handle %d err %v", pl.Slot, mluIntance, err)
+		if err := cndev.DestroySmlu(mluIntance); err != nil {
+			log.Errorf("Failed to destroy smlu with instance handle %d err %v", mluIntance, err)
+		}
+		return nil, fmt.Errorf("failed to get smlu info for slot %d to match instance handle %d", pl.Slot, mluIntance)
+	}
+
+	log.Debugf("Created profile %d instance %d for pod %s", profileID, mluIntance, pod.Name)
+
+	uuid, ok := m.GetDeviceUUIDByIndex(uint(pl.Slot))
+	if !ok {
+		log.Errorf("Failed to get uuid by index %d", pl.Slot)
+		return nil, fmt.Errorf("failed GetDeviceUUIDByIndex %d", pl.Slot)
+	}
+
+	uid := uuid + "-dsmlu-" + dsmluInfo.UUID
+	m.devsInfo[uid] = &cndev.Device{
+		Slot:    uint(pl.Slot),
+		UUID:    uid,
+		Path:    fmt.Sprintf("%s%d", mluDeviceName, pl.Slot) + "," + fmt.Sprintf("%s%d", mluIpcmDeviceName, pl.Slot) + "," + dsmluInfo.DevNodeName, // device name should never contain ","
+		Profile: strings.ReplaceAll(dsmluInfo.Name, "+", "-"),
+	}
+
+	responses := pluginapi.AllocateResponse{}
+	resp := m.PrepareResponse([]string{uid})
+	responses.ContainerResponses = append(responses.ContainerResponses, &resp)
+
+	dynamicSmlu = make(map[string]*pluginapi.AllocateResponse)
+	dynamicSmlu[pod.Name] = &responses
+	profileAndInstance = make(map[string]string)
+	profileAndInstance[pod.Name] = fmt.Sprintf("%d_%d_%d_%d", profileID, mluIntance, pl.Slot, dsmluInfo.InstanceID)
+
+	log.Debugf("Store in dynamicSmlu Map with key %s, value %v", pod.Name, responses)
 
 	return &responses, nil
 }
 
 // Allocate which return list of devices.
 func (m *CambriconDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+	ta := time.Now()
+	log.Debugf("Receive allocate requesets %v in time %s", reqs, ta)
 
-	if m.options.Mode == mluShare {
-		return m.allocateMLUShare(ctx, reqs)
+	if m.options.Mode == DynamicSmlu {
+		return m.allocateDynamicSmlu(ctx)
 	}
 
 	responses := pluginapi.AllocateResponse{}
@@ -370,6 +435,9 @@ func (m *CambriconDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Al
 		car := m.PrepareResponse(req.DevicesIDs)
 		responses.ContainerResponses = append(responses.ContainerResponses, &car)
 	}
+
+	tf := time.Now()
+	log.Debugf("Receive allocate response for reqs %v in time %s, diff is %s", reqs, tf, tf.Sub(ta))
 	return &responses, nil
 }
 
@@ -416,24 +484,19 @@ func (m *CambriconDevicePlugin) Serve() error {
 		log.Panicf("invalid cnmon path: %s", m.options.CnmonPath)
 	}
 
-	if m.options.Mode == topologyAware {
+	if m.options.Mode == TopologyAware {
 		m.allocator = allocator.New(m.options.MLULinkPolicy, m.devsInfo)
 		m.clientset = initClientSet()
 
-		if m.options.MLULinkPolicy != common.BestEffort {
+		if m.options.MLULinkPolicy != bestEffort {
 			if err := m.updateNodeMLULinkAnnotation(0); err != nil {
 				return err
 			}
 		}
 	}
 
-	if m.options.Mode == mluShare {
+	if m.options.Mode == DynamicSmlu {
 		m.clientset = initClientSet()
-		if num, err := cndev.GetDeviceCount(); err != nil {
-			return err
-		} else if err = m.patchMLUCount(int(num)); err != nil {
-			return err
-		}
 		if err := m.releaseNodeLock(); err != nil {
 			return err
 		}
@@ -444,6 +507,7 @@ func (m *CambriconDevicePlugin) Serve() error {
 	}
 
 	log.Printf("Starting to serve on socket %v", m.socket)
+
 	resourceName := "cambricon.com/mlu"
 	if m.options.EnableDeviceType {
 		model := cndev.GetDeviceModel(uint(0))
@@ -457,8 +521,20 @@ func (m *CambriconDevicePlugin) Serve() error {
 			resourceName = "cambricon.com/" + strings.Split(strings.ToLower(model), "-")[0]
 		}
 	}
-	if m.options.Mode == mluShare {
-		resourceName = mluMemResourceName
+	switch m.options.Mode {
+	case DynamicSmlu:
+		if m.profile != normalMlu {
+			resourceName = resourceName + ".smlu." + m.profile
+		}
+	case EnvShare:
+		resourceName = resourceName + ".share"
+	case Mim:
+		if m.profile != normalMlu {
+			resourceName = resourceName + ".mim-" + m.profile
+		}
+	}
+	if m.profile == realCounts {
+		resourceName = "cambricon.com/" + realCounts
 	}
 	if err := m.Register(pluginapi.KubeletSocket, resourceName); err != nil {
 		m.Stop()
@@ -471,12 +547,26 @@ func (m *CambriconDevicePlugin) Serve() error {
 func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
 	response := &pluginapi.PreferredAllocationResponse{}
 	for _, req := range r.ContainerRequests {
-		available := m.getSlots(req.AvailableDeviceIDs)
-		required := m.getSlots(req.MustIncludeDeviceIDs)
-		allocated, err := m.GetPreferredAllocatedDeviceUUIDs(available, required, int(req.AllocationSize))
-		if err != nil {
-			log.Printf("failed to get preferred allocated devices, available: %v, size: %d, err: %v \n", available, req.AllocationSize, err)
-			return response, err
+		var allocated []string
+		var err error
+		switch m.options.Mode {
+		case EnvShare:
+			allocated, err = getPreferredEnvShareDeviceID(req)
+			if err != nil {
+				log.Errorf("failed to get preferred allocated devices for env share mode, requests %d, err: %v", req.AllocationSize, err)
+				return response, err
+			}
+		case TopologyAware:
+			available := m.getSlots(req.AvailableDeviceIDs)
+			required := m.getSlots(req.MustIncludeDeviceIDs)
+			allocated, err = m.getPreferredAllocatedDeviceUUIDs(available, required, int(req.AllocationSize))
+			if err != nil {
+				log.Errorf("failed to get preferred allocated devices, available: %v, size: %d, err: %v", available, req.AllocationSize, err)
+				return response, err
+			}
+		default:
+			log.Errorf("not supported mode %s", m.options.Mode)
+			return response, fmt.Errorf("not supported mode %s", m.options.Mode)
 		}
 		resp := &pluginapi.ContainerPreferredAllocationResponse{
 			DeviceIDs: allocated,
@@ -486,20 +576,19 @@ func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *p
 	return response, nil
 }
 
-func (m *CambriconDevicePlugin) GetPreferredAllocatedDeviceUUIDs(available []uint, required []uint, size int) ([]string, error) {
-
+func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uint, required []uint, size int) ([]string, error) {
 	// todo: consider required list for init containers and numa. ignore it for now.
 	if len(required) != 0 {
-		log.Printf("required device slice not empty, ignore it. %v \n", required)
+		log.Printf("required device slice not empty, ignore it. %v", required)
 	}
 
-	log.Println("=== Start GetPreferredAllocatedDeviceUUIDs ===")
+	log.Println("=== Start getPreferredAllocatedDeviceUUIDs ===")
 	log.Printf("available devs: %v, size %d", available, size)
 
 	devs, err := m.allocator.Allocate(available, required, size)
 	if err != nil {
 		if e := m.updateNodeMLULinkAnnotation(size); e != nil {
-			log.Printf("updateNodeMLULinkAnnotation err: %v", e)
+			log.Errorf("updateNodeMLULinkAnnotation err: %v", e)
 		}
 		return nil, err
 	}
@@ -515,7 +604,7 @@ func (m *CambriconDevicePlugin) GetPreferredAllocatedDeviceUUIDs(available []uin
 		uuids = append(uuids, uuid)
 	}
 
-	log.Println("=== Finish GetPreferredAllocatedDeviceUUIDs ===")
+	log.Println("=== Finish getPreferredAllocatedDeviceUUIDs ===")
 	return uuids, nil
 }
 
@@ -544,7 +633,7 @@ func (m *CambriconDevicePlugin) updateNodeMLULinkAnnotation(size int) error {
 	err := m.createAnnotationWithTimestamp(size)
 	for i := 0; i < retries && err != nil; i++ {
 		log.Printf("createAnnotationWithTimestamp err: %v, retried times: %d", err, i+1)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(i)) * 10 * time.Millisecond)
 		err = m.createAnnotationWithTimestamp(size)
 	}
 	return err
@@ -559,10 +648,15 @@ func (m *CambriconDevicePlugin) getSlots(ids []string) []uint {
 	return slots
 }
 
-func addDevice(car *pluginapi.ContainerAllocateResponse, hostPath string, containerPath string) {
+func cleanDsmluRecord() {
+	dynamicSmlu = nil
+	profileAndInstance = nil
+}
+
+func addDevice(car *pluginapi.ContainerAllocateResponse, devPath string) {
 	dev := new(pluginapi.DeviceSpec)
-	dev.HostPath = hostPath
-	dev.ContainerPath = containerPath
+	dev.HostPath = devPath
+	dev.ContainerPath = devPath
 	dev.Permissions = "rw"
 	car.Devices = append(car.Devices, dev)
 }
@@ -570,11 +664,55 @@ func addDevice(car *pluginapi.ContainerAllocateResponse, hostPath string, contai
 func initClientSet() kubernetes.Interface {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Printf("Failed to get in cluser config, err: %v", err)
+		log.Errorf("Failed to get in cluser config, err: %v", err)
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Printf("Failed to init clientset, err: %v", err)
+		log.Errorf("Failed to init clientset, err: %v", err)
 	}
 	return clientset
+}
+
+func getPreferredEnvShareDeviceID(req *pluginapi.ContainerPreferredAllocationRequest) ([]string, error) {
+	dMap := map[string][]int{}
+	for _, id := range req.AvailableDeviceIDs {
+		ids := strings.Split(id, "-_-")
+		uuid := ids[0]
+		vf, err := strconv.Atoi(ids[len(ids)-1])
+		if err != nil {
+			log.Errorf("convert value to int, error %v, value %s", err, ids[len(ids)-1])
+			return nil, err
+		}
+		dMap[uuid] = append(dMap[uuid], vf)
+	}
+
+	type envShareDeviceID struct {
+		uuid string
+		vfs  []int
+	}
+	es := []envShareDeviceID{}
+	for k, v := range dMap {
+		sort.Ints(v)
+		es = append(es, envShareDeviceID{
+			uuid: k,
+			vfs:  v,
+		})
+	}
+	sort.Slice(es, func(i int, j int) bool {
+		return len(es[i].vfs) > len(es[j].vfs)
+	})
+
+	if req.AllocationSize == 1 {
+		return []string{fmt.Sprintf("%s-_-%d", es[0].uuid, es[0].vfs[0])}, nil
+	}
+
+	if int(req.AllocationSize) > len(es) {
+		return nil, fmt.Errorf("can not get preferred devices since available is shorter than required, required:%d, available:%d", int(req.AllocationSize), len(es))
+	}
+
+	res := []string{}
+	for i := 0; i < int(req.AllocationSize); i++ {
+		res = append(res, fmt.Sprintf("%s-_-%d", es[i].uuid, es[i].vfs[0]))
+	}
+	return res, nil
 }

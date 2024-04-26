@@ -16,10 +16,10 @@
 curpath=$(dirname "$0")
 cd "$curpath" || exit 1
 
-: "${TAG:=v1.3.6}"
+: "${TAG:=v2.0.11}"
 : "${ARCH:=amd64}"
 : "${LIBCNDEV:=/usr/local/neuware/lib64/libcndev.so}"
-: "${CNTOPO:=/usr/local/neuware/bin/cntopo}"
+: "${LIBCNTOPO:=/usr/local/neuware/lib64/libcntopo.so}"
 
 case $(awk -F= '/^NAME/{print $2}' /etc/os-release) in
 "CentOS Linux")
@@ -27,7 +27,7 @@ case $(awk -F= '/^NAME/{print $2}' /etc/os-release) in
 	;;
 esac
 
-: "${BASE_IMAGE:=ubuntu:18.04}"
+: "${BASE_IMAGE:=ubuntu:22.04}"
 
 echo "Build environ (Can be overridden):"
 echo "TAG       = $TAG"
@@ -36,7 +36,7 @@ echo "LIBCNDEV  = $LIBCNDEV"
 echo "APT_PROXY = $APT_PROXY"
 echo "GOPROXY   = $GOPROXY"
 echo "BASE_IMAGE   = $BASE_IMAGE"
-echo "CNTOPO = $CNTOPO"
+echo "LIBCNTOPO = $LIBCNTOPO"
 
 case $(uname -m) in
 x86_64)
@@ -60,8 +60,8 @@ if [[ ! -f "$LIBCNDEV" ]]; then
 	exit 1
 fi
 
-if [[ ! -f "$CNTOPO" ]]; then
-	echo "Can't find cntopo at $CNTOPO."
+if [[ ! -f "$LIBCNTOPO" ]]; then
+	echo "Can't find cntopo at $LIBCNTOPO."
 	echo "Please install Cambricon cncl, or set CNTOPO environ to path of cntopo"
 	exit 1
 fi
@@ -83,26 +83,27 @@ if ! file "$LIBCNDEV" --dereference | grep -q "$file_arch"; then
 	echo "$LIBCNDEV is not for $ARCH"
 	exit 1
 fi
-if ! file "$CNTOPO" --dereference | grep -q "$file_arch"; then
-	echo "$CNTOPO is not for $ARCH"
+if ! file "$LIBCNTOPO" --dereference | grep -q "$file_arch"; then
+	echo "$LIBCNTOPO is not for $ARCH"
 	exit 1
 fi
 
 cp "$LIBCNDEV" "$curpath/libs/linux/$ARCH/libcndev.so"
-cp "$CNTOPO" "$curpath/libs/linux/$ARCH/cntopo"
+cp "$LIBCNTOPO" "$curpath/libs/linux/$ARCH/libcntopo.so"
 
 echo "Building Cambricon device plugin docker image."
 
 # Legacy build for docker 18.06.
 # Remove this when docker is upgraded to 19.03 in all environ.
-[[ "$ARCH" == "$build_arch" ]] && docker build -t "cambricon-k8s-device-plugin:$TAG" \
+[[ "$ARCH" == "$build_arch" ]] && docker build -t "cambricon-device-plugin:$TAG" \
 	--build-arg "GOPROXY=$GOPROXY" --build-arg "APT_PROXY=$APT_PROXY" \
 	--build-arg "BUILDPLATFORM=linux/$ARCH" \
 	--build-arg "BASE_IMAGE=$BASE_IMAGE" \
+	--build-arg "VERSION=$TAG" \
 	--build-arg "TARGETPLATFORM=linux/$ARCH" .
 
-[[ "$ARCH" == "$build_arch" ]] && docker save -o "image/cambricon-k8s-device-plugin-$ARCH.tar" \
-	"cambricon-k8s-device-plugin:$TAG"
+[[ "$ARCH" == "$build_arch" ]] && docker save -o "image/cambricon-device-plugin-$ARCH.tar" \
+	"cambricon-device-plugin:$TAG"
 
 if [[ "$ARCH" != "$build_arch" && "$(docker version -f '{{ge .Client.Version "19.03"}}')" != "true" ]]; then
 	echo "Needs docker 19.03 and above"
@@ -110,11 +111,11 @@ if [[ "$ARCH" != "$build_arch" && "$(docker version -f '{{ge .Client.Version "19
 fi
 
 [[ "$ARCH" != "$build_arch" ]] && DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build \
-	--platform="linux/$ARCH" -t "cambricon-k8s-device-plugin:$TAG" \
+	--platform="linux/$ARCH" -t "cambricon-device-plugin:$TAG" \
 	--build-arg "GOPROXY=$GOPROXY" --build-arg "APT_PROXY=$APT_PROXY" \
 	--build-arg "BASE_IMAGE=$BASE_IMAGE" \
-	--output type=docker,dest="./image/cambricon-k8s-device-plugin-$ARCH.tar" .
+	--output type=docker,dest="./image/cambricon-device-plugin-$ARCH.tar" .
 
-echo "Image is saved at ./image/cambricon-k8s-device-plugin-$ARCH.tar"
+echo "Image is saved at ./image/cambricon-device-plugin-$ARCH.tar"
 rm -f "$curpath/libs/linux/$ARCH/libcndev.so"
-rm -f "$curpath/libs/linux/$ARCH/cntopo"
+rm -f "$curpath/libs/linux/$ARCH/libcntopo.so"

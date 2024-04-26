@@ -17,12 +17,11 @@ package allocator
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
-	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
+	log "github.com/sirupsen/logrus"
 )
 
 type boardAllocator struct {
@@ -54,14 +53,14 @@ func (a *boardAllocator) Allocate(available []uint, required []uint, size int) (
 	boards := splitByBoards(available, a.devs)
 	groups, err := a.filterAvaliableDevsByGroup(available)
 	if err != nil {
-		log.Printf("failed to filter %v by group %v, ignore when allocating", available, a.groups)
+		log.Printf("failed to filter %v by group %v, err: %v, maybe in pcie mode, ignore when allocating", available, a.groups, err)
 	}
 
 	log.Printf("available devs filtered by group: %v", groups)
 
 	if len(rings) == 0 {
 		log.Println("found no rings")
-		if a.policy != common.BestEffort && !a.sizeAlwaysFailsToFormRing(size) {
+		if a.policy != bestEffort && !a.sizeAlwaysFailsToFormRing(size) {
 			return nil, fmt.Errorf("mode %s found no rings for size %d", a.policy, size)
 		}
 
@@ -103,7 +102,7 @@ func (a *boardAllocator) Allocate(available []uint, required []uint, size int) (
 		return nil, errors.New("allocated from all available devices, should not be here")
 	}
 
-	if a.policy == common.Restricted && size == 2 && rings[0].NonConflictRingNum < 2 {
+	if a.policy == restricted && size == 2 && rings[0].NonConflictRingNum < 2 {
 		return nil, fmt.Errorf("mode %s, max non-conflict ring num %d", a.policy, rings[0].NonConflictRingNum)
 	}
 
@@ -168,7 +167,7 @@ func splitByBoards(available []uint, devs map[string]*cndev.Device) [][]uint {
 		}
 		boards[dev.SN] = append(boards[dev.SN], dev.Slot)
 	}
-	log.Printf("available devices seperated by board %v", boards)
+	log.Debugf("available devices seperated by board %v", boards)
 	res := [][]uint{}
 	for _, board := range boards {
 		res = append(res, board)
@@ -176,7 +175,7 @@ func splitByBoards(available []uint, devs map[string]*cndev.Device) [][]uint {
 	sort.Slice(res, func(i, j int) bool {
 		return len(res[i]) < len(res[j])
 	})
-	log.Printf("sorted available devices seperated by board %v", res)
+	log.Debugf("sorted available devices seperated by board %v", res)
 	return res
 }
 

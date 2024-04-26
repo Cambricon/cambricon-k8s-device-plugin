@@ -25,7 +25,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	err := Init()
+	err := Init(false, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,13 +70,10 @@ func TestGetDeviceHealthState(t *testing.T) {
 	assert.Equal(t, 1, health)
 }
 
-func TestGetDevicePCIeInfo(t *testing.T) {
-	pcie, err := getDevicePCIeInfo(uint(0))
+func TestGetDeviceXidError(t *testing.T) {
+	hasXidError, err := getDeviceXidError(uint(0))
 	assert.NoError(t, err)
-	assert.Equal(t, 0, pcie.domain)
-	assert.Equal(t, 12, pcie.bus)
-	assert.Equal(t, 13, pcie.device)
-	assert.Equal(t, 1, pcie.function)
+	assert.Equal(t, true, hasXidError)
 }
 
 func TestGetDeviceMLULinkDevs(t *testing.T) {
@@ -100,4 +97,75 @@ func TestGetMLULinkGroups(t *testing.T) {
 		})
 	}
 	assert.Equal(t, [][]uint{{0, 1, 2, 3, 4, 5, 6, 7}}, groups)
+}
+
+func TestGetAllMluInstanceInfo(t *testing.T) {
+	expectInfos := []MimInfo{
+		{
+			DevNodeName:     "/dev/cambricon-caps/cap_dev0_mi1",
+			IpcmDevNodeName: "/dev/cambricon_ipcm0",
+			Name:            "2m.16gb",
+			UUID:            "MLU-B0001012-1916-0000-0000-000000000000",
+		},
+		{
+			DevNodeName:     "/dev/cambricon-caps/cap_dev0_mi3",
+			IpcmDevNodeName: "/dev/cambricon_ipcm0",
+			Name:            "4m.32gb",
+			UUID:            "MLU-C0001012-1916-0000-0000-000000000000",
+		},
+		{
+			DevNodeName:     "/dev/cambricon-caps/cap_dev0_mi5",
+			IpcmDevNodeName: "/dev/cambricon_ipcm0",
+			Name:            "4m.16gb",
+			UUID:            "MLU-D0001012-1916-0000-0000-000000000000",
+		},
+	}
+	infos, err := GetAllMluInstanceInfo(0)
+	assert.NoError(t, err)
+	assert.Equal(t, infos, expectInfos)
+}
+
+func TestGetAllSMluInfo(t *testing.T) {
+	expectInfos := []SmluInfo{
+		{
+			DevNodeName: "/dev/cambricon-caps/cap_dev0_mi1",
+			Name:        "12.000m.78.784gb",
+			UUID:        "MLU-B0001012-1916-0000-0000-000000000000",
+			ProfileID:   0,
+			InstanceID:  1,
+		},
+		{
+			DevNodeName: "/dev/cambricon-caps/cap_dev0_mi2",
+			Name:        "6.000m.39.392gb",
+			UUID:        "MLU-C0001012-1916-0000-0000-000000000000",
+			ProfileID:   1,
+			InstanceID:  2,
+		},
+		{
+			DevNodeName: "/dev/cambricon-caps/cap_dev0_mi3",
+			Name:        "3.000m.19.696gb",
+			UUID:        "MLU-D0001012-1916-0000-0000-000000000000",
+			ProfileID:   2,
+			InstanceID:  3,
+		},
+	}
+	infos, err := GetAllSmluInfo(0)
+	assert.NoError(t, err)
+	assert.Equal(t, infos, expectInfos)
+}
+
+func TestGetDeviceProfileInfo(t *testing.T) {
+	expectInfos := []DsmluProfileInfo{
+		{
+			ProfileID: 0,
+			Total:     4,
+			Remain:    4,
+			Memory:    1073741824,
+			Quota:     100,
+			Name:      "10p.80675mb",
+		},
+	}
+	infos, err := GetDeviceProfileInfo(0)
+	assert.NoError(t, err)
+	assert.Equal(t, infos, expectInfos)
 }

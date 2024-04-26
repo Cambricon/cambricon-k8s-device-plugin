@@ -1,0 +1,6 @@
+cnmonPath: /cnmon
+mode: env-share
+disableHealthCheck: false
+abnormalXIDErrorList:
+  - ecc
+  - dbm

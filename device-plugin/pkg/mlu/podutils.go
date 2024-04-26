@@ -16,36 +16,18 @@ package mlu
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
-	"sort"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 )
-
-func (m *CambriconDevicePlugin) getCandidatePods(ctx context.Context) ([]*v1.Pod, error) {
-	candidatePods := []*v1.Pod{}
-	allPods, err := m.getPendingPodsInNode(ctx)
-	if err != nil {
-		return candidatePods, err
-	}
-	for _, pod := range allPods {
-		current := pod
-		if isMLUMemoryAssumedPod(&current) {
-			candidatePods = append(candidatePods, &current)
-		}
-	}
-	sort.Slice(candidatePods, func(i, j int) bool {
-		return getAssumeTimeFromPodAnnotation(candidatePods[i]) < getAssumeTimeFromPodAnnotation(candidatePods[j])
-	})
-	return candidatePods, nil
-}
 
 func (m *CambriconDevicePlugin) getPendingPodsInNode(ctx context.Context) ([]v1.Pod, error) {
 	pods := []v1.Pod{}
@@ -75,120 +57,135 @@ func (m *CambriconDevicePlugin) getPendingPodsInNode(ctx context.Context) ([]v1.
 	return pods, nil
 }
 
-func isMLUMemoryAssumedPod(pod *v1.Pod) bool {
-	if !requestsMLUMemory(pod) {
+func isDynamicSmluAssumedPod(pod *v1.Pod) bool {
+	if !requestsDynamicSmlu(pod) {
 		return false
 	}
 
-	if _, ok := pod.ObjectMeta.Annotations[mluMemResourceAssumeTime]; !ok {
+	if pod.ObjectMeta.Annotations == nil {
 		return false
 	}
 
-	if assigned, ok := pod.ObjectMeta.Annotations[mluMemResourceAssigned]; ok && assigned == "false" {
+	if assigned, ok := pod.ObjectMeta.Annotations[DsmluResourceAssigned]; ok &&
+		assigned == "false" {
 		return true
 	}
 
 	return false
 }
 
-func requestsMLUMemory(pod *v1.Pod) bool {
-	r := false
+func requestsDynamicSmlu(pod *v1.Pod) bool {
 	for _, c := range pod.Spec.Containers {
-		if _, ok := c.Resources.Limits[v1.ResourceName(mluMemResourceName)]; ok {
-			r = true
-			break
+		for k, v := range c.Resources.Limits {
+			if v.Value() > 0 && strings.HasPrefix(k.String(), "cambricon.com/") &&
+				(strings.HasSuffix(k.String(), ".vcore") || strings.HasSuffix(k.String(), ".vmemory")) {
+				return true
+			}
 		}
 	}
-	return r
+	return false
 }
 
-func getAssumeTimeFromPodAnnotation(pod *v1.Pod) (assumeTime uint64) {
-	if assumeTimeStr, ok := pod.ObjectMeta.Annotations[mluMemResourceAssumeTime]; ok {
-		u64, err := strconv.ParseUint(assumeTimeStr, 10, 64)
-		if err != nil {
-			log.Printf("Failed to parse assume Timestamp %s due to %v", assumeTimeStr, err)
-		} else {
-			assumeTime = u64
-		}
-	}
-	return assumeTime
-}
-
-func getIndexFromAnnotation(pod *v1.Pod) (uint, error) {
-	value, found := pod.ObjectMeta.Annotations[mluMemSplitIndex]
+func GetProfileFromAnnotation(pod *v1.Pod) (*cndev.DsmluProfile, error) {
+	pl := &cndev.DsmluProfile{}
+	value, found := pod.ObjectMeta.Annotations[DsmluProfile]
 	if !found {
-		return 0, fmt.Errorf("pod annotation %s not found", mluMemSplitIndex)
+		return pl, fmt.Errorf("pod annotation %s not found", DsmluProfile)
 	}
-	index, err := strconv.Atoi(value)
-	if err != nil {
-		return 0, fmt.Errorf("strconv value %v, %v", value, err)
-	}
-	if index < 0 {
-		return 0, fmt.Errorf("index %d less than 0", index)
-	}
-	return uint(index), nil
-}
 
-func podContainerCountWithMlu(pod *v1.Pod) uint {
-	count := 0
-	for _, c := range pod.Spec.InitContainers {
-		if _, ok := c.Resources.Limits[v1.ResourceName(mluMemResourceName)]; ok {
-			count++
-			log.Printf("namespace %s pod %s init container %s uses mlu-mem, just allocate the mlu and ignore memory limit", pod.Namespace, pod.Name, c.Name)
-		}
+	// value is like slot_vcore_vmemory, for example 0_2_5
+	log.Debugf("Get pod %s profile %s", pod.Name, value)
+	v := strings.Split(value, "_")
+	if len(v) != 3 {
+		return pl, fmt.Errorf("invalid pod annotation %s", value)
 	}
-	for _, c := range pod.Spec.Containers {
-		if _, ok := c.Resources.Limits[v1.ResourceName(mluMemResourceName)]; ok {
-			count++
-		}
+
+	p, err := strconv.Atoi(v[0])
+	if err != nil {
+		return pl, fmt.Errorf("strconv value %s, %v", v[0], err)
 	}
-	return uint(count)
+	pl.Slot = p
+	p, err = strconv.Atoi(v[1])
+	if err != nil {
+		return pl, fmt.Errorf("strconv value %s, %v", v[1], err)
+	}
+	pl.Vcore = p
+	p, err = strconv.Atoi(v[2])
+	if err != nil {
+		return pl, fmt.Errorf("strconv value %s, %v", v[2], err)
+	}
+	pl.Vmemory = p
+
+	return pl, nil
 }
 
 func (m *CambriconDevicePlugin) releaseNodeLock() error {
 	node, err := m.clientset.CoreV1().Nodes().Get(context.TODO(), m.nodeHostname, metav1.GetOptions{})
-
 	if err != nil {
 		return err
 	}
-	newNode := node.DeepCopy()
-
-	if newNode.Annotations != nil {
-		if time, ok := newNode.Annotations[mluMemLock]; ok {
-			log.Printf("node lock timestamp %s", time)
-			delete(newNode.Annotations, mluMemLock)
-		} else {
-			log.Println("Lock is released, No Need to update node")
-			return nil
-		}
+	if node.Annotations == nil {
+		return nil
 	}
-	_, err = m.clientset.CoreV1().Nodes().Update(context.TODO(), newNode, metav1.UpdateOptions{})
+	t, ok := node.Annotations[DsmluLockTime]
+	if !ok {
+		return nil
+	}
+	log.Printf("node lock timestamp %s", t)
+	patchData := []byte(`[
+				{
+					"op": "remove",
+					"path": "/metadata/annotations/cambricon.com~1dsmlu.lock"
+				}
+			]`)
+
+	_, err = m.clientset.CoreV1().Nodes().Patch(context.TODO(), node.Name, types.JSONPatchType, patchData, metav1.PatchOptions{})
 
 	if err != nil {
-		log.Printf("Failed to release node lock %s, err %v", mluMemLock, err)
+		log.Printf("Failed to release node lock %s, err %v", DsmluLockTime, err)
 	} else {
-		log.Printf("release node lock %s successfully.", mluMemLock)
+		log.Printf("release node lock %s successfully.", DsmluLockTime)
 	}
 	return err
 }
 
-func (m *CambriconDevicePlugin) patchMLUCount(count int) error {
+func (m *CambriconDevicePlugin) getDynamicSmluCandidatePod(ctx context.Context) (*v1.Pod, error) {
+	var podCount, containerCount uint
+	var candidatePod v1.Pod
 
-	patchAnnotations := map[string]interface{}{
-		"metadata": map[string]map[string]string{"annotations": {
-			mluResourceCount: fmt.Sprintf("%d", count),
-		}}}
-
-	b, err := json.Marshal(patchAnnotations)
+	allPods, err := m.getPendingPodsInNode(ctx)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	log.Debugf("Found %d pending pods", len(allPods))
+
+	for _, pod := range allPods {
+		if isDynamicSmluAssumedPod(&pod) {
+			candidatePod = pod
+			log.Debugf("Found candidate pod %s", candidatePod.Name)
+			podCount++
+		}
+		if podCount > 1 {
+			return nil, fmt.Errorf("number of dynamic smlu candidate pods large than one")
+		}
 	}
 
-	_, err = m.clientset.CoreV1().Nodes().Patch(context.TODO(), m.nodeHostname, types.StrategicMergePatchType, b, metav1.PatchOptions{})
-	if err != nil {
-		log.Printf("Failed to update Capacity %s.", mluResourceCount)
-	} else {
-		log.Printf("Updated Capacity %s to %d successfully.", mluResourceCount, count)
+	if podCount == 0 {
+		return nil, fmt.Errorf("no dynamic smlu candidate pod found")
 	}
-	return err
+
+	for _, c := range candidatePod.Spec.Containers {
+		for k, v := range c.Resources.Limits {
+			if v.Value() > 0 && strings.HasPrefix(k.String(), "cambricon.com/") &&
+				(strings.HasSuffix(k.String(), ".vcore") || strings.HasSuffix(k.String(), ".vmemory")) {
+				containerCount++
+				break
+			}
+		}
+		if containerCount > 1 {
+			return nil, fmt.Errorf("number of containers of dynamic smlu candidate pod large than one")
+		}
+	}
+
+	return &candidatePod, nil
 }

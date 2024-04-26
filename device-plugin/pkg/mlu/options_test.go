@@ -18,7 +18,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,40 +32,78 @@ func TestLegacyConfigs(t *testing.T) {
 		out  Options
 	}{
 		{
-			args: []string{"-mode", "sriov"},
+			args: []string{"-mode", "mim"},
 			out: Options{
-				Mode:               sriov,
-				MLULinkPolicy:      common.BestEffort,
+				Mode:               Mim,
+				MLULinkPolicy:      bestEffort,
+				MinDsmluUnit:       0,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
+				LogLevel:           "info",
 			},
 		},
 		{
 			args: []string{"-mode=env-share"},
 			out: Options{
-				Mode:               envShare,
-				MLULinkPolicy:      common.BestEffort,
+				Mode:               EnvShare,
+				MLULinkPolicy:      bestEffort,
+				MinDsmluUnit:       0,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
+				LogLevel:           "info",
 			},
 		},
 		{
 			args: []string{"--mode=topology-aware"},
 			out: Options{
-				Mode:               topologyAware,
-				MLULinkPolicy:      common.BestEffort,
+				Mode:               TopologyAware,
+				MLULinkPolicy:      bestEffort,
+				MinDsmluUnit:       0,
 				VirtualizationNum:  1,
 				DisableHealthCheck: true,
+				LogLevel:           "info",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			os.Args = append(cmd, tt.args...)
-			o := ParseFlags()
+			o := LoadConfig()
 			assert.Equal(t, tt.out, o)
 		})
 	}
 	err = os.Unsetenv("DP_DISABLE_HEALTHCHECKS")
 	assert.NoError(t, err)
+}
+
+func TestConfigFile(t *testing.T) {
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+	cmd := []string{os.Args[0]}
+	tests := []struct {
+		args []string
+		out  Options
+	}{
+		{
+			args: []string{"-mode", "mim", "--config-file", "testdata/config.yaml", "--disable-health-check"},
+			out: Options{
+				CnmonPath:            "/cnmon",
+				ConfigFile:           "testdata/config.yaml",
+				Mode:                 Mim,
+				MLULinkPolicy:        bestEffort,
+				MinDsmluUnit:         0,
+				VirtualizationNum:    1,
+				DisableHealthCheck:   true,
+				LogLevel:             "info",
+				AbnormalXIDErrorList: []string{"ecc", "dbm"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			os.Args = append(cmd, tt.args...)
+			o := LoadConfig()
+			assert.Equal(t, tt.out, o)
+		})
+	}
 }

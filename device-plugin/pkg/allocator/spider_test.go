@@ -19,7 +19,6 @@ import (
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
-	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -99,14 +98,14 @@ var _ = Describe("Spider Allocator", func() {
 				}
 			},
 			Entry("1",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 5},
 				1,
 				[]cntopo.Ring{},
 				[]uint{5},
 			),
 			Entry("2",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 4},
 				2,
 				[]cntopo.Ring{
@@ -126,7 +125,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{0, 1},
 			),
 			Entry("3",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 2, 3, 4, 6},
 				2,
 				[]cntopo.Ring{
@@ -170,7 +169,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{4, 6},
 			),
 			Entry("4",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 4, 6},
 				2,
 				[]cntopo.Ring{
@@ -190,14 +189,14 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{4, 6},
 			),
 			Entry("5",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 5},
 				2,
 				[]cntopo.Ring{},
 				[]uint{0, 5},
 			),
 			Entry("6",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 2, 4},
 				3,
 				[]cntopo.Ring{
@@ -209,7 +208,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{0, 1, 2},
 			),
 			Entry("7",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 2, 4, 5, 6, 7},
 				4,
 				[]cntopo.Ring{
@@ -233,7 +232,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{4, 5, 6, 7},
 			),
 			Entry("8",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 2, 3, 4, 7},
 				4,
 				[]cntopo.Ring{
@@ -245,14 +244,14 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{0, 3, 4, 7},
 			),
 			Entry("9",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 3, 6},
 				4,
 				[]cntopo.Ring{},
 				[]uint{0, 1, 3, 6},
 			),
 			Entry("10",
-				common.BestEffort,
+				bestEffort,
 				[]uint{0, 1, 3, 4, 5, 7},
 				4,
 				[]cntopo.Ring{
@@ -272,7 +271,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{1, 3, 5, 7},
 			),
 			Entry("11",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 3, 4, 5, 7},
 				4,
 				[]cntopo.Ring{
@@ -292,14 +291,14 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{1, 3, 5, 7},
 			),
 			Entry("12",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 3, 6},
 				4,
 				[]cntopo.Ring{},
 				nil,
 			),
 			Entry("13",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 2, 4},
 				3,
 				[]cntopo.Ring{
@@ -311,7 +310,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{0, 1, 2},
 			),
 			Entry("14",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 4},
 				2,
 				[]cntopo.Ring{
@@ -331,14 +330,14 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{0, 1},
 			),
 			Entry("15",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 5},
 				2,
 				[]cntopo.Ring{},
 				nil,
 			),
 			Entry("16",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 2, 3, 4, 6},
 				2,
 				[]cntopo.Ring{
@@ -382,7 +381,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{4, 6},
 			),
 			Entry("17",
-				common.Guaranteed,
+				guaranteed,
 				[]uint{0, 1, 4, 6},
 				2,
 				[]cntopo.Ring{
@@ -402,7 +401,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{4, 6},
 			),
 			Entry("18",
-				common.Restricted,
+				restricted,
 				[]uint{0, 1, 2},
 				2,
 				[]cntopo.Ring{
@@ -422,7 +421,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{0, 2},
 			),
 			Entry("19",
-				common.Restricted,
+				restricted,
 				[]uint{0, 3, 4},
 				2,
 				[]cntopo.Ring{
@@ -438,7 +437,7 @@ var _ = Describe("Spider Allocator", func() {
 				nil,
 			),
 			Entry("20",
-				common.Restricted,
+				restricted,
 				[]uint{0, 1, 2, 3, 4, 6},
 				2,
 				[]cntopo.Ring{
@@ -482,7 +481,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{4, 6},
 			),
 			Entry("21",
-				common.Restricted,
+				restricted,
 				[]uint{0, 2, 4, 5},
 				2,
 				[]cntopo.Ring{
@@ -502,7 +501,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{0, 2},
 			),
 			Entry("22",
-				common.Restricted,
+				restricted,
 				[]uint{0, 1, 2, 4, 5, 6, 7},
 				4,
 				[]cntopo.Ring{
@@ -526,7 +525,7 @@ var _ = Describe("Spider Allocator", func() {
 				[]uint{4, 5, 6, 7},
 			),
 			Entry("23",
-				common.Restricted,
+				restricted,
 				[]uint{0, 2, 3, 4, 7},
 				4,
 				[]cntopo.Ring{
@@ -538,7 +537,7 @@ var _ = Describe("Spider Allocator", func() {
 				nil,
 			),
 			Entry("24",
-				common.Restricted,
+				restricted,
 				[]uint{0, 2, 4, 6},
 				4,
 				[]cntopo.Ring{
