@@ -15,8 +15,8 @@
  */
 
 #include "../include/cndev.h"
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 int Test_cndevGetDeviceCount() {
@@ -135,28 +135,33 @@ void Test_cndevGetMLULinkPortNumber(int id) {
 
 void Test_cndevGetMimMode(cndevDevice_t device) {
 	cndevMimMode_t mode;
-	cndevGetMimMode(&mode,device);
+	cndevGetMimMode(&mode, device);
 	printf("=== Test cndevGetMimMode ===\nret:%d\n", (&mode)->mimMode);
 }
 
 void Test_cndevGetSMLUMode(cndevDevice_t device) {
 	cndevSMLUMode_t mode;
-	cndevGetSMLUMode(&mode,device);
+	cndevGetSMLUMode(&mode, device);
 	printf("=== Test cndevGetSMLUMode ===\nret:%d\n", (&mode)->smluMode);
 }
 
 void Test_cndevGetAllMluInstanceInfo(cndevDevice_t device) {
 	int count;
 	cndevMluInstanceInfo_t *miInfo;
-	miInfo = (cndevMluInstanceInfo_t *)malloc(3 * sizeof(cndevMluInstanceInfo_t));
-	cndevGetAllMluInstanceInfo(&count,miInfo,device);
+	miInfo = (cndevMluInstanceInfo_t *)malloc(
+	    3 * sizeof(cndevMluInstanceInfo_t));
+	cndevGetAllMluInstanceInfo(&count, miInfo, device);
 	printf("=== Test cndevGetAllMluInstanceInfo ===\ncount:%d\n \
 	first uuid:%s, first profileName:%s, first devNodeName:%s, first ipcmDevNodeName:%s, first instanceID:%d\n \
 	second uuid:%s, second profileName:%s, second devNodeName:%s, second ipcmDevNodeName:%s, second instanceID:%d\n \
-	third uuid:%s, third profileName:%s, third devNodeName:%s, third ipcmDevNodeName:%s, third instanceID:%d\n", \
-	count, miInfo->uuid, miInfo->profileName, miInfo->devNodeName, miInfo->ipcmDevNodeName, miInfo->instanceId,
-	(miInfo+1)->uuid, (miInfo+1)->profileName, (miInfo+1)->devNodeName, (miInfo+1)->ipcmDevNodeName, (miInfo+1)->instanceId,
-	(miInfo+2)->uuid, (miInfo+2)->profileName, (miInfo+2)->devNodeName, (miInfo+2)->ipcmDevNodeName, (miInfo+2)->instanceId);
+	third uuid:%s, third profileName:%s, third devNodeName:%s, third ipcmDevNodeName:%s, third instanceID:%d\n",
+	       count, miInfo->uuid, miInfo->profileName, miInfo->devNodeName,
+	       miInfo->ipcmDevNodeName, miInfo->instanceId, (miInfo + 1)->uuid,
+	       (miInfo + 1)->profileName, (miInfo + 1)->devNodeName,
+	       (miInfo + 1)->ipcmDevNodeName, (miInfo + 1)->instanceId,
+	       (miInfo + 2)->uuid, (miInfo + 2)->profileName,
+	       (miInfo + 2)->devNodeName, (miInfo + 2)->ipcmDevNodeName,
+	       (miInfo + 2)->instanceId);
 	free(miInfo);
 }
 
@@ -164,50 +169,37 @@ void Test_cndevGetAllSMluInstanceInfo(cndevDevice_t device) {
 	int count;
 	cndevSMluInfo_t *smluInfo;
 	smluInfo = (cndevSMluInfo_t *)malloc(3 * sizeof(cndevSMluInfo_t));
-	cndevGetAllSMluInstanceInfo(&count,smluInfo,device);
+	cndevGetAllSMluInstanceInfo(&count, smluInfo, device);
 	printf("=== Test cndevGetAllSMluInstanceInfo ===\ncount:%d\n \
 	first uuid:%s, first profileName:%s, first devNodeName:%s first instanceID:%d first profileID:%d\n \
 	second uuid:%s, second profileName:%s, second devNodeName:%s second instanceID:%d second profileID:%d\n \
-	third uuid:%s, third namprofileNamee:%s, third devNodeName:%s third instanceID:%d third profileID:%d\n", \
-	count, smluInfo->uuid, smluInfo->profileName, smluInfo->devNodeName, smluInfo->instanceId, smluInfo->profileId,
-	(smluInfo+1)->uuid, (smluInfo+1)->profileName, (smluInfo+1)->devNodeName, (smluInfo+1)->instanceId, (smluInfo+1)->profileId,
-	(smluInfo+2)->uuid, (smluInfo+2)->profileName, (smluInfo+2)->devNodeName, (smluInfo+2)->instanceId, (smluInfo+2)->profileId);
+	third uuid:%s, third namprofileNamee:%s, third devNodeName:%s third instanceID:%d third profileID:%d\n",
+	       count, smluInfo->uuid, smluInfo->profileName,
+	       smluInfo->devNodeName, smluInfo->instanceId, smluInfo->profileId,
+	       (smluInfo + 1)->uuid, (smluInfo + 1)->profileName,
+	       (smluInfo + 1)->devNodeName, (smluInfo + 1)->instanceId,
+	       (smluInfo + 1)->profileId, (smluInfo + 2)->uuid,
+	       (smluInfo + 2)->profileName, (smluInfo + 2)->devNodeName,
+	       (smluInfo + 2)->instanceId, (smluInfo + 2)->profileId);
 	free(smluInfo);
 }
 
 void Test_cndevGetSMluProfileInfo(cndevDevice_t device) {
-    cndevSMluProfileInfo_t profile_info;
+	cndevSMluProfileInfo_t profile_info;
 	cndevGetSMluProfileInfo(&profile_info, 0, device);
 	printf("=== Test cndevGetSMluProfileInfo ===\n \
-	profileID:%d, name:%s, total:%d, remain:%d\n", \
-	profile_info.profileId, profile_info.name, profile_info.totalCapacity, profile_info.remainCapacity);
+	profileID:%d, name:%s, total:%d, remain:%d\n",
+	       profile_info.profileId, profile_info.name,
+	       profile_info.totalCapacity, profile_info.remainCapacity);
 }
 
 void Test_cndevGetSMluInstanceInfo(cndevDevice_t device) {
 	cndevSMluInfo_t smluInfo;
 	cndevGetSMluInstanceInfo(&smluInfo, device);
 	printf("=== Test cndevGetSMluInstanceInfo ===\n \
-	uuid:%s, profileName:%s, devNodeName:%s, instanceID:%d\n", \
-	smluInfo.uuid, smluInfo.profileName, smluInfo.devNodeName, smluInfo.instanceId);
-}
-
-void Test_cndevGetXidError(cndevDevice_t device) {
-	if (device != 0) {
-		return;
-	}
-
-	cndevXidErrorV2_t xidErr;
-	cndevXidEnum_t str;
-	const char *ret;
-	cndevGetXidErrorV2(&xidErr, device);
-	int n = sizeof(xidErr.xidCount) / sizeof(xidErr.xidCount[0]);
-	for (int i = 0; i < n; i++) {
-		str = i;
-		ret = cndevGetXidErrorString(str);
-		if (strcmp(ret, "unknown") != 0 && xidErr.xidCount[i] != 0)  {
-			printf("=== Test cndevGetXidError ===\n errString is %s, count is %ld\n", ret, xidErr.xidCount[i]);
-		}
-	}
+	uuid:%s, profileName:%s, devNodeName:%s, instanceID:%d\n",
+	       smluInfo.uuid, smluInfo.profileName, smluInfo.devNodeName,
+	       smluInfo.instanceId);
 }
 
 int main() {
@@ -238,7 +230,6 @@ int main() {
 			Test_cndevGetSMluProfileInfo(device);
 			Test_cndevGetSMluInstanceInfo(device);
 		}
-		Test_cndevGetXidError(device);
 	}
 	return 0;
 }

@@ -78,7 +78,7 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
 
    ```yaml
    args:
-     - --mode=default #device plugin mode: default, dynamic-smlu, env-share, mim and topology-aware
+     - --mode=default #device plugin mode: default, env-share, mim and topology-aware
      - --virtualization-num=1 #  virtualization number for each MLU, used only in env-share mode, set to 110 to support multi cards per container in env-share mode
      - --mlulink-policy=best-effort # MLULink topology policy: best-effort, guaranteed or restricted, used only in topology-aware mode
      - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line to avoid mounting cnmon.
@@ -91,7 +91,6 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
    supported features:
 
    - default: default mode
-   - dynamic-smlu: supports `dynamic-smlu` mode, now only 370 support `dynamic-smlu`, need to use accompony with scheduler extender
    - env-share: a whole card can be allocated into multiple containers, should set `virtualization-num` as maximum number of containers one MLU can be allocated into.
    - mim: supports `mim` mode, need to preset `mim` in the host before device plugin starting
    - topology-aware: device plugin is aware of MLULink topology and tries to allocate MLUs forming a ring. Set `mlulink-policy` as described below
@@ -137,8 +136,6 @@ spec:
           #cambricon.com/mlu370: "1" #uncomment to use when device type is enabled
           #cambricon.com/mlu370.share: "1" #uncomment to use device with env-share mode
           #cambricon.com/mlu370.mim-2m.8gb: "1" #uncomment to use device with mim mode
-          #cambricon.com/mlu370.smlu.vcore: "1" #uncomment to use device with dynamic-smlu mode
-          #cambricon.com/mlu370.smlu.vmemory: "1" #uncomment to use device with dynamic-smlu mode
 ```
 
 ## Upgrade Notice

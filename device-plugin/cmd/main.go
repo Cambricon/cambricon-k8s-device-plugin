@@ -67,7 +67,7 @@ func main() {
 	}
 
 	log.Println("Loading CNDEV")
-	if err := cndev.Init(false, options.AbnormalXIDErrorList); err != nil {
+	if err := cndev.Init(false); err != nil {
 		log.Errorf("Failed to initialize CNDEV, err: %v", err)
 		select {}
 	}
@@ -111,7 +111,7 @@ func main() {
 
 	go func() {
 		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-			if err := cndev.Init(true, nil); err != nil {
+			if err := cndev.Init(true); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				w.WriteHeader(http.StatusOK)

@@ -87,15 +87,14 @@ func TestConfigFile(t *testing.T) {
 		{
 			args: []string{"-mode", "mim", "--config-file", "testdata/config.yaml", "--disable-health-check"},
 			out: Options{
-				CnmonPath:            "/cnmon",
-				ConfigFile:           "testdata/config.yaml",
-				Mode:                 Mim,
-				MLULinkPolicy:        bestEffort,
-				MinDsmluUnit:         0,
-				VirtualizationNum:    1,
-				DisableHealthCheck:   true,
-				LogLevel:             "info",
-				AbnormalXIDErrorList: []string{"ecc", "dbm"},
+				CnmonPath:          "/cnmon",
+				ConfigFile:         "testdata/config.yaml",
+				Mode:               Mim,
+				MLULinkPolicy:      bestEffort,
+				MinDsmluUnit:       0,
+				VirtualizationNum:  1,
+				DisableHealthCheck: true,
+				LogLevel:           "info",
 			},
 		},
 	}
