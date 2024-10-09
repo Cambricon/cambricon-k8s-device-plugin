@@ -16,9 +16,9 @@
 
 #include "../include/cndev.h"
 #include "cJSON.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 cJSON *readJsonFile() {
 	FILE *f;
@@ -65,7 +65,7 @@ cndevRet_t cndevGetCardHealthState(cndevCardHealthState_t *cardHealthState,
 
 	cJSON *health_node = cJSON_GetObjectItem(config, "health");
 	cardHealthState->health =
-		cJSON_GetArrayItem(health_node, device)->valueint;
+	    cJSON_GetArrayItem(health_node, device)->valueint;
 
 	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
@@ -76,7 +76,8 @@ cndevRet_t cndevGetCardSN(cndevCardSN_t *cardSN, cndevDevice_t device) {
 	config = readJsonFile();
 
 	cJSON *mb_sn_node = cJSON_GetObjectItem(config, "motherboard");
-	cardSN->motherBoardSn = cJSON_GetArrayItem(mb_sn_node, device)->valueint;
+	cardSN->motherBoardSn =
+	    cJSON_GetArrayItem(mb_sn_node, device)->valueint;
 
 	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
@@ -128,7 +129,8 @@ const char *cndevGetCardNameStringByDevId(cndevDevice_t device) {
 		return "MLU100";
 	} else if (card_type == 1) {
 		return "MLU270";
-	} else if (card_type == 16 || card_type == 17 || card_type == 18 ||	card_type == 19) {
+	} else if (card_type == 16 || card_type == 17 || card_type == 18 ||
+		   card_type == 19) {
 		return "MLU220";
 	} else if (card_type == 20) {
 		return "MLU290";
@@ -173,7 +175,8 @@ cndevRet_t cndevGetPCIeInfo(cndevPCIeInfo_t *deviceInfo, cndevDevice_t device) {
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevGetMemoryUsage(cndevMemoryInfo_t *memInfo, cndevDevice_t device) {
+cndevRet_t cndevGetMemoryUsage(cndevMemoryInfo_t *memInfo,
+			       cndevDevice_t device) {
 	cJSON *config;
 	__int64_t memory;
 	config = readJsonFile();
@@ -196,14 +199,15 @@ cndevRet_t cndevGetMLULinkRemoteInfo(cndevMLULinkRemoteInfo_t *remoteinfo,
 	cJSON *link_info = cJSON_GetArrayItem(info_array, link);
 
 	for (int i = 0; i < UUID_SIZE; ++i) {
-		remoteinfo->uuid[i] = cJSON_GetArrayItem(link_info, i)->valueint;
+		remoteinfo->uuid[i] =
+		    cJSON_GetArrayItem(link_info, i)->valueint;
 	}
 	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevGetMLULinkStatus(cndevMLULinkStatus_t *status, cndevDevice_t device,
-				 int link) {
+cndevRet_t cndevGetMLULinkStatus(cndevMLULinkStatus_t *status,
+				 cndevDevice_t device, int link) {
 	cJSON *config;
 	config = readJsonFile();
 
@@ -238,7 +242,15 @@ cndevRet_t cndevGetSMLUMode(cndevSMLUMode_t *mode, cndevDevice_t device) {
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevGetAllMluInstanceInfo(int *count, cndevMluInstanceInfo_t *miInfo, cndevDevice_t device) {
+cndevRet_t cndevGetNUMANodeIdByDevId(cndevNUMANodeId_t *numaNodeId,
+				     cndevDevice_t device) {
+	numaNodeId->nodeId = 0;
+	return CNDEV_SUCCESS;
+}
+
+cndevRet_t cndevGetAllMluInstanceInfo(int *count,
+				      cndevMluInstanceInfo_t *miInfo,
+				      cndevDevice_t device) {
 	cJSON *config;
 	config = readJsonFile();
 
@@ -247,26 +259,37 @@ cndevRet_t cndevGetAllMluInstanceInfo(int *count, cndevMluInstanceInfo_t *miInfo
 	cJSON *uuids = cJSON_GetObjectItem(subitem, "uuid");
 	cJSON *profileNames = cJSON_GetObjectItem(subitem, "profileName");
 	cJSON *devNodeNames = cJSON_GetObjectItem(subitem, "devNodeName");
-	cJSON *ipcmDevNodeNames = cJSON_GetObjectItem(subitem, "ipcmDevNodeName");
+	cJSON *ipcmDevNodeNames =
+	    cJSON_GetObjectItem(subitem, "ipcmDevNodeName");
 	cJSON *instanceIDs = cJSON_GetObjectItem(subitem, "instance_id");
 	int n = cJSON_GetArraySize(profileNames);
+	if (n > *count) {
+		*count = n;
+		return CNDEV_ERROR_INSUFFICIENT_SPACE;
+	}
 	for (int i = 0; i < n; i++) {
 		cJSON *uuid = cJSON_GetArrayItem(uuids, i);
 		cJSON *profileName = cJSON_GetArrayItem(profileNames, i);
 		cJSON *devNodeName = cJSON_GetArrayItem(devNodeNames, i);
-		cJSON *ipcmDevNodeName = cJSON_GetArrayItem(ipcmDevNodeNames, i);
-		(miInfo+i)->instanceId = cJSON_GetArrayItem(instanceIDs, i)->valueint;
+		cJSON *ipcmDevNodeName =
+		    cJSON_GetArrayItem(ipcmDevNodeNames, i);
+		(miInfo + i)->instanceId =
+		    cJSON_GetArrayItem(instanceIDs, i)->valueint;
 		for (int j = 0; j < UUID_SIZE; ++j) {
-			(miInfo+i)->uuid[j] = cJSON_GetArrayItem(uuid, j)->valueint;
+			(miInfo + i)->uuid[j] =
+			    cJSON_GetArrayItem(uuid, j)->valueint;
 		}
 		for (int k = 0; k < sizeof(*profileName); k++) {
-			(miInfo+i)->profileName[k] = (cJSON_GetStringValue(profileName))[k];
+			(miInfo + i)->profileName[k] =
+			    (cJSON_GetStringValue(profileName))[k];
 		}
 		for (int l = 0; l < sizeof(*devNodeName); l++) {
-			(miInfo+i)->devNodeName[l] = (cJSON_GetStringValue(devNodeName))[l];
+			(miInfo + i)->devNodeName[l] =
+			    (cJSON_GetStringValue(devNodeName))[l];
 		}
 		for (int m = 0; m < sizeof(*ipcmDevNodeName); m++) {
-			(miInfo+i)->ipcmDevNodeName[m] = (cJSON_GetStringValue(ipcmDevNodeName))[m];
+			(miInfo + i)->ipcmDevNodeName[m] =
+			    (cJSON_GetStringValue(ipcmDevNodeName))[m];
 		}
 	}
 	cJSON_Delete(config);
@@ -274,7 +297,8 @@ cndevRet_t cndevGetAllMluInstanceInfo(int *count, cndevMluInstanceInfo_t *miInfo
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevGetAllSMluInstanceInfo(int *count, cndevSMluInfo_t *smluInfo, cndevDevice_t device) {
+cndevRet_t cndevGetAllSMluInstanceInfo(int *count, cndevSMluInfo_t *smluInfo,
+				       cndevDevice_t device) {
 	cJSON *config;
 	config = readJsonFile();
 
@@ -287,20 +311,29 @@ cndevRet_t cndevGetAllSMluInstanceInfo(int *count, cndevSMluInfo_t *smluInfo, cn
 	cJSON *instanceIds = cJSON_GetObjectItem(subitem, "instanceIds");
 
 	int n = cJSON_GetArraySize(profileNames);
+	if (n > *count) {
+		*count = n;
+		return CNDEV_ERROR_INSUFFICIENT_SPACE;
+	}
 	for (int i = 0; i < n; i++) {
 		cJSON *uuid = cJSON_GetArrayItem(uuids, i);
 		cJSON *profileName = cJSON_GetArrayItem(profileNames, i);
 		cJSON *devNodeName = cJSON_GetArrayItem(devNodeNames, i);
-		(smluInfo+i)->profileId = cJSON_GetArrayItem(profileIds, i)->valueint;
-		(smluInfo+i)->instanceId = cJSON_GetArrayItem(instanceIds, i)->valueint;
+		(smluInfo + i)->profileId =
+		    cJSON_GetArrayItem(profileIds, i)->valueint;
+		(smluInfo + i)->instanceId =
+		    cJSON_GetArrayItem(instanceIds, i)->valueint;
 		for (int j = 0; j < UUID_SIZE; ++j) {
-			(smluInfo+i)->uuid[j] = cJSON_GetArrayItem(uuid, j)->valueint;
+			(smluInfo + i)->uuid[j] =
+			    cJSON_GetArrayItem(uuid, j)->valueint;
 		}
 		for (int k = 0; k < sizeof(*profileName); k++) {
-			(smluInfo+i)->profileName[k] = (cJSON_GetStringValue(profileName))[k];
+			(smluInfo + i)->profileName[k] =
+			    (cJSON_GetStringValue(profileName))[k];
 		}
 		for (int l = 0; l < sizeof(*devNodeName); l++) {
-			(smluInfo+i)->devNodeName[l] = (cJSON_GetStringValue(devNodeName))[l];
+			(smluInfo + i)->devNodeName[l] =
+			    (cJSON_GetStringValue(devNodeName))[l];
 		}
 	}
 	cJSON_Delete(config);
@@ -308,23 +341,29 @@ cndevRet_t cndevGetAllSMluInstanceInfo(int *count, cndevSMluInfo_t *smluInfo, cn
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevCreateSMluProfileInfo(cndevSMluSet_t *profileInfo, int *profileId, cndevDevice_t device) {
+cndevRet_t cndevCreateSMluProfileInfo(cndevSMluSet_t *profileInfo,
+				      int *profileId, cndevDevice_t device) {
 	*profileId = 0;
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevCreateSMluInstanceByProfileId(cndevMluInstance_t *miHandle, unsigned int profileId, cndevDevice_t device, char * name) {
+cndevRet_t cndevCreateSMluInstanceByProfileId(cndevMluInstance_t *miHandle,
+					      unsigned int profileId,
+					      cndevDevice_t device,
+					      char *name) {
 	*miHandle = 256;
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevGetSMluProfileIdInfo(cndevSMluProfileIdInfo_t *profileID, cndevDevice_t device) {
+cndevRet_t cndevGetSMluProfileIdInfo(cndevSMluProfileIdInfo_t *profileID,
+				     cndevDevice_t device) {
 	profileID->count = 1;
 	profileID->profileId[0] = 0;
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevGetSMluProfileInfo(cndevSMluProfileInfo_t *profileInfo, int profile, cndevDevice_t device) {
+cndevRet_t cndevGetSMluProfileInfo(cndevSMluProfileInfo_t *profileInfo,
+				   int profile, cndevDevice_t device) {
 	cJSON *config;
 	config = readJsonFile();
 
@@ -334,16 +373,22 @@ cndevRet_t cndevGetSMluProfileInfo(cndevSMluProfileInfo_t *profileInfo, int prof
 	for (int k = 0; k < sizeof(*profileName); k++) {
 		profileInfo->name[k] = (cJSON_GetStringValue(profileName))[k];
 	}
-	profileInfo->profileId = cJSON_GetObjectItem(subitem, "profileId")->valueint;
-	profileInfo->totalCapacity = cJSON_GetObjectItem(subitem, "total")->valueint;
-	profileInfo->remainCapacity = cJSON_GetObjectItem(subitem, "remain")->valueint;
-	profileInfo->memorySize[CNDEV_SMLU_MAX] = cJSON_GetObjectItem(subitem, "memorySize")->valueint;
-	profileInfo->mluQuota[CNDEV_SMLU_MAX] = cJSON_GetObjectItem(subitem, "mluQuota")->valueint;
+	profileInfo->profileId =
+	    cJSON_GetObjectItem(subitem, "profileId")->valueint;
+	profileInfo->totalCapacity =
+	    cJSON_GetObjectItem(subitem, "total")->valueint;
+	profileInfo->remainCapacity =
+	    cJSON_GetObjectItem(subitem, "remain")->valueint;
+	profileInfo->memorySize[CNDEV_SMLU_MAX] =
+	    cJSON_GetObjectItem(subitem, "memorySize")->valueint;
+	profileInfo->mluQuota[CNDEV_SMLU_MAX] =
+	    cJSON_GetObjectItem(subitem, "mluQuota")->valueint;
 	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
 }
 
-cndevRet_t cndevGetSMluInstanceInfo(cndevSMluInfo_t *smluInfo, cndevMluInstance_t miHandle) {
+cndevRet_t cndevGetSMluInstanceInfo(cndevSMluInfo_t *smluInfo,
+				    cndevMluInstance_t miHandle) {
 	cJSON *config;
 	config = readJsonFile();
 
@@ -361,10 +406,12 @@ cndevRet_t cndevGetSMluInstanceInfo(cndevSMluInfo_t *smluInfo, cndevMluInstance_
 		smluInfo->uuid[j] = cJSON_GetArrayItem(uuid, j)->valueint;
 	}
 	for (int k = 0; k < sizeof(*profileName); k++) {
-		smluInfo->profileName[k] = (cJSON_GetStringValue(profileName))[k];
+		smluInfo->profileName[k] =
+		    (cJSON_GetStringValue(profileName))[k];
 	}
 	for (int l = 0; l < sizeof(*devNodeName); l++) {
-		smluInfo->devNodeName[l] = (cJSON_GetStringValue(devNodeName))[l];
+		smluInfo->devNodeName[l] =
+		    (cJSON_GetStringValue(devNodeName))[l];
 	}
 	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
@@ -389,19 +436,9 @@ cndevRet_t cndevGetXidErrorV2(cndevXidErrorV2_t *xidErr, cndevDevice_t device) {
 	cJSON *xidErrors = cJSON_GetObjectItem(config, "xidErrors");
 	int n = cJSON_GetArraySize(xidErrors);
 	for (int i = 0; i < n; i++) {
-		xidErr->xidCount[i] = cJSON_GetArrayItem(xidErrors, i)->valueint;
+		xidErr->xidCount[i] =
+		    cJSON_GetArrayItem(xidErrors, i)->valueint;
 	}
 	cJSON_Delete(config);
 	return CNDEV_SUCCESS;
-}
-
-const char *cndevGetXidErrorString(cndevXidEnum_t xid) {
-	switch(xid) {
-		case CNDEV_XID_MCU_ERROR:
-			return "CNDEV_XID_MCU_ERROR";
-		case CNDEV_XID_RPC_ERROR:
-			return "CNDEV_XID_RPC_ERROR";
-		default:
-			return "unknown";
-	}
 }

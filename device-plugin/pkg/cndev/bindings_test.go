@@ -25,7 +25,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	err := Init(false, nil)
+	err := Init(false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,12 +68,6 @@ func TestGetDeviceHealthState(t *testing.T) {
 	health, err := getDeviceHealthState(uint(0), 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, health)
-}
-
-func TestGetDeviceXidError(t *testing.T) {
-	hasXidError, err := getDeviceXidError(uint(0))
-	assert.NoError(t, err)
-	assert.Equal(t, true, hasXidError)
 }
 
 func TestGetDeviceMLULinkDevs(t *testing.T) {

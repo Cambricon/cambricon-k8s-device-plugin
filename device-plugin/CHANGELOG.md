@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.0.14
+
+- Support retrying when initial allocation is insufficient
+- Remove xid check
+- Bump `cndev` to version 3.12.3
+
+## v2.0.13
+
+- Bump cndev to 3.12.1
+
+## v2.0.12
+
+- Bump cndev to 3.11.0
+- Upgrade dependence to cntopo 1.4.0
+- Support numa topology
+
 ## v2.0.11
 
 - Support cambricon_gdr
@@ -14,7 +30,7 @@
 
 - Add host ipc and pid config
 - Support dsmlu restore
-- bump cndev to 3.9.0
+- Bump cndev to 3.9.0
 - Rename dynamic-mim
 
 ## v2.0.8

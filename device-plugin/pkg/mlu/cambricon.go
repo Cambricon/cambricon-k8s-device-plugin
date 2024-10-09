@@ -185,6 +185,13 @@ func GetDevices(o Options) (map[string][]*pluginapi.Device, map[string]map[strin
 			devs = append(devs, &pluginapi.Device{
 				ID:     d.UUID,
 				Health: pluginapi.Healthy,
+				Topology: &pluginapi.TopologyInfo{
+					Nodes: []*pluginapi.NUMANode{
+						{
+							ID: int64(d.Numa),
+						},
+					},
+				},
 			})
 		}
 	}

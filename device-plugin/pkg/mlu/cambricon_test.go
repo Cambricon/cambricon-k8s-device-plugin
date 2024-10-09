@@ -25,7 +25,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	err := cndev.Init(false, nil)
+	err := cndev.Init(false)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -28,11 +28,11 @@ import (
 
 var (
 	cndevHandleMap map[uint]C.cndevDevice_t
-	xidErrorsList  []string
 )
 
 type Device struct {
 	MotherBoard string
+	Numa        int
 	Path        string
 	Profile     string
 	Slot        uint
@@ -70,26 +70,10 @@ type SmluInfo struct {
 	UUID        string
 }
 
-func Init(healthCheck bool, list []string) error {
+func Init(healthCheck bool) error {
 	r := dl.cndevInit()
 	if err := errorString(r); err != nil || healthCheck {
 		return err
-	}
-	xidErrorsList = list
-	if len(xidErrorsList) == 0 {
-		xidErrorsList = []string{
-			"CNDEV_XID_DBE_ECC_ERROR",
-			"CNDEV_XID_FALLEN_OFF_ERROR",
-			"CNDEV_XID_HBM_ERROR",
-			"CNDEV_XID_HEARTBEAT_ERROR",
-			"CNDEV_XID_IPU_RESET_ERROR",
-			"CNDEV_XID_MCU_ERROR",
-			"CNDEV_XID_MLULINK_FATAL_ERROR",
-			"CNDEV_XID_OVER_TEMP_ERROR",
-			"CNDEV_XID_PAGE_RETIREMENT_ERROR",
-			"CNDEV_XID_PCIE_DMA_ERROR",
-			"CNDEV_XID_RPC_ERROR",
-		}
 	}
 	return generateDeviceHandleMap()
 }
@@ -139,17 +123,39 @@ func DeviceSmluModeEnabled(idx uint) (bool, error) {
 }
 
 func GetAllMluInstanceInfo(idx uint) ([]MimInfo, error) {
+	miCount := C.int(1 << 4)
 	var miInfos []MimInfo
-	miCount := C.int(10)
 	var miInfo C.cndevMluInstanceInfo_t
 	infs := (*C.cndevMluInstanceInfo_t)(C.malloc(C.size_t(miCount) * C.size_t(unsafe.Sizeof(miInfo))))
-	defer C.free(unsafe.Pointer(infs))
+	defer func() {
+		if infs != nil {
+			C.free(unsafe.Pointer(infs))
+		}
+	}()
+
 	infs.version = C.CNDEV_VERSION_6
 	r := C.cndevGetAllMluInstanceInfo(&miCount, infs, cndevHandleMap[idx])
-	if errorString(r) != nil {
+	if errorString(r) != nil && r != C.CNDEV_ERROR_INSUFFICIENT_SPACE {
 		return miInfos, errorString(r)
 	}
-	infos := (*[10]C.cndevMluInstanceInfo_t)(unsafe.Pointer(infs))[:miCount]
+
+	// handle the case when the initial count is insufficient,
+	// after cndevGetAllMluInstanceInfo miCount will be set to real count,
+	// so just use it to reallocate and cndevGetAllMluInstanceInfo again.
+	if r == C.CNDEV_ERROR_INSUFFICIENT_SPACE {
+		log.Debugf("cndevGetAllMluInstanceInfo with insufficient space with real counts %d, with slot: %d, will try with the real counts", miCount, idx)
+		newInfs := (*C.cndevMluInstanceInfo_t)(C.realloc(unsafe.Pointer(infs), C.size_t(miCount)*C.size_t(unsafe.Sizeof(miInfo))))
+		if newInfs == nil {
+			return miInfos, fmt.Errorf("realloc failed for cndevGetAllMluInstanceInfo")
+		}
+		infs = newInfs
+		r := C.cndevGetAllMluInstanceInfo(&miCount, infs, cndevHandleMap[idx])
+		if errorString(r) != nil {
+			return miInfos, errorString(r)
+		}
+	}
+
+	infos := (*[1 << 16]C.cndevMluInstanceInfo_t)(unsafe.Pointer(infs))[:miCount]
 	for i := 0; i < int(miCount); i++ {
 		info := infos[i]
 		miInfos = append(miInfos,
@@ -161,21 +167,44 @@ func GetAllMluInstanceInfo(idx uint) ([]MimInfo, error) {
 			})
 	}
 	log.Debugf("Mim infos for device %d are %+v", idx, miInfos)
+
 	return miInfos, nil
 }
 
 func GetAllSmluInfo(idx uint) ([]SmluInfo, error) {
+	smluCount := C.int(1 << 7)
 	var smluInfos []SmluInfo
-	smluCount := C.int(100)
 	var smluInfo C.cndevSMluInfo_t
 	infs := (*C.cndevSMluInfo_t)(C.malloc(C.size_t(smluCount) * C.size_t(unsafe.Sizeof(smluInfo))))
-	defer C.free(unsafe.Pointer(infs))
+	defer func() {
+		if infs != nil {
+			C.free(unsafe.Pointer(infs))
+		}
+	}()
+
 	infs.version = C.CNDEV_VERSION_6
 	r := C.cndevGetAllSMluInstanceInfo(&smluCount, infs, cndevHandleMap[idx])
-	if errorString(r) != nil {
+	if errorString(r) != nil && r != C.CNDEV_ERROR_INSUFFICIENT_SPACE {
 		return smluInfos, errorString(r)
 	}
-	infos := (*[100]C.cndevSMluInfo_t)(unsafe.Pointer(infs))[:smluCount]
+
+	// handle the case when the initial count is insufficient,
+	// after cndevGetAllSMluInstanceInfo smluCount will be set to real count,
+	// so just use it to reallocate and cndevGetAllSMluInstanceInfo again.
+	if r == C.CNDEV_ERROR_INSUFFICIENT_SPACE {
+		log.Debugf("cndevGetAllSMluInstanceInfo with insufficient space with real counts %d, with slot: %d, will try with the real counts", smluCount, idx)
+		newInfs := (*C.cndevSMluInfo_t)(C.realloc(unsafe.Pointer(infs), C.size_t(smluCount)*C.size_t(unsafe.Sizeof(smluInfo))))
+		if newInfs == nil {
+			return smluInfos, fmt.Errorf("realloc failed for cndevGetAllSMluInstanceInfo")
+		}
+		infs = newInfs
+		r := C.cndevGetAllSMluInstanceInfo(&smluCount, infs, cndevHandleMap[idx])
+		if errorString(r) != nil {
+			return smluInfos, errorString(r)
+		}
+	}
+
+	infos := (*[1 << 16]C.cndevSMluInfo_t)(unsafe.Pointer(infs))[:smluCount]
 	for i := 0; i < int(smluCount); i++ {
 		info := infos[i]
 		smluInfos = append(smluInfos,
@@ -188,6 +217,7 @@ func GetAllSmluInfo(idx uint) ([]SmluInfo, error) {
 			})
 	}
 	log.Debugf("Smlu infos for device %d are %+v", idx, smluInfos)
+
 	return smluInfos, nil
 }
 
@@ -201,10 +231,6 @@ func GetDeviceCount() (uint, error) {
 func GetDeviceHealthState(d *Device, delayTime int) (int, error) {
 	ret, err := getDeviceHealthState(d.Slot, delayTime)
 	if err != nil || ret == 0 {
-		return 0, err
-	}
-	res, err := getDeviceXidError(d.Slot)
-	if err != nil || res {
 		return 0, err
 	}
 	return 1, nil
@@ -350,12 +376,17 @@ func NewDeviceLite(idx uint) (*Device, error) {
 	if err != nil {
 		return nil, err
 	}
+	numa, err := getDeviceNUMA(idx)
+	if err != nil {
+		return nil, err
+	}
 	d := &Device{
-		Slot:        idx,
-		UUID:        uuid,
-		SN:          sn,
-		Path:        path,
 		MotherBoard: motherBoard,
+		Numa:        numa,
+		Path:        path,
+		Slot:        idx,
+		SN:          sn,
+		UUID:        uuid,
 	}
 	log.Debugf("newdevicelite device %+v", d)
 	return d, nil
@@ -445,29 +476,11 @@ func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
 	return devs, nil
 }
 
-func getDeviceXidError(idx uint) (bool, error) {
-	var xidErr C.cndevXidErrorV2_t
-	xidErr.version = C.CNDEV_VERSION_5
-	r := C.cndevGetXidErrorV2(&xidErr, cndevHandleMap[idx])
-	if err := errorString(r); err != nil {
-		return true, err
-	}
-	xidErrorMap := map[string]struct{}{}
-	for _, x := range xidErrorsList {
-		xidErrorMap[x] = struct{}{}
-	}
-	for i, count := range xidErr.xidCount {
-		if count == 0 {
-			continue
-		}
-		errString := C.GoString(C.cndevGetXidErrorString(C.cndevXidEnum_t(i)))
-		if _, ok := xidErrorMap[errString]; ok {
-			log.Warnf("Found xid error %s for device %d", errString, idx)
-			return true, nil
-		}
-	}
-
-	return false, nil
+func getDeviceNUMA(idx uint) (int, error) {
+	var numaNode C.cndevNUMANodeId_t
+	numaNode.version = C.CNDEV_VERSION_5
+	r := C.cndevGetNUMANodeIdByDevId(&numaNode, cndevHandleMap[idx])
+	return int(numaNode.nodeId), errorString(r)
 }
 
 func generateDeviceHandleMap() error {

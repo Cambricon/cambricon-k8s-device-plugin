@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/allocator"
@@ -175,7 +176,11 @@ func (m *CambriconDevicePlugin) Register(kubeletEndpoint, resourceName string) e
 
 // ListAndWatch lists devices and update that list according to the health status
 func (m *CambriconDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
-	s.Send(&pluginapi.ListAndWatchResponse{Devices: m.devs})
+	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: m.devs}); err != nil {
+		log.Errorf("Failed send list and watch response via sock %s with %v", m.socket, err)
+		syscall.Kill(os.Getpid(), syscall.SIGHUP)
+		return err
+	}
 
 	for {
 		select {
@@ -188,7 +193,11 @@ func (m *CambriconDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Dev
 					break
 				}
 			}
-			s.Send(&pluginapi.ListAndWatchResponse{Devices: m.devs})
+			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: m.devs}); err != nil {
+				log.Errorf("Failed send list and watch response via sock %s with %v", m.socket, err)
+				syscall.Kill(os.Getpid(), syscall.SIGHUP)
+				return err
+			}
 		}
 	}
 }
