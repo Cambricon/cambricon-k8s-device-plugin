@@ -16,6 +16,7 @@ package allocator
 
 import (
 	"strings"
+	"time"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 )
@@ -25,6 +26,8 @@ const (
 	restricted string = "restricted"
 	guaranteed string = "guaranteed"
 )
+
+var getRingTimeout time.Duration = 60 * time.Second
 
 type Allocator interface {
 	Allocate(available []uint, required []uint, size int) ([]uint, error)

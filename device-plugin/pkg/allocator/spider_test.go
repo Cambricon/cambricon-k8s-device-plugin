@@ -16,6 +16,7 @@ package allocator
 
 import (
 	"sort"
+	"time"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
@@ -78,13 +79,23 @@ var _ = Describe("Spider Allocator", func() {
 		})
 
 		DescribeTable("Allocation Devices",
-			func(policy string, available []uint, size int, rings []cntopo.Ring, expected []uint) {
+			func(policy string, available []uint, size int, rings []cntopo.Ring, expected []uint, testTimeout ...bool) {
+				var timeout bool
+				if len(testTimeout) != 0 {
+					timeout = testTimeout[0]
+				}
 				allocator = &spiderAllocator{
 					policy: policy,
 					cntopo: cntopoMock,
 					devs:   devsInfo,
 				}
-				cntopoMock.EXPECT().GetRings(available, size).Times(1).Return(rings, nil)
+				getRingTimeout = 50 * time.Millisecond
+				cntopoMock.EXPECT().GetRings(available, size).Times(1).DoAndReturn(func(_, _ interface{}) ([]cntopo.Ring, error) {
+					if timeout {
+						time.Sleep(200 * time.Millisecond)
+					}
+					return rings, nil
+				})
 				got, err := allocator.Allocate(available, nil, size)
 				if expected != nil {
 					Expect(err).NotTo(HaveOccurred())
@@ -547,6 +558,22 @@ var _ = Describe("Spider Allocator", func() {
 					},
 				},
 				nil,
+			),
+			Entry("25",
+				bestEffort,
+				[]uint{0, 2, 4, 6},
+				2,
+				[]cntopo.Ring{{}},
+				[]uint{0, 2},
+				true,
+			),
+			Entry("26",
+				restricted,
+				[]uint{0, 2, 4, 6},
+				2,
+				[]cntopo.Ring{{}},
+				nil,
+				true,
 			),
 		)
 	})

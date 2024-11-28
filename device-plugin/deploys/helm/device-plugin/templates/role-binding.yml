@@ -1,0 +1,15 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "device-plugin.name" . }}
+  labels:
+    {{- include "device-plugin.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "device-plugin.name" . }}
+    namespace: {{ include "device-plugin.namespace" . }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "device-plugin.name" . }}
+  apiGroup: rbac.authorization.k8s.io

@@ -25,12 +25,12 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Board Allocator", func() {
+var _ = Describe("Default Allocator", func() {
 
 	Context("Test allocate", func() {
 		var (
 			devsInfo  map[string]*cndev.Device
-			allocator *boardAllocator
+			allocator *defaultAllocator
 		)
 
 		BeforeEach(func() {
@@ -124,11 +124,10 @@ var _ = Describe("Board Allocator", func() {
 				if len(testTimeout) != 0 {
 					timeout = testTimeout[0]
 				}
-				allocator = &boardAllocator{
+				allocator = &defaultAllocator{
 					policy: policy,
 					cntopo: cntopoMock,
 					devs:   devsInfo,
-					groups: [][]uint{{0, 1, 2, 3, 4, 5, 6, 7}, {8, 9, 10, 11, 12, 13, 14, 15}},
 				}
 				getRingTimeout = 50 * time.Millisecond
 				cntopoMock.EXPECT().GetRings(available, size).Times(1).DoAndReturn(func(_, _ interface{}) ([]cntopo.Ring, error) {
@@ -149,14 +148,7 @@ var _ = Describe("Board Allocator", func() {
 					Expect(got).To(BeNil())
 				}
 			},
-			Entry("Should Succeed Case 1",
-				bestEffort,
-				[]uint{0, 1, 5},
-				1,
-				[]cntopo.Ring{},
-				[]uint{5},
-			),
-			Entry("Should Succeed Case 2",
+			Entry("size 2 for best effort mode",
 				bestEffort,
 				[]uint{0, 1, 4},
 				2,
@@ -176,86 +168,14 @@ var _ = Describe("Board Allocator", func() {
 				},
 				[]uint{0, 1},
 			),
-			Entry("Should Succeed Case 3",
-				bestEffort,
-				[]uint{0, 1, 2, 3, 14, 15},
-				2,
-				[]cntopo.Ring{
-					{
-						Ordinals:           []uint{0, 1},
-						NonConflictRingNum: 2,
-					},
-					{
-						Ordinals:           []uint{0, 2},
-						NonConflictRingNum: 1,
-					},
-					{
-						Ordinals:           []uint{1, 3},
-						NonConflictRingNum: 1,
-					},
-					{
-						Ordinals:           []uint{2, 3},
-						NonConflictRingNum: 2,
-					},
-					{
-						Ordinals:           []uint{14, 15},
-						NonConflictRingNum: 2,
-					},
-				},
-				[]uint{14, 15},
-			),
-			Entry("Should Succeed Case 4",
-				bestEffort,
-				[]uint{0, 1, 2, 3, 14, 11},
-				2,
-				[]cntopo.Ring{
-					{
-						Ordinals:           []uint{0, 1},
-						NonConflictRingNum: 2,
-					},
-					{
-						Ordinals:           []uint{0, 2},
-						NonConflictRingNum: 1,
-					},
-					{
-						Ordinals:           []uint{1, 3},
-						NonConflictRingNum: 1,
-					},
-					{
-						Ordinals:           []uint{2, 3},
-						NonConflictRingNum: 2,
-					},
-				},
-				[]uint{0, 1},
-			),
-			Entry("Should Succeed Case 5",
-				bestEffort,
-				[]uint{0, 1, 4, 6},
-				2,
-				[]cntopo.Ring{
-					{
-						Ordinals:           []uint{0, 1},
-						NonConflictRingNum: 2,
-					},
-					{
-						Ordinals:           []uint{0, 6},
-						NonConflictRingNum: 1,
-					},
-					{
-						Ordinals:           []uint{4, 6},
-						NonConflictRingNum: 1,
-					},
-				},
-				[]uint{0, 1},
-			),
-			Entry("Should Succeed Case 6",
+			Entry("no rings with size 2 for best effort mode",
 				bestEffort,
 				[]uint{0, 14},
 				2,
 				[]cntopo.Ring{},
 				[]uint{0, 14},
 			),
-			Entry("Should Succeed Case 7",
+			Entry("size 4 for best effort mode",
 				bestEffort,
 				[]uint{0, 1, 2, 3, 8, 9, 10},
 				4,
@@ -267,7 +187,7 @@ var _ = Describe("Board Allocator", func() {
 				},
 				[]uint{0, 1, 2, 3},
 			),
-			Entry("Should Succeed Case 8",
+			Entry("size 8 for best effort mode",
 				bestEffort,
 				[]uint{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
 				8,
@@ -279,7 +199,15 @@ var _ = Describe("Board Allocator", func() {
 				},
 				[]uint{0, 1, 2, 3, 4, 5, 6, 7},
 			),
-			Entry("Should Succeed Case 9",
+			Entry("size 8 for best effort mode when get ring with timeout",
+				bestEffort,
+				[]uint{0, 1, 2, 3, 4, 5, 6, 7, 8},
+				8,
+				[]cntopo.Ring{{}},
+				[]uint{0, 1, 2, 3, 4, 5, 6, 7},
+				true,
+			),
+			Entry("size 4 for guaranteed mode",
 				guaranteed,
 				[]uint{0, 1, 2, 3, 8, 9, 10},
 				4,
@@ -291,83 +219,44 @@ var _ = Describe("Board Allocator", func() {
 				},
 				[]uint{0, 1, 2, 3},
 			),
-			Entry("Should Succeed Case 10",
+			Entry("no rings with size 4 for guaranteed mode",
 				guaranteed,
 				[]uint{0, 1, 3, 6},
 				4,
 				[]cntopo.Ring{},
 				nil,
 			),
-			Entry("Should Succeed Case 11",
+			Entry("size 2 for guaranteed mode when get ring with timeout",
 				guaranteed,
 				[]uint{0, 1, 4},
-				2,
-				[]cntopo.Ring{
-					{
-						Ordinals:           []uint{0, 1},
-						NonConflictRingNum: 2,
-					},
-					{
-						Ordinals:           []uint{1, 4},
-						NonConflictRingNum: 1,
-					},
-					{
-						Ordinals:           []uint{0, 4},
-						NonConflictRingNum: 1,
-					},
-				},
-				[]uint{0, 1},
-			),
-			Entry("Should Succeed Case 12",
-				guaranteed,
-				[]uint{0, 7, 15},
-				2,
-				[]cntopo.Ring{},
-				nil,
-			),
-			Entry("Should Succeed Case 13",
-				restricted,
-				[]uint{0, 1, 4},
-				2,
-				[]cntopo.Ring{
-					{
-						Ordinals:           []uint{0, 1},
-						NonConflictRingNum: 2,
-					},
-					{
-						Ordinals:           []uint{1, 4},
-						NonConflictRingNum: 1,
-					},
-					{
-						Ordinals:           []uint{0, 4},
-						NonConflictRingNum: 1,
-					},
-				},
-				[]uint{0, 1},
-			),
-			Entry("Should Succeed Case 14",
-				restricted,
-				[]uint{1, 4},
-				2,
-				[]cntopo.Ring{
-					{
-						Ordinals:           []uint{1, 4},
-						NonConflictRingNum: 1,
-					},
-				},
-				nil,
-			),
-			Entry("Should Succeed Case 15",
-				bestEffort,
-				[]uint{1, 2, 4},
 				2,
 				[]cntopo.Ring{{}},
-				[]uint{1, 2},
+				nil,
 				true,
 			),
-			Entry("Should Succeed Case 16",
+			Entry("size 2 for restricted mode",
 				restricted,
-				[]uint{1, 4},
+				[]uint{0, 1, 4},
+				2,
+				[]cntopo.Ring{
+					{
+						Ordinals:           []uint{0, 1},
+						NonConflictRingNum: 2,
+					},
+					{
+						Ordinals:           []uint{1, 4},
+						NonConflictRingNum: 1,
+					},
+					{
+						Ordinals:           []uint{0, 4},
+						NonConflictRingNum: 1,
+					},
+				},
+				[]uint{0, 1},
+			),
+			Entry("size 2 for restricted mode when get ring with timeout",
+				restricted,
+				[]uint{0, 1, 4},
 				2,
 				[]cntopo.Ring{{}},
 				nil,

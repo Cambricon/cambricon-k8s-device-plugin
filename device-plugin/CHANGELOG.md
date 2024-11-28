@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.15
+
+- Support to deploy with helm
+- Add handle when get ring timeout
+- Bump `cndev` to version 3.13.0
+
 ## v2.0.14
 
 - Support retrying when initial allocation is insufficient

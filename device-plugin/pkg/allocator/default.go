@@ -15,6 +15,7 @@
 package allocator
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -38,26 +39,41 @@ func NewDefaultAllocator(policy string, devs map[string]*cndev.Device) Allocator
 }
 
 func (a *defaultAllocator) Allocate(available []uint, required []uint, size int) ([]uint, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), getRingTimeout)
+	defer cancel()
 
-	rings, err := a.cntopo.GetRings(available, size)
-	if err != nil {
-		return nil, err
-	}
-	sort.Slice(rings, func(i int, j int) bool {
-		return rings[i].NonConflictRingNum > rings[j].NonConflictRingNum
-	})
+	resultChan := make(chan []cntopo.Ring)
+	errorChan := make(chan error)
 
-	if len(rings) == 0 {
-		log.Println("found no rings")
-		if a.policy != bestEffort && !a.sizeAlwaysFailsToFormRing(size) {
-			return nil, fmt.Errorf("mode %s found no rings", a.policy)
+	go func() {
+		rings, err := a.cntopo.GetRings(available, size)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		resultChan <- rings
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Warnf("get rings timeout for %v", available)
+		if a.policy != bestEffort {
+			return nil, ctx.Err()
 		}
 		return available[0:size], nil
+	case err := <-errorChan:
+		return nil, err
+	case rings := <-resultChan:
+		sort.Slice(rings, func(i int, j int) bool {
+			return rings[i].NonConflictRingNum > rings[j].NonConflictRingNum
+		})
+		if len(rings) == 0 {
+			log.Printf("found no rings for %v", available)
+			if a.policy != bestEffort {
+				return nil, fmt.Errorf("mode %s found no rings", a.policy)
+			}
+			return available[0:size], nil
+		}
+		return rings[0].Ordinals, nil
 	}
-
-	return rings[0].Ordinals, nil
-}
-
-func (a *defaultAllocator) sizeAlwaysFailsToFormRing(size int) bool {
-	return size%2 == 1
 }

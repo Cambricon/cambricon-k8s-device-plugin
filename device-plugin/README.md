@@ -114,6 +114,14 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
    kubectl create -f examples/cambricon-device-plugin-config.yaml
    ```
 
+### Install with helm
+
+This step is optional, you can also install device plugin via helm
+
+1. Download and install helm firstly, refer <https://helm.sh/docs/intro/install/>
+
+2. Clone this repo, `cd device-plugin/deploys/helm` and run `helm install release-x.x.x device-plugin/`
+
 ### Running MLU Jobs
 
 Cambricon MLUs can now be consumed via container level resource requirements using the resource name `cambricon.com/mlu`:
@@ -136,6 +144,22 @@ spec:
           #cambricon.com/mlu370: "1" #uncomment to use when device type is enabled
           #cambricon.com/mlu370.share: "1" #uncomment to use device with env-share mode
           #cambricon.com/mlu370.mim-2m.8gb: "1" #uncomment to use device with mim mode
+```
+
+### Change log level
+
+Support to change log level and validate without restarting
+
+change to debug
+
+```shell
+curl -i http://{{device-plugin-pod-ip}}:30107/logLevel?level=debug
+```
+
+change to info
+
+```shell
+curl -i http://{{device-plugin-pod-ip}}:30107/logLevel?level=info
 ```
 
 ## Upgrade Notice

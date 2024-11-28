@@ -25,7 +25,7 @@ generate:
 	mockgen -package mock -destination pkg/cntopo/mock/cntopo.go -mock_names=Cntopo=Cntopo github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo Cntopo
 
 lint:
-	golangci-lint run -v
+	golangci-lint run --timeout 5m -v
 
 build:
 	go build -trimpath -ldflags="-s -w" -ldflags="-X 'main.version=$(VERSION)'" -o k8s-device-plugin cmd/main.go
@@ -65,7 +65,7 @@ cntopo-mock-test: pkg/cntopo/test/mock_test
 	MOCK_JSON=$(CURDIR)/test/mock.json ./pkg/cntopo/test/mock_test
 
 addlicense:
-	# install with `go get github.com/google/addlicense`
+	# install with `go install github.com/google/addlicense@latest`
 	addlicense -c 'Cambricon, Inc.' -l apache -v .
 
 clean:

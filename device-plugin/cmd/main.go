@@ -119,11 +119,22 @@ func main() {
 			}
 		})
 
+		http.HandleFunc("/logLevel", func(w http.ResponseWriter, r *http.Request) {
+			level := r.URL.Query().Get("level")
+			logLevel, err := log.ParseLevel(level)
+			if err != nil {
+				fmt.Fprintf(w, "Invalid log level: %s", level)
+				return
+			}
+			log.SetLevel(logLevel)
+			log.Printf("Log level set to %s", level)
+		})
+
 		server := &http.Server{
 			Addr: "0.0.0.0:30107",
 		}
 
-		log.Printf("start serving at %s", server.Addr)
+		log.Printf("Start serving at %s", server.Addr)
 		log.Panic(server.ListenAndServe())
 	}()
 
@@ -158,11 +169,11 @@ restart:
 			goto restart
 		case event := <-watcher.Events:
 			if event.Name == pluginapi.KubeletSocket && event.Op&fsnotify.Create == fsnotify.Create {
-				log.Printf("inotify: %s created, restarting.", pluginapi.KubeletSocket)
+				log.Printf("Inotify: %s created, restarting.", pluginapi.KubeletSocket)
 				goto restart
 			}
 		case err := <-watcher.Errors:
-			log.Printf("inotify err: %v", err)
+			log.Printf("Inotify err: %v", err)
 		case s := <-sigs:
 			switch s {
 			case syscall.SIGHUP:

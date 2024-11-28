@@ -594,12 +594,18 @@ func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uin
 	log.Println("=== Start getPreferredAllocatedDeviceUUIDs ===")
 	log.Printf("available devs: %v, size %d", available, size)
 
-	devs, err := m.allocator.Allocate(available, required, size)
-	if err != nil {
-		if e := m.updateNodeMLULinkAnnotation(size); e != nil {
-			log.Errorf("updateNodeMLULinkAnnotation err: %v", e)
+	var devs []uint
+	if m.options.MLULinkPolicy == bestEffort && len(available) == size {
+		devs = available
+	} else {
+		var err error
+		devs, err = m.allocator.Allocate(available, required, size)
+		if err != nil {
+			if e := m.updateNodeMLULinkAnnotation(size); e != nil {
+				log.Errorf("updateNodeMLULinkAnnotation err: %v", e)
+			}
+			return nil, err
 		}
-		return nil, err
 	}
 
 	log.Printf("preferred devices %v", devs)

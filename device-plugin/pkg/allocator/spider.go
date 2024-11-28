@@ -15,6 +15,7 @@
 package allocator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -39,72 +40,84 @@ func NewSpiderAllocator(policy string, devs map[string]*cndev.Device) Allocator 
 }
 
 func (a *spiderAllocator) Allocate(available []uint, required []uint, size int) ([]uint, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), getRingTimeout)
+	defer cancel()
 
-	rings, err := a.cntopo.GetRings(available, size)
-	if err != nil {
-		return nil, err
-	}
-	sort.Slice(rings, func(i int, j int) bool {
-		return rings[i].NonConflictRingNum > rings[j].NonConflictRingNum
-	})
+	resultChan := make(chan []cntopo.Ring)
+	errorChan := make(chan error)
 
-	mbs := splitByMotherBoards(available, a.devs)
-
-	if len(rings) == 0 {
-		log.Println("found no rings")
-		if a.policy != bestEffort && !a.sizeAlwaysFailsToFormRing(size) {
-			return nil, fmt.Errorf("mode %s found no rings", a.policy)
+	go func() {
+		rings, err := a.cntopo.GetRings(available, size)
+		if err != nil {
+			errorChan <- err
+			return
 		}
+		resultChan <- rings
+	}()
 
-		needed := size
-		allocated := []uint{}
-
-		allocateRemainingFrom := func(devices []uint) bool {
-			for _, device := range devices {
-				if contains(allocated, device) {
-					continue
+	select {
+	case <-ctx.Done():
+		log.Warnf("get rings timeout for %v", available)
+		if a.policy != bestEffort {
+			return nil, ctx.Err()
+		}
+		return available[0:size], nil
+	case err := <-errorChan:
+		return nil, err
+	case rings := <-resultChan:
+		sort.Slice(rings, func(i int, j int) bool {
+			return rings[i].NonConflictRingNum > rings[j].NonConflictRingNum
+		})
+		mbs := splitByMotherBoards(available, a.devs)
+		if len(rings) == 0 {
+			log.Printf("found no rings for %v", available)
+			if a.policy != bestEffort && !a.sizeAlwaysFailsToFormRing(size) {
+				return nil, fmt.Errorf("mode %s found no rings", a.policy)
+			}
+			needed := size
+			allocated := []uint{}
+			allocateRemainingFrom := func(devices []uint) bool {
+				for _, device := range devices {
+					if contains(allocated, device) {
+						continue
+					}
+					allocated = append(allocated, device)
+					needed--
+					if needed == 0 {
+						return true
+					}
 				}
-				allocated = append(allocated, device)
-				needed--
-				if needed == 0 {
-					return true
+				return false
+			}
+			for _, mb := range mbs {
+				if allocateRemainingFrom(mb) {
+					return allocated, nil
 				}
 			}
-			return false
+			return nil, errors.New("finished allocateRemainingFrom, should not be here")
+		}
+		if a.policy == restricted && size == 4 && rings[0].NonConflictRingNum < 4 {
+			return nil, fmt.Errorf("mode %s, max non-conflict ring num %d", a.policy, rings[0].NonConflictRingNum)
+		}
+		if a.policy == restricted && size == 2 && rings[0].NonConflictRingNum < 2 {
+			return nil, fmt.Errorf("mode %s, max non-conflict ring num %d", a.policy, rings[0].NonConflictRingNum)
+		}
+		candidates := rings
+		for i, ring := range rings {
+			if ring.NonConflictRingNum < rings[0].NonConflictRingNum {
+				candidates = rings[0:i]
+				break
+			}
 		}
 		for _, mb := range mbs {
-			if allocateRemainingFrom(mb) {
-				return allocated, nil
+			for _, candidate := range candidates {
+				if containsAll(mb, candidate.Ordinals) {
+					return candidate.Ordinals, nil
+				}
 			}
 		}
-		return nil, errors.New("finished allocateRemainingFrom, should not be here")
+		return candidates[0].Ordinals, nil
 	}
-
-	if a.policy == restricted && size == 4 && rings[0].NonConflictRingNum < 4 {
-		return nil, fmt.Errorf("mode %s, max non-conflict ring num %d", a.policy, rings[0].NonConflictRingNum)
-	}
-
-	if a.policy == restricted && size == 2 && rings[0].NonConflictRingNum < 2 {
-		return nil, fmt.Errorf("mode %s, max non-conflict ring num %d", a.policy, rings[0].NonConflictRingNum)
-	}
-
-	candidates := rings
-	for i, ring := range rings {
-		if ring.NonConflictRingNum < rings[0].NonConflictRingNum {
-			candidates = rings[0:i]
-			break
-		}
-	}
-
-	for _, mb := range mbs {
-		for _, candidate := range candidates {
-			if containsAll(mb, candidate.Ordinals) {
-				return candidate.Ordinals, nil
-			}
-		}
-	}
-
-	return candidates[0].Ordinals, nil
 }
 
 func (a *spiderAllocator) sizeAlwaysFailsToFormRing(size int) bool {
