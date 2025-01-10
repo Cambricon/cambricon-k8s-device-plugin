@@ -85,7 +85,7 @@ func Release() error {
 func CreateSmluProfile(pl *DsmluProfile, memUnit int) (uint, error) {
 	var profileID C.int
 	var profile C.cndevSMluSet_t
-	profile.version = C.CNDEV_VERSION_5
+	profile.version = C.CNDEV_VERSION_6
 	profile.mluQuota = C.uint(pl.Vcore)
 	profile.memorySize = C.ulong(pl.Vmemory * memUnit * 1024 * 1024)
 	r := C.cndevCreateSMluProfileInfo(&profile, &profileID, cndevHandleMap[uint(pl.Slot)])
@@ -110,14 +110,14 @@ func DestroySmluProfile(profileID, index uint) error {
 
 func DeviceMimModeEnabled(idx uint) (bool, error) {
 	var mode C.cndevMimMode_t
-	mode.version = C.CNDEV_VERSION_5
+	mode.version = C.CNDEV_VERSION_6
 	r := C.cndevGetMimMode(&mode, cndevHandleMap[idx])
 	return mode.mimMode == C.CNDEV_FEATURE_ENABLED, errorString(r)
 }
 
 func DeviceSmluModeEnabled(idx uint) (bool, error) {
 	var mode C.cndevSMLUMode_t
-	mode.version = C.CNDEV_VERSION_5
+	mode.version = C.CNDEV_VERSION_6
 	r := C.cndevGetSMLUMode(&mode, cndevHandleMap[idx])
 	return mode.smluMode == C.CNDEV_FEATURE_ENABLED, errorString(r)
 }
@@ -223,7 +223,7 @@ func GetAllSmluInfo(idx uint) ([]SmluInfo, error) {
 
 func GetDeviceCount() (uint, error) {
 	var cardInfos C.cndevCardInfo_t
-	cardInfos.version = C.CNDEV_VERSION_5
+	cardInfos.version = C.CNDEV_VERSION_6
 	r := C.cndevGetDeviceCount(&cardInfos)
 	return uint(cardInfos.number), errorString(r)
 }
@@ -238,7 +238,7 @@ func GetDeviceHealthState(d *Device, delayTime int) (int, error) {
 
 func GetDeviceMemory(idx uint) (uint, error) {
 	var cardMemInfo C.cndevMemoryInfo_t
-	cardMemInfo.version = C.CNDEV_VERSION_5
+	cardMemInfo.version = C.CNDEV_VERSION_6
 	r := C.cndevGetMemoryUsage(&cardMemInfo, cndevHandleMap[idx])
 	return uint(cardMemInfo.physicalMemoryTotal), errorString(r)
 }
@@ -250,14 +250,14 @@ func GetDeviceModel(idx uint) string {
 func GetDeviceProfileInfo(index uint) ([]DsmluProfileInfo, error) {
 	var dsmluProfileInfos []DsmluProfileInfo
 	var deviceProfiles C.cndevSMluProfileIdInfo_t
-	deviceProfiles.version = C.CNDEV_VERSION_5
+	deviceProfiles.version = C.CNDEV_VERSION_6
 	r := C.cndevGetSMluProfileIdInfo(&deviceProfiles, cndevHandleMap[index])
 	if errorString(r) != nil {
 		return dsmluProfileInfos, errorString(r)
 	}
 	for i := 0; i < int(deviceProfiles.count); i++ {
 		var profileInfo C.cndevSMluProfileInfo_t
-		profileInfo.version = C.CNDEV_VERSION_5
+		profileInfo.version = C.CNDEV_VERSION_6
 		r := C.cndevGetSMluProfileInfo(&profileInfo, deviceProfiles.profileId[i], cndevHandleMap[index])
 		if errorString(r) != nil {
 			return dsmluProfileInfos, errorString(r)
@@ -278,7 +278,7 @@ func GetDeviceProfileInfo(index uint) ([]DsmluProfileInfo, error) {
 
 func GetDeviceUUID(idx uint) (string, error) {
 	var uuidInfo C.cndevUUID_t
-	uuidInfo.version = C.CNDEV_VERSION_5
+	uuidInfo.version = C.CNDEV_VERSION_6
 	r := C.cndevGetUUID(&uuidInfo, cndevHandleMap[idx])
 	if err := errorString(r); err != nil {
 		return "", err
@@ -318,50 +318,44 @@ func GetMLULinkGroups() ([][]uint, error) {
 		}
 		slots[uuid] = i
 	}
-	group := map[uint]bool{}
-	queue := []uint{0}
-	visited := map[uint]bool{}
-	for len(queue) != 0 {
-		slot := queue[0]
-		queue = queue[1:]
+	visited := make([]bool, num)
+	var groups [][]uint
+	var dfs func(slot uint, currentGroup *[]uint) bool
+	dfs = func(slot uint, currentGroup *[]uint) bool {
 		visited[slot] = true
+		*currentGroup = append(*currentGroup, slot)
 		devs, err := getDeviceMLULinkDevs(slot)
 		if err != nil {
-			return nil, err
+			log.Debugf("failed to get device %d mlulink devs %v", slot, err)
+			return false
 		}
 		for dev := range devs {
-			if _, ok := slots[dev]; !ok {
-				continue
-			}
-			if !visited[slots[dev]] {
-				queue = append(queue, slots[dev])
+			if nextSlot, ok := slots[dev]; ok && !visited[nextSlot] {
+				if !dfs(nextSlot, currentGroup) {
+					return false
+				}
 			}
 		}
-		group[slot] = true
-	}
-	// We assume there are at most 2 groups.
-	group1 := []uint{}
-	group2 := []uint{}
-	for idx := range group {
-		group1 = append(group1, idx)
+		return true
 	}
 	for slot := uint(0); slot < num; slot++ {
-		if !group[slot] {
-			group2 = append(group2, slot)
+		if !visited[slot] {
+			currentGroup := []uint{}
+			if !dfs(slot, &currentGroup) {
+				return nil, fmt.Errorf("failed to get mlulink groups for slot %d", slot)
+			}
+			if len(currentGroup) > 0 {
+				groups = append(groups, currentGroup)
+			}
 		}
 	}
-	if len(group2) != 0 {
-		log.Debugf("getmlulinkgroups groups %+v", [][]uint{group1, group2})
-		return [][]uint{group1, group2}, nil
-	}
-
-	log.Debugf("getmlulinkgroups groups %+v", [][]uint{group1})
-	return [][]uint{group1}, nil
+	log.Debugf("getmlulinkgroups groups %+v", groups)
+	return groups, nil
 }
 
 func GetSmluInfo(instanceHandle int) (SmluInfo, error) {
 	var smluInfo C.cndevSMluInfo_t
-	smluInfo.version = C.CNDEV_VERSION_5
+	smluInfo.version = C.CNDEV_VERSION_6
 	r := C.cndevGetSMluInstanceInfo(&smluInfo, C.int(instanceHandle))
 	return SmluInfo{
 		DevNodeName: C.GoString((*C.char)(unsafe.Pointer(&smluInfo.devNodeName))),
@@ -405,7 +399,7 @@ func getDeviceInfo(idx uint) (string, string, string, string, error) {
 	var cardSN C.cndevCardSN_t
 	var uuidInfo C.cndevUUID_t
 
-	cardName.version = C.CNDEV_VERSION_5
+	cardName.version = C.CNDEV_VERSION_6
 	r := C.cndevGetCardName(&cardName, cndevHandleMap[idx])
 	err := errorString(r)
 	if err != nil {
@@ -416,14 +410,14 @@ func getDeviceInfo(idx uint) (string, string, string, string, error) {
 		log.Panicln("MLU100 detected, there is no way to be here.")
 	}
 
-	cardSN.version = C.CNDEV_VERSION_5
+	cardSN.version = C.CNDEV_VERSION_6
 	r = C.cndevGetCardSN(&cardSN, cndevHandleMap[idx])
 	err = errorString(r)
 	if err != nil {
 		return "", "", "", "", err
 	}
 
-	uuidInfo.version = C.CNDEV_VERSION_5
+	uuidInfo.version = C.CNDEV_VERSION_6
 	r = C.cndevGetUUID(&uuidInfo, cndevHandleMap[idx])
 	err = errorString(r)
 	if err != nil {
@@ -439,7 +433,7 @@ func getDeviceHealthState(idx uint, delayTime int) (int, error) {
 	var ret C.cndevRet_t
 	var cardHealthState C.cndevCardHealthState_t
 	var healthCode int
-	cardHealthState.version = C.CNDEV_VERSION_5
+	cardHealthState.version = C.CNDEV_VERSION_6
 	// sleep for some seconds
 	time.Sleep(time.Duration(delayTime) * time.Second)
 	ret = C.cndevGetCardHealthState(&cardHealthState, cndevHandleMap[idx])
@@ -452,7 +446,7 @@ func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
 	portNum := C.cndevGetMLULinkPortNumber(cndevHandleMap[idx])
 	for i := 0; i < int(portNum); i++ {
 		var status C.cndevMLULinkStatus_t
-		status.version = C.CNDEV_VERSION_5
+		status.version = C.CNDEV_VERSION_6
 		r := C.cndevGetMLULinkStatus(&status, cndevHandleMap[idx], C.int(i))
 		err := errorString(r)
 		if err != nil {
@@ -463,7 +457,7 @@ func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
 			continue
 		}
 		var remoteinfo C.cndevMLULinkRemoteInfo_t
-		remoteinfo.version = C.CNDEV_VERSION_5
+		remoteinfo.version = C.CNDEV_VERSION_6
 		r = C.cndevGetMLULinkRemoteInfo(&remoteinfo, cndevHandleMap[idx], C.int(i))
 		err = errorString(r)
 		if err != nil {
@@ -478,7 +472,7 @@ func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
 
 func getDeviceNUMA(idx uint) (int, error) {
 	var numaNode C.cndevNUMANodeId_t
-	numaNode.version = C.CNDEV_VERSION_5
+	numaNode.version = C.CNDEV_VERSION_6
 	r := C.cndevGetNUMANodeIdByDevId(&numaNode, cndevHandleMap[idx])
 	return int(numaNode.nodeId), errorString(r)
 }

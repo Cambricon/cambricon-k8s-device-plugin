@@ -139,26 +139,27 @@ func (a *boardAllocator) Allocate(available []uint, required []uint, size int) (
 }
 
 func (a *boardAllocator) filterAvaliableDevsByGroup(available []uint) ([][]uint, error) {
-	if len(a.groups) != 2 {
-		return nil, fmt.Errorf("allocator groups is %v", a.groups)
+	if len(a.groups) == 0 {
+		return nil, fmt.Errorf("no groups available in allocator")
 	}
-	group0 := []uint{}
-	group1 := []uint{}
+	groups := make([][]uint, len(a.groups))
 	for _, dev := range available {
-		if contains(a.groups[0], dev) {
-			group0 = append(group0, dev)
-			continue
+		found := false
+		for i, group := range a.groups {
+			if contains(group, dev) {
+				groups[i] = append(groups[i], dev)
+				found = true
+				break
+			}
 		}
-		if contains(a.groups[1], dev) {
-			group1 = append(group1, dev)
-			continue
+		if !found {
+			return nil, fmt.Errorf("dev %d not in any group %v", dev, a.groups)
 		}
-		return nil, fmt.Errorf("dev %d not in groups %v", available, a.groups)
 	}
-	if len(group0) > len(group1) {
-		group0, group1 = group1, group0
-	}
-	return [][]uint{group0, group1}, nil
+	sort.SliceStable(groups, func(i, j int) bool {
+		return len(groups[i]) < len(groups[j])
+	})
+	return groups, nil
 }
 
 func (a *boardAllocator) sizeAlwaysFailsToFormRing(size int) bool {
@@ -195,10 +196,6 @@ func getCPUGroups() [][]uint {
 	groups, err := cndev.GetMLULinkGroups()
 	if err != nil {
 		log.Printf("failed to get CPU groups, err %v", err)
-		return nil
-	}
-	if len(groups) != 2 || len(groups[0]) != 8 {
-		log.Printf("unexpected groups: %v", groups)
 		return nil
 	}
 	return groups

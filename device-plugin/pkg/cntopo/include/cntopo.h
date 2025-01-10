@@ -16,7 +16,7 @@
  *
  *  @file cntopo.h
  *
- *  @brief CNTOPO (Cambricon MLU-Link Topology Tool) APIs provide
+ *  @brief CNTopo (Cambricon MLU-Link Topology Tool) APIs provide
  *programmable
  *  interfaces for users to develop their-owned programs, which includes find rings
  *of
@@ -28,8 +28,8 @@
 #define CNTOPO_H_  // NOLINT
 
 #define CNTOPO_MAJOR_VERSION 1
-#define CNTOPO_MINOR_VERSION 4
-#define CNTOPO_PATCH_VERSION 0
+#define CNTOPO_MINOR_VERSION 7
+#define CNTOPO_PATCH_VERSION 2
 
 #ifndef CNTOPO_VERSION
 #define CNTOPO_VERSION \
@@ -42,45 +42,45 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-/** @brief Return values for CNTOPO APIs. */
+/** @brief Return values for CNTopo APIs. */
 typedef enum {
   /*! Indicates no error occurred. */
   CNTOPO_RET_SUCCESS = 0x0,
-  /*! Returns when CNTOPO internal error occurred. */
+  /*! Returns when CNTopo internal error occurred. */
   CNTOPO_INTERNEL_ERROR = 0x1,
-  /*! Indicates CNTOPO finished normally is in command line mode. */
+  /*! Indicates CNTopo finished normally is in command line mode. */
   CNTOPO_NORMAL_FINISH = 0x10,
-  /*! Indicates the value of CNTOPO input is invalid. */
+  /*! Indicates the value of CNTopo input is invalid. */
   CNTOPO_VALUE_ERROR = 0x12,
-  /*! Indicates the file of CNTOPO input is empty. */
+  /*! Indicates the file of CNTopo input is empty. */
   CNTOPO_FILE_EMPTY = 0x2,
-  /*! Indicates the file path of CNTOPO input is invalid. */
+  /*! Indicates the file path of CNTopo input is invalid. */
   CNTOPO_FILE_PATHERR = 0x21,
   /*! Returns when an error occurred during reading file content. */
   CNTOPO_FILE_ERR = 0x22,
-  /*! Indicates CNTOPO probe result is empty. */
+  /*! Indicates CNTopo probe result is empty. */
   CNTOPO_PROBE_EMPTY = 0x3,
   /*! Returns when the IP address cannot be logged in. */
   CNTOPO_PARAM_ERROR = 0x31,
-  /*! Indicates CNTOPO ping result is empty. */
+  /*! Indicates CNTopo ping result is empty. */
   CNTOPO_PING_EMPTY = 0x32,
-  /*! Indicates CNTOPO latbwtest result is empty. */
+  /*! Indicates CNTopo latbwtest result is empty. */
   CNTOPO_LATBWTEST_EMPTY = 0x33,
-  /*! Returns when CNTOPO does not support the dependent Driver or CNDev version. */
+  /*! Returns when CNTopo does not support the dependent Driver or CNDev version. */
   CNTOPO_UNSUPPORTED = 0x4,
   /*! Indicates null pointer is invalid. */
   CNTOPO_NULL_POINTER = 0x41,
   /*! Returns when the version cannot be extracted. */
   CNTOPO_INVALID_VERSION = 0x42,
-  /*! Indicates CNTOPO Context has not been initialized. */
+  /*! Indicates CNTopo Context has not been initialized. */
   CNTOPO_CONTEXT_NOT_INIT = 0x5,
-  /*! Indicates CNTOPO Context has not been created. */
+  /*! Indicates CNTopo Context has not been created. */
   CNTOPO_CONTEXT_NOT_CREATE = 0x50,
-  /*! Indicates CNTOPO Query has not been initialized. */
+  /*! Indicates CNTopo Query has not been initialized. */
   CNTOPO_QUERY_NOT_INIT = 0x51,
-  /*! Indicates CNTOPO DevSet has not been initialized. */
+  /*! Indicates CNTopo DevSet has not been initialized. */
   CNTOPO_DEVSET_NOT_INIT = 0x52,
-  /*! Indicates CNTOPO topology has not been initialized. */
+  /*! Indicates CNTopo topology has not been initialized. */
   CNTOPO_TOPO_NOT_INIT = 0x53,
   /*! Indicates the unsupported format of the string content. */
   CNTOPO_CONTANT_ERR_FORMAT = 0x6,
@@ -93,7 +93,7 @@ typedef enum {
 } cntopoResult_t;
 
 /**
- * @brief Checks CNTOPO return value.
+ * @brief Checks CNTopo return value.
  *
  * @details If the return value is not #CNTOPO_RET_SUCCESS, the program will be
  * exited.
@@ -103,7 +103,7 @@ typedef enum {
   do {                                                     \
     cntopoResult_t ret_code = (call);                      \
     if (ret_code != CNTOPO_RET_SUCCESS) {                  \
-      printf("[%s:%d] CNTOPO error, msg: %s, code: %#x\n", \
+      printf("[%s:%d] CNTopo error, msg: %s, code: %#x\n", \
              __FILE__,                                     \
              __LINE__,                                     \
              cntopoGetErrorStr(ret_code),                  \
@@ -112,19 +112,19 @@ typedef enum {
     }                                                      \
   } while (0);
 
-/** @brief The handle of CNTOPO Context. */
+/** @brief The handle of CNTopo Context. */
 /** @details Obtains and saves the device information of each machine,
  * and manages the reclamation of dynamic memory. */
 typedef void *cntopoContext_t;
 /** @brief The handle of local machine information. */
 typedef char *cntopoMachineInfo_t;
-/** @brief The handle of CNTOPO Query based on CNTOPO Context. 
+/** @brief The handle of CNTopo Query based on CNTopo Context. 
  * @details Sets the Query restrictions based on  
  * the devices information obtained by ::cntopoContext_t,
  * finds the corresponding topology according to the restrictions, such as blacklists,
  * and manages the reclamation of dynamic memory. */
 typedef void *cntopoQuery_t;
-/** @brief The handle of DevSet found by CNTOPO Query. */
+/** @brief The handle of DevSet found by CNTopo Query. */
 /** @details Stores a single ring or single tree device set.
  * The device set is just a set of devices,
  * unordered, without connection information or topological edges.*/
@@ -134,7 +134,7 @@ typedef void *cntopoDevSet_t;
  * The topology is ordered and edged, and you can get the exact port used by each
  * edge from the topology, which is a capability that the device set does not have. */
 typedef void *cntopoTopo_t;
-/** @brief Topology types supported by CNTOPO.*/
+/** @brief Topology types supported by CNTopo.*/
 typedef enum cntopoTopoType_t {
   /** Ring topology.*/
   RING,
@@ -200,9 +200,9 @@ const char *cntopoGetErrorStr(cntopoResult_t ret);
 //Group:Context Management
 
 /**
- * @brief Initializes a CNTOPO Context which manages all machines' information.
+ * @brief Initializes a CNTopo Context which manages all machines' information.
  *
- * @param[out] ctx Pointer to the obtained CNTOPO Context handle.
+ * @param[out] ctx Pointer to the obtained CNTopo Context handle.
  * 
  * @return
  * - ::CNTOPO_RET_SUCCESS
@@ -213,9 +213,9 @@ cntopoResult_t cntopoInitContext(cntopoContext_t *ctx);
 //Group:Context Management
 
 /**
- * @brief Destroys the Context to free all CNTOPO inside resources including management resources.
+ * @brief Destroys the Context to free all CNTopo inside resources including management resources.
  *
- * @param[in] ctx The handle of CNTOPO Context obtained by #cntopoInitContext.
+ * @param[in] ctx The handle of CNTopo Context obtained by #cntopoInitContext.
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_CONTEXT_NOT_CREATE
@@ -228,7 +228,7 @@ cntopoResult_t cntopoDestroyContext(cntopoContext_t ctx);
 /**
  * @brief Gets the local machine information of the JSON format string.
  *
- * @param[in] ctx The handle of CNTOPO Context obtained by #cntopoInitContext.
+ * @param[in] ctx The handle of CNTopo Context obtained by #cntopoInitContext.
  * @param[out] node_info The local machine information.
  * @param[out] size_bytes The length of #cntopoMachineInfo_t, ended with ``\0``.
  * @return
@@ -264,7 +264,7 @@ cntopoResult_t cntopoSaveMachineInfoToFile(cntopoMachineInfo_t node_info,
 /**
  * @brief Loads the local information of the machine from the specified file.
  *
- * @param[in] ctx The handle of CNTOPO Context obtained by #cntopoInitContext.
+ * @param[in] ctx The handle of CNTopo Context obtained by #cntopoInitContext.
  * @param[in] file_name The file name.
  * @param[out] node_info The local information of the machine got from file.
  * @return
@@ -315,7 +315,7 @@ cntopoResult_t cntopoLoadMachineInfoFromFile(cntopoContext_t ctx,
 /**
  * @brief Adds machine information and label to Context.
  *
- * @param[in] ctx The handle of CNTOPO context obtained by #cntopoInitContext.
+ * @param[in] ctx The handle of CNTopo context obtained by #cntopoInitContext.
  * @param[in] node_info The local machine information.
  * @param[in] machine_label The machine label to distinguish different machines.
  * @return
@@ -360,7 +360,7 @@ cntopoResult_t cntopoAddMachineInfo(cntopoContext_t ctx,
 /**
  * @brief Clears machine information in Context.
  *
- * @param[in] ctx The handle of CNTOPO Context obtained by #cntopoInitContext.
+ * @param[in] ctx The handle of CNTopo Context obtained by #cntopoInitContext.
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_CONTEXT_NOT_CREATE
@@ -379,10 +379,10 @@ cntopoResult_t cntopoClearMachineInfo(cntopoContext_t ctx);
 //Group:Query Management
 
 /**
- * @brief Creates CNTOPO Query based on Context.
+ * @brief Creates CNTopo Query based on Context.
  *
- * @param[in] ctx The handle of CNTOPO Context obtained by #cntopoInitContext.
- * @param[out] query_handle The handle of CNTOPO Query.
+ * @param[in] ctx The handle of CNTopo Context obtained by #cntopoInitContext.
+ * @param[out] query_handle The handle of CNTopo Query.
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_CONTEXT_NOT_CREATE
@@ -423,9 +423,9 @@ cntopoResult_t cntopoCreateQuery(cntopoContext_t ctx, cntopoQuery_t *query_handl
 //Group:Query Management
 
 /**
- * @brief Destroys CNTOPO Query to free all Query management resources.
+ * @brief Destroys CNTopo Query to free all Query management resources.
  *
- * @param[in] query_handle The handle of CNTOPO Query obtain by #cntopoCreateQuery.
+ * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_CONTEXT_NOT_INIT
@@ -438,7 +438,7 @@ cntopoResult_t cntopoDestroyQuery(cntopoQuery_t query_handle);
 /**
  * @brief Sets the number of devices used in the DevSet of the specified machine.
  *
- * @param[in] query_handle The handle of CNTOPO Query obtain by #cntopoCreateQuery.
+ * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @param[in] machine_label The label of the machine corresponding to
  * #cntopoAddMachineInfo.
  * @param[in] num_dev The used device number of machine_label.
@@ -467,7 +467,7 @@ cntopoResult_t cntopoSetDevNumFilter(cntopoQuery_t query_handle,
 /**
  * @brief Adds the device ordinal of the specified machine to the blacklist.
  *
- * @param[in] query_handle The handle of CNTOPO Query obtain by #cntopoCreateQuery.
+ * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @param[in] machine_label The label of the machine corresponding to
  * #cntopoAddMachineInfo.
  * @param[in] dev_ordinal The device ordinal in the blacklist.
@@ -495,7 +495,7 @@ cntopoResult_t cntopoSetBlacklistDevOrdinal(cntopoQuery_t query_handle,
 /**
  * @brief Adds the device UUID of the specified machine to the blacklist.
  *
- * @param[in] query_handle The handle of CNTOPO Query obtain by #cntopoCreateQuery.
+ * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @param[in] machine_label The label of the machine corresponding to
  * #cntopoAddMachineInfo.
  * @param[in] uuid The device UUID in the blacklist.
@@ -523,7 +523,7 @@ cntopoResult_t cntopoSetBlacklistUUID(cntopoQuery_t query_handle,
 /**
  * @brief Adds the device ordinal of the specified machine to the whitelist.
  *
- * @param[in] query_handle The handle of CNTOPO Query obtain by #cntopoCreateQuery.
+ * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @param[in] machine_label The label of the machine corresponding to
  * #cntopoAddMachineInfo.
  * @param[in] dev_ordinal The device ordinal in the whitelist.
@@ -552,7 +552,7 @@ cntopoResult_t cntopoSetWhitelistDevOrdinal(cntopoQuery_t query_handle,
 /**
  * @brief Adds the device UUID of the specified machine to the whitelist.
  *
- * @param[in] query_handle The handle of CNTOPO Query obtain by #cntopoCreateQuery.
+ * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @param[in] machine_label The label of the machine corresponding to
  * #cntopoAddMachineInfo.
  * @param[in] uuid The device UUID in the whitelist.
@@ -580,7 +580,7 @@ cntopoResult_t cntopoSetWhitelistUUID(cntopoQuery_t query_handle,
 /**
  * @brief Finds DevSet according to input topology type and maximum number of topology.
  *
- * @param[in] query_handle The handle of CNTOPO Query obtain by #cntopoCreateQuery.
+ * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @param[in] topo_type The topology type. Only RING and TREE are supported.
  * @param[in] max_topo_num The maximum number of topology.
  * @param[out] dev_sets The found DevSet list.
@@ -851,7 +851,7 @@ cntopoResult_t cntopoGetNodeFromTopo(cntopoTopo_t topo,
 //Group:Version Control
 
 /**
- * @brief Gets the current CNTOPO library version to check if CNTOPO satisfies the dependency.
+ * @brief Gets the current CNTopo library version to check if CNTopo satisfies the dependency.
  *
  * @param[out] major Pointer to the major version id.
  * @param[out] minor Pointer to the minor version id.
@@ -862,7 +862,7 @@ cntopoResult_t cntopoGetNodeFromTopo(cntopoTopo_t topo,
  * - ::CNTOPO_INTERNEL_ERROR
  *
  * @par Example
- * Get the version of the current CNTOPO.
+ * Get the version of the current CNTopo.
  * @code{.cpp}
  * int major, minor, patch;
  * CNTOPO_CHECK(cntopoGetLibVersion(&major, &minor, &patch));

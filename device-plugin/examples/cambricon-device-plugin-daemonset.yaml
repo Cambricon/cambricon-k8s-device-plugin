@@ -47,7 +47,7 @@ spec:
       hostIPC: true
       serviceAccount: cambricon-device-plugin # comment to use default rbac
       containers:
-      - image: cambricon-device-plugin:v2.0.15
+      - image: cambricon-device-plugin:v2.0.16
         name: cambricon-device-plugin-ctr
         command:
         - /usr/bin/k8s-device-plugin

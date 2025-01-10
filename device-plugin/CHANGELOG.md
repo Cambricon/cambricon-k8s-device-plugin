@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.16
+
+- Bump `cndev` to version 3.14.2
+- Bump `cntopo` to 1.7.2
+
 ## v2.0.15
 
 - Support to deploy with helm

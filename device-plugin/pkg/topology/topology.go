@@ -47,6 +47,7 @@ var (
 	topoRules = map[string]map[int]int{
 		"MLU290": {2: 2, 4: 4}, //key is the number of cards required, value is the best 'NonConflictRingNum' for this card number combination derived from cntopo
 		"MLU370": {2: 2, 4: 2, 8: 4},
+		"MLU580": {2: 2},
 		"MLU590": {2: 2, 4: 6},
 	}
 	uuidPrefix = "MLU-"
