@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.17
+
+- Bump golang version to 1.23
+
 ## v2.0.16
 
 - Bump `cndev` to version 3.14.2

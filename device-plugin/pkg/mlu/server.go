@@ -206,6 +206,18 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 
 	resp := pluginapi.ContainerAllocateResponse{}
 
+	if m.options.UseRuntime &&
+		m.options.Mode != Mim &&
+		m.options.Mode != DynamicSmlu {
+		resp.Envs = make(map[string]string)
+		var slots []string
+		for _, uuid := range uuids {
+			slots = append(slots, strconv.Itoa(int(m.devsInfo[uuid].Slot)))
+		}
+		resp.Envs[cambriconVisibleDevices] = strings.Join(slots, ",")
+		return resp
+	}
+
 	if m.options.MountRPMsg {
 		resp.Mounts = append(resp.Mounts, &pluginapi.Mount{
 			ContainerPath: mluRPMsgDir,

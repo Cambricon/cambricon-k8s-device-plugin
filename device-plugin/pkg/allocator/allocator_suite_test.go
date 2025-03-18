@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo/mock"
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 )
 
 var (

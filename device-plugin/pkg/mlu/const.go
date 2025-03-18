@@ -19,6 +19,8 @@ import pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 type pluginMode string
 
 const (
+	cambriconVisibleDevices = "CAMBRICON_VISIBLE_DEVICES"
+
 	DsmluLockTime           = "cambricon.com/dsmlu.lock"
 	DsmluProfile            = "CAMBRICON_DSMLU_PROFILE"
 	DsmluProfileAndInstance = "CAMBRICON_DSMLU_PROFILE_INSTANCE"

@@ -14,7 +14,7 @@
 
 package cntopo
 
-// #cgo LDFLAGS: -ldl -Wl,--unresolved-symbols=ignore-in-object-files
+// #cgo LDFLAGS: -ldl -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files
 // #include "include/cntopo.h"
 import "C"
 

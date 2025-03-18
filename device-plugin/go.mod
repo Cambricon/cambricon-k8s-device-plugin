@@ -1,20 +1,21 @@
 module github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin
 
-go 1.20
+go 1.23
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/golang/mock v1.6.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.6
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.9.0
+	go.uber.org/mock v0.5.0
 	google.golang.org/grpc v1.55.0
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 	k8s.io/client-go v0.27.1
 	k8s.io/kubelet v0.27.1
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
@@ -58,5 +59,4 @@ require (
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
 )

@@ -22,7 +22,7 @@ spec:
   hostPID: true
   hostIPC: true
   containers:
-  - image: cambricon-device-plugin:v2.0.16
+  - image: cambricon-device-plugin:v2.0.17
     name: cambricon-device-plugin-ctr
     command:
     - /usr/bin/k8s-device-plugin
@@ -55,6 +55,11 @@ spec:
       mountPath: /var/lib/kubelet/device-plugins
     - name: pod-resources
       mountPath: /var/lib/kubelet/pod-resources
+    - name: dev
+      mountPath: /dev
+      # mount /etc/cambricon 
+      # - name: restore-cfg
+      #   mountPath: /etc/cambricon
   volumes:
   - name: device-plugin
     hostPath:
@@ -62,3 +67,10 @@ spec:
   - name: pod-resources
     hostPath:
       path: /var/lib/kubelet/pod-resources
+  - name: dev
+    hostPath:
+      path: /dev
+  # mount /etc/cambricon 
+  # - name: restore-cfg
+  #   hostPath:
+  #     path: /etc/cambricon

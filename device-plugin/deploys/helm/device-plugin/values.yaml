@@ -66,9 +66,8 @@ volumeMounts:
   mountPath: /var/lib/kubelet/device-plugins
 - name: pod-resources
   mountPath: /var/lib/kubelet/pod-resources
-  # mount dev if dynamic-smlu mode is enabled
-  # - name: dev
-  #   mountPath: /dev
+- name: dev
+  mountPath: /dev
   # mount /etc/cambricon if dynamic-smlu mode is enabled
   # - name: restore-cfg
   #   mountPath: /etc/cambricon
@@ -80,3 +79,11 @@ volumes:
 - name: pod-resources
   hostPath:
     path: /var/lib/kubelet/pod-resources
+- name: dev
+  hostPath:
+    path: /dev
+
+# mount /etc/cambricon
+# - name: restore-cfg
+#   hostPath:
+#     path: /etc/cambricon
