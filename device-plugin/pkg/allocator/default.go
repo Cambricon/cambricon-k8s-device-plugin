@@ -38,7 +38,7 @@ func NewDefaultAllocator(policy string, devs map[string]*cndev.Device) Allocator
 	}
 }
 
-func (a *defaultAllocator) Allocate(available []uint, required []uint, size int) ([]uint, error) {
+func (a *defaultAllocator) Allocate(available []uint, _ []uint, size int) ([]uint, error) {
 	// only for 8-mlu machine
 	if len(available) > 0 && size == 1 || len(available) == size && size == 8 {
 		return available[0:size], nil

@@ -20,6 +20,9 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -66,21 +69,13 @@ func main() {
 		log.SetLevel(log.PanicLevel)
 	}
 
-	log.Println("Loading CNDEV")
-	if err := cndev.Init(false); err != nil {
-		log.Errorf("Failed to initialize CNDEV, err: %v", err)
-		select {}
-	}
+	ensureMLUAllOk()
 	defer func() { log.Println("Shutdown of CNDEV returned:", cndev.Release()) }()
 
 	log.Println("Fetching devices.")
 	n, err := cndev.GetDeviceCount()
-	if err != nil {
-		log.Printf("Failed to get device count. err: %v", err)
-	}
-	if n == 0 {
-		log.Println("No devices found. Waiting indefinitely.")
-		select {}
+	if err != nil || n == 0 {
+		log.Panicf("Failed to get device count with err: %v, or count is 0", err)
 	}
 
 	if options.Mode == mlu.TopologyAware {
@@ -110,7 +105,7 @@ func main() {
 	sigs := startOSWatcher(syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
-		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 			if err := cndev.Init(true); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
@@ -243,4 +238,128 @@ func startPlugins(options mlu.Options) ([]*mlu.CambriconDevicePlugin, bool) {
 		log.Println("No devices found. Waiting indefinitely.")
 	}
 	return plugins, false
+}
+
+func fetchMLUCounts() (uint, error) {
+	targetVendorID := uint16(0xcabc) // cambricon mlu vendor ID is 0xcabc
+	targetClassBase := uint8(0x12)   // cambricon mlu class code base is 0x12
+	pciDevicesPath := "/sys/bus/pci/devices"
+
+	readHexFile := func(path string) (uint64, error) {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return 0, err
+		}
+		s := strings.TrimSpace(string(data))
+		s = strings.TrimPrefix(s, "0x")
+		val, err := strconv.ParseUint(s, 16, 32)
+		if err != nil {
+			return 0, err
+		}
+		return val, nil
+	}
+
+	entries, err := os.ReadDir(pciDevicesPath)
+	if err != nil {
+		log.Errorf("Can't read pci dir: %v", err)
+		return 0, err
+	}
+
+	var count uint
+	for _, entry := range entries {
+		devicePath := filepath.Join(pciDevicesPath, entry.Name())
+		vendorID, err := readHexFile(filepath.Join(devicePath, "vendor"))
+		if err != nil {
+			log.Warnf("Can't read vendor file: %v", err)
+			continue
+		}
+		if uint16(vendorID) != targetVendorID {
+			log.Debugf("VendorID not match 0x%x", vendorID)
+			continue
+		}
+		classCode, err := readHexFile(filepath.Join(devicePath, "class"))
+		if err != nil {
+			log.Warnf("Can't read class file: %v", err)
+			continue
+		}
+		classBase := uint8((classCode >> 16) & 0xFF)
+		if classBase == targetClassBase {
+			log.Debugf("Find mlu device: %s with vendorID 0x%x,classCode: 0x%x, classBase: 0x%x", devicePath, vendorID, classCode, classBase)
+			count++
+		}
+	}
+
+	log.Debugf("Find %d mlu devices", count)
+	return count, nil
+}
+
+func isDriverRunning(counts uint) bool {
+	for i := range counts {
+		_, good, running, err := cndev.GetDeviceHealthState(i, 0)
+		if err != nil {
+			log.Warnf("GetDeviceHealth for slot %d with err %v", i, err)
+			return false
+		}
+		if !good {
+			log.Warnf("MLU device %d health maybe in problem, ignoring at init", i)
+		}
+		if !running {
+			log.Warnf("MLU device %d driver is not running", i)
+			return false
+		}
+	}
+	return true
+}
+
+func ensureMLUAllOk() {
+	log.Infof("Start to ensure mlu driver status is ok")
+	i := 1
+	for {
+		if i < 60000 {
+			i = i << 1
+		}
+		time.Sleep(time.Duration(min(i, 60000)) * time.Millisecond)
+
+		if err := cndev.Init(false); err != nil {
+			log.Errorf("Init cndev client failed with err: %v", err)
+			continue
+		}
+
+		if os.Getenv("INTEGRATION_TEST") == "true" {
+			log.Info("Skip ensuring mlu driver status is ok for integration test")
+			return
+		}
+
+		log.Debug("Start GetDeviceCount")
+		counts, err := cndev.GetDeviceCount()
+		if err != nil {
+			log.Errorf("GetDeviceCount failed %v", err)
+			continue
+		}
+		if counts == 0 {
+			log.Warn("No MLU device found with GetDeviceCount")
+			continue
+		}
+		log.Debugf("Devie counts: %d", counts)
+
+		realCounts, err := fetchMLUCounts()
+		if err != nil {
+			log.Errorf("FetchMLUCounts failed %v", err)
+			continue
+		}
+		log.Debugf("RealCounts is :%d ", realCounts)
+
+		if counts != realCounts {
+			log.Warnf("MLU device count not match, counts: %d, realCounts: %d", counts, realCounts)
+			continue
+		}
+		log.Infof("MLU device count match, count is %d", counts)
+
+		if !isDriverRunning(counts) {
+			continue
+		}
+
+		log.Info("Driver of MLU devices are all running")
+		return
+	}
 }

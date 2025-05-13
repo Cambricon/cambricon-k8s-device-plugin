@@ -228,18 +228,9 @@ func GetDeviceCount() (uint, error) {
 	return uint(cardInfos.number), errorString(r)
 }
 
-func GetDeviceHealthState(d *Device, delayTime int) (int, error) {
-	ret, err := getDeviceHealthState(d.Slot, delayTime)
-	if err != nil || ret == 0 {
-		return 0, err
-	}
-	return 1, nil
-}
-
 func GetDeviceMemory(idx uint) (uint, error) {
-	var cardMemInfo C.cndevMemoryInfo_t
-	cardMemInfo.version = C.CNDEV_VERSION_6
-	r := C.cndevGetMemoryUsage(&cardMemInfo, cndevHandleMap[idx])
+	var cardMemInfo C.cndevMemoryInfoV2_t
+	r := C.cndevGetMemoryUsageV2(&cardMemInfo, cndevHandleMap[idx])
 	return uint(cardMemInfo.physicalMemoryTotal), errorString(r)
 }
 
@@ -394,6 +385,16 @@ func errorString(ret C.cndevRet_t) error {
 	return fmt.Errorf("cndev: %v", err)
 }
 
+func GetDeviceComputeMode(idx uint, delayTime int) (bool, error) {
+	var ret C.cndevRet_t
+	var cardComputeMode C.cndevComputeMode_t
+	cardComputeMode.version = C.CNDEV_VERSION_6
+	// sleep for some seconds
+	time.Sleep(time.Duration(delayTime) * time.Second)
+	ret = C.cndevGetComputeMode(&cardComputeMode, cndevHandleMap[idx])
+	return cardComputeMode.mode == C.CNDEV_COMPUTEMODE_PROHIBITED, errorString(ret)
+}
+
 func getDeviceInfo(idx uint) (string, string, string, string, error) {
 	var cardName C.cndevCardName_t
 	var cardSN C.cndevCardSN_t
@@ -429,7 +430,7 @@ func getDeviceInfo(idx uint) (string, string, string, string, error) {
 	return fmt.Sprintf("MLU-%s", uuid), fmt.Sprintf("%x", uint64(cardSN.sn)), fmt.Sprintf("%x", uint64(cardSN.motherBoardSn)), fmt.Sprintf("/dev/cambricon_dev%d", idx), nil
 }
 
-func getDeviceHealthState(idx uint, delayTime int) (int, error) {
+func GetDeviceHealthState(idx uint, delayTime int) (int, bool, bool, error) {
 	var ret C.cndevRet_t
 	var cardHealthState C.cndevCardHealthState_t
 	var healthCode int
@@ -438,21 +439,20 @@ func getDeviceHealthState(idx uint, delayTime int) (int, error) {
 	time.Sleep(time.Duration(delayTime) * time.Second)
 	ret = C.cndevGetCardHealthState(&cardHealthState, cndevHandleMap[idx])
 	healthCode = int(cardHealthState.health)
-	return healthCode, errorString(ret)
+	return healthCode, cardHealthState.deviceState == C.CNDEV_HEALTH_STATE_DEVICE_GOOD, cardHealthState.driverState == C.CNDEV_HEALTH_STATE_DRIVER_RUNNING, errorString(ret)
 }
 
 func getDeviceMLULinkDevs(idx uint) (map[string]int, error) {
 	devs := make(map[string]int)
 	portNum := C.cndevGetMLULinkPortNumber(cndevHandleMap[idx])
 	for i := 0; i < int(portNum); i++ {
-		var status C.cndevMLULinkStatus_t
-		status.version = C.CNDEV_VERSION_6
-		r := C.cndevGetMLULinkStatus(&status, cndevHandleMap[idx], C.int(i))
+		var status C.cndevMLULinkStatusV2_t
+		r := C.cndevGetMLULinkStatusV2(&status, cndevHandleMap[idx], C.int(i))
 		err := errorString(r)
 		if err != nil {
 			return nil, err
 		}
-		if status.isActive == C.CNDEV_FEATURE_DISABLED {
+		if status.macState == C.CNDEV_MLULINK_MAC_STATE_DOWN {
 			log.Printf("MLU %v port %v disabled", idx, i)
 			continue
 		}

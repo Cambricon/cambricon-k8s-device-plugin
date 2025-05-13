@@ -14,11 +14,11 @@
 
 linters:
   enable:
-    - exportloopref
+    - copyloopvar
     - gci
     - gofmt
     - goimports
-    - golint
+    - revive
     - gosimple
     - govet
     - unused
@@ -26,4 +26,9 @@ linters:
 issues:
   exclude-use-default: false
   exclude:
-    - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
+  - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
+linters-settings:
+  revive:
+    rules:
+      - name: dot-imports
+        disabled: true

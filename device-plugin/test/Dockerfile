@@ -15,6 +15,7 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 ENV MOCK_JSON=/mock.json
+ENV INTEGRATION_TEST=true
 COPY mock.json /
 COPY cntopo.json /tmp/cntopo_output.json
 RUN rm -f /usr/bin/cntopo && touch /usr/bin/cntopo && chmod +x /usr/bin/cntopo

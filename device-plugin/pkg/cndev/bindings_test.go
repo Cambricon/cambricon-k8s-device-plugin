@@ -65,9 +65,15 @@ func TestGetDeviceInfo(t *testing.T) {
 }
 
 func TestGetDeviceHealthState(t *testing.T) {
-	health, err := getDeviceHealthState(uint(0), 1)
+	health, _, _, err := GetDeviceHealthState(uint(0), 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, health)
+}
+
+func TestGetDeviceComputeMode(t *testing.T) {
+	mode, err := GetDeviceComputeMode(uint(0), 1)
+	assert.NoError(t, err)
+	assert.Equal(t, false, mode)
 }
 
 func TestGetDeviceMLULinkDevs(t *testing.T) {

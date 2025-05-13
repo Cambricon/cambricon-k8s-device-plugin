@@ -210,19 +210,29 @@ func deviceExists(devs []*pluginapi.Device, id string) bool {
 
 func watchUnhealthy(ctx context.Context, devsInfo map[string]*cndev.Device, health chan<- *pluginapi.Device) {
 	unhealthy := make(map[string]bool)
-
+	var getDeviceComputeModeDisabled bool
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-
 		for _, dm := range devsInfo {
-			ret, err := cndev.GetDeviceHealthState(dm, 1)
+			ret, _, _, err := cndev.GetDeviceHealthState(dm.Slot, 1)
 			if err != nil {
 				log.Warnf("Failed to get Device %s healthy status with err %v, set it as unhealthy", dm.UUID, err)
 				ret = 0
+			}
+			if ret == 1 && !getDeviceComputeModeDisabled {
+				computeMode, err := cndev.GetDeviceComputeMode(dm.Slot, 1)
+				if err != nil {
+					getDeviceComputeModeDisabled = true
+					log.Warnf("Failed to get Device %s compute mode with err %v, ignore compute mode", dm.UUID, err)
+				} else {
+					if computeMode {
+						ret = 0
+					}
+				}
 			}
 			if ret == 0 {
 				if unhealthy[dm.UUID] {

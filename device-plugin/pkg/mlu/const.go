@@ -28,10 +28,11 @@ const (
 
 	mluLinkPolicyUnsatisfied = "mluLinkPolicyUnsatisfied"
 
-	normalMlu  = "mlu"
-	realCounts = "real-mlu-counts"
-	retries    = 5
-	serverSock = pluginapi.DevicePluginPath + "cambricon.sock"
+	normalMlu      = "mlu"
+	realCounts     = "real-mlu-counts"
+	retries        = 5
+	serverSock     = pluginapi.DevicePluginPath + "cambricon.sock"
+	virtualDevices = "VIRTUAL_DEVICES"
 )
 
 const (

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-image: yellow.hub.cambricon.com/caip/ci/buildpack:20221013
+image: yellow.hub.cambricon.com/caip/ci/buildpack:20250311
 variables:
   GOPROXY: http://10.3.68.2:8080
 

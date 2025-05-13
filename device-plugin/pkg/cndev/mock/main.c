@@ -34,6 +34,18 @@ void Test_cndevInit() {
 	result = cndevInit(0);
 	printf("=== Test cndevInit ===\nret: %d\n", result);
 }
+
+void Test_cndevGetComputeMode(int id) {
+	cndevComputeMode_t *cardComputeMode;
+	cardComputeMode =
+	    (cndevComputeMode_t *)malloc(sizeof(cndevComputeMode_t));
+	cardComputeMode->version = 5;
+	cndevRet_t result;
+	result = cndevGetComputeMode(cardComputeMode, id);
+	printf("=== Test cndevGetComputeMode ===\nmode:%d\nret:%d\n",
+	       cardComputeMode->mode, result);
+}
+
 void Test_cndevGetCardHealthState(int id) {
 	cndevCardHealthState_t *cardHealthState;
 	cardHealthState =
@@ -41,8 +53,10 @@ void Test_cndevGetCardHealthState(int id) {
 	cardHealthState->version = 5;
 	cndevRet_t result;
 	result = cndevGetCardHealthState(cardHealthState, id);
-	printf("=== Test cndevGetCardHealthState ===\nhealth:%d\nret:%d\n",
-	       cardHealthState->health, result);
+	printf("=== Test cndevGetCardHealthState "
+	       "===\nhealth:%d\ndevice_status:%d\ndriver_status:%d\nret:%d\n",
+	       cardHealthState->health, cardHealthState->deviceState,
+	       cardHealthState->driverState, result);
 }
 void Test_cndevGetCardSN(int id) {
 	cndevCardSN_t *cardSN;
@@ -54,12 +68,11 @@ void Test_cndevGetCardSN(int id) {
 	       cardSN->motherBoardSn, result);
 }
 
-void Test_cndevGetPCIeInfo(int id) {
-	cndevPCIeInfo_t *cardPcie;
-	cardPcie = (cndevPCIeInfo_t *)malloc(sizeof(cndevPCIeInfo_t));
-	cardPcie->version = 5;
+void Test_cndevGetPCIeInfoV2(int id) {
+	cndevPCIeInfoV2_t *cardPcie;
+	cardPcie = (cndevPCIeInfoV2_t *)malloc(sizeof(cndevPCIeInfoV2_t));
 	cndevRet_t result;
-	result = cndevGetPCIeInfo(cardPcie, id);
+	result = cndevGetPCIeInfoV2(cardPcie, id);
 	printf("=== Test cndevGetPcieInfo "
 	       "===\ndomain:%d\nbus:%d\ndevice:%d\nfunction:%d\nret:%d\n",
 	       cardPcie->domain, cardPcie->bus, cardPcie->device,
@@ -86,14 +99,14 @@ void Test_cndevGetCardName(int id) {
 	       result);
 }
 
-void Test_cndevGetMemoryUsage(int id) {
-	cndevMemoryInfo_t *memInfo;
-	memInfo = (cndevMemoryInfo_t *)malloc(sizeof(cndevMemoryInfo_t));
-	memInfo->version = 5;
+void Test_cndevGetMemoryUsageV2(int id) {
+	cndevMemoryInfoV2_t *memInfo;
+	memInfo = (cndevMemoryInfoV2_t *)malloc(sizeof(cndevMemoryInfoV2_t));
 	cndevRet_t result;
-	result = cndevGetMemoryUsage(memInfo, id);
-	printf("=== Test cndevGetMemoryUsage ===\nid:%d\nmemory:%ld\nret:%d\n",
-	       id, memInfo->physicalMemoryTotal, result);
+	result = cndevGetMemoryUsageV2(memInfo, id);
+	printf(
+	    "=== Test cndevGetMemoryUsageV2 ===\nid:%d\nmemory:%ld\nret:%d\n",
+	    id, memInfo->physicalMemoryTotal, result);
 }
 
 void Test_cndevGetMLULinkRemoteInfo(int id) {
@@ -112,18 +125,18 @@ void Test_cndevGetMLULinkRemoteInfo(int id) {
 	}
 }
 
-void Test_cndevGetMLULinkStatus(int id) {
-	cndevMLULinkStatus_t *status;
-	status = (cndevMLULinkStatus_t *)malloc(sizeof(cndevMLULinkStatus_t));
-	status->version = 5;
+void Test_cndevGetMLULinkStatusV2(int id) {
+	cndevMLULinkStatusV2_t *status;
+	status =
+	    (cndevMLULinkStatusV2_t *)malloc(sizeof(cndevMLULinkStatusV2_t));
 	cndevRet_t result;
 	printf("=== Test cndevGetMLULinkStatus ===\n");
 	int num;
 	num = cndevGetMLULinkPortNumber(id);
 	for (int i = 0; i < num; ++i) {
-		result = cndevGetMLULinkStatus(status, id, i);
+		result = cndevGetMLULinkStatusV2(status, id, i);
 		printf("port:%d mlulink status:%d, ret:%d\n", i,
-		       status->isActive, result);
+		       status->macState, result);
 	}
 }
 
@@ -212,13 +225,14 @@ int main() {
 		cndevRet_t result;
 		result = cndevGetDeviceHandleByIndex(i, &device);
 		Test_cndevGetCardName(device);
+		Test_cndevGetComputeMode(device);
 		Test_cndevGetCardHealthState(device);
 		Test_cndevGetCardSN(device);
-		Test_cndevGetPCIeInfo(device);
+		Test_cndevGetPCIeInfoV2(device);
 		Test_cndevGetUUID(device);
-		Test_cndevGetMemoryUsage(device);
+		Test_cndevGetMemoryUsageV2(device);
 		Test_cndevGetMLULinkRemoteInfo(device);
-		Test_cndevGetMLULinkStatus(device);
+		Test_cndevGetMLULinkStatusV2(device);
 		Test_cndevGetMLULinkPortNumber(device);
 		if (i == 0 || i == 1) {
 			Test_cndevGetMimMode(device);

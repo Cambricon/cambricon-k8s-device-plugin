@@ -175,7 +175,7 @@ func (m *CambriconDevicePlugin) Register(kubeletEndpoint, resourceName string) e
 }
 
 // ListAndWatch lists devices and update that list according to the health status
-func (m *CambriconDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
+func (m *CambriconDevicePlugin) ListAndWatch(_ *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: m.devs}); err != nil {
 		log.Errorf("Failed send list and watch response via sock %s with %v", m.socket, err)
 		syscall.Kill(os.Getpid(), syscall.SIGHUP)
@@ -203,13 +203,17 @@ func (m *CambriconDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Dev
 }
 
 func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.ContainerAllocateResponse {
-
 	resp := pluginapi.ContainerAllocateResponse{}
 
-	if m.options.UseRuntime &&
-		m.options.Mode != Mim &&
-		m.options.Mode != DynamicSmlu {
+	devPaths := m.uuidToPath(uuids)
+	log.Debugf("Prepare response device paths %v", devPaths)
+
+	if m.options.UseRuntime {
 		resp.Envs = make(map[string]string)
+		if (m.options.Mode == Mim || m.options.Mode == DynamicSmlu) && m.profile != normalMlu {
+			resp.Envs[virtualDevices] = strings.Join(devPaths, ";")
+			return resp
+		}
 		var slots []string
 		for _, uuid := range uuids {
 			slots = append(slots, strconv.Itoa(int(m.devsInfo[uuid].Slot)))
@@ -233,9 +237,6 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 		})
 	}
 
-	devpaths := m.uuidToPath(uuids)
-	log.Debugf("prepareresponse devicepaths %v", devpaths)
-
 	if m.deviceList.hasCtrlDev {
 		addDevice(&resp, mluMonitorDeviceName)
 	}
@@ -245,12 +246,12 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 	}
 
 	omitDup := map[string]struct{}{}
-	for _, devpath := range devpaths {
+	for _, devPath := range devPaths {
 		if (m.options.Mode == Mim || m.options.Mode == DynamicSmlu) && m.profile != normalMlu {
 			// devpath is like "/dev/cambricon_dev0,/dev/cambricon_ipcm0,/dev/cambricon-caps/cap_dev0_mi1"
-			pathSets := strings.Split(devpath, ",")
+			pathSets := strings.Split(devPath, ",")
 			if len(pathSets) != 3 {
-				log.Printf("invalid devpath %s", devpath)
+				log.Printf("Invalid devPath %s", devPath)
 				continue
 			}
 			if _, ok := omitDup[pathSets[0]]; !ok {
@@ -265,7 +266,7 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 		}
 
 		var index int
-		_, err := fmt.Sscanf(devpath, mluDeviceName+"%d", &index)
+		_, err := fmt.Sscanf(devPath, mluDeviceName+"%d", &index)
 		if err != nil {
 			log.Printf("Failed to get device index for device path %v", err)
 			continue
@@ -288,7 +289,7 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 		if m.deviceList.hasUARTConsoleDev && m.options.EnableConsole {
 			addDevice(&resp, fmt.Sprintf(mluUARTConsoleDeviceName+"%d", index))
 		}
-		addDevice(&resp, devpath)
+		addDevice(&resp, devPath)
 	}
 	return resp
 }
@@ -331,7 +332,7 @@ func (m *CambriconDevicePlugin) allocateDynamicSmlu(ctx context.Context) (*plugi
 		}
 		_, err = m.clientset.CoreV1().Pods(pod.Namespace).Patch(ctx, pod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
 		for i := 0; i < retries && err != nil; i++ {
-			log.Warnf("patchPodAnnotation err: %v, retried times: %d", err, i)
+			log.Warnf("PatchPodAnnotation err: %v, retried times: %d", err, i)
 			time.Sleep(time.Duration(rand.Intn(i)) * 10 * time.Millisecond)
 			_, err = m.clientset.CoreV1().Pods(pod.Namespace).Patch(ctx, pod.Name, types.StrategicMergePatchType, patchedAnnotation, metav1.PatchOptions{})
 		}
@@ -345,7 +346,7 @@ func (m *CambriconDevicePlugin) allocateDynamicSmlu(ctx context.Context) (*plugi
 			err = m.releaseNodeLock()
 		}
 		if err != nil {
-			log.Printf("releaseNodeLock exceeds retry count %d", retries)
+			log.Printf("ReleaseNodeLock exceeds retry count %d", retries)
 		}
 		return resp, nil
 	}
@@ -502,7 +503,7 @@ func (m *CambriconDevicePlugin) healthcheck() {
 // Serve starts the gRPC server and register the device plugin to Kubelet
 func (m *CambriconDevicePlugin) Serve() error {
 	if m.options.CnmonPath != "" && !path.IsAbs(m.options.CnmonPath) {
-		log.Panicf("invalid cnmon path: %s", m.options.CnmonPath)
+		log.Panicf("Invalid cnmon path: %s", m.options.CnmonPath)
 	}
 
 	if m.options.Mode == TopologyAware {
@@ -565,7 +566,7 @@ func (m *CambriconDevicePlugin) Serve() error {
 	return nil
 }
 
-func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+func (m *CambriconDevicePlugin) GetPreferredAllocation(_ context.Context, r *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
 	response := &pluginapi.PreferredAllocationResponse{}
 	for _, req := range r.ContainerRequests {
 		var allocated []string
@@ -574,7 +575,7 @@ func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *p
 		case EnvShare:
 			allocated, err = getPreferredEnvShareDeviceID(req)
 			if err != nil {
-				log.Errorf("failed to get preferred allocated devices for env share mode, requests %d, err: %v", req.AllocationSize, err)
+				log.Errorf("Failed to get preferred allocated devices for env share mode, requests %d, err: %v", req.AllocationSize, err)
 				return response, err
 			}
 		case TopologyAware:
@@ -582,11 +583,11 @@ func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *p
 			required := m.getSlots(req.MustIncludeDeviceIDs)
 			allocated, err = m.getPreferredAllocatedDeviceUUIDs(available, required, int(req.AllocationSize))
 			if err != nil {
-				log.Errorf("failed to get preferred allocated devices, available: %v, size: %d, err: %v", available, req.AllocationSize, err)
+				log.Errorf("Failed to get preferred allocated devices, available: %v, size: %d, err: %v", available, req.AllocationSize, err)
 				return response, err
 			}
 		default:
-			log.Errorf("not supported mode %s", m.options.Mode)
+			log.Errorf("Not supported mode %s", m.options.Mode)
 			return response, fmt.Errorf("not supported mode %s", m.options.Mode)
 		}
 		resp := &pluginapi.ContainerPreferredAllocationResponse{
@@ -600,11 +601,11 @@ func (m *CambriconDevicePlugin) GetPreferredAllocation(ctx context.Context, r *p
 func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uint, required []uint, size int) ([]string, error) {
 	// todo: consider required list for init containers and numa. ignore it for now.
 	if len(required) != 0 {
-		log.Printf("required device slice not empty, ignore it. %v", required)
+		log.Printf("Required device slice not empty, ignore it. %v", required)
 	}
 
 	log.Println("=== Start getPreferredAllocatedDeviceUUIDs ===")
-	log.Printf("available devs: %v, size %d", available, size)
+	log.Printf("Available devs: %v, size %d", available, size)
 
 	var devs []uint
 	if m.options.MLULinkPolicy == bestEffort && len(available) == size {
@@ -614,13 +615,13 @@ func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uin
 		devs, err = m.allocator.Allocate(available, required, size)
 		if err != nil {
 			if e := m.updateNodeMLULinkAnnotation(size); e != nil {
-				log.Errorf("updateNodeMLULinkAnnotation err: %v", e)
+				log.Errorf("UpdateNodeMLULinkAnnotation err: %v", e)
 			}
 			return nil, err
 		}
 	}
 
-	log.Printf("preferred devices %v", devs)
+	log.Printf("Preferred devices %v", devs)
 
 	uuids := []string{}
 	for _, dev := range devs {
@@ -659,7 +660,7 @@ func (m *CambriconDevicePlugin) createAnnotationWithTimestamp(size int) error {
 func (m *CambriconDevicePlugin) updateNodeMLULinkAnnotation(size int) error {
 	err := m.createAnnotationWithTimestamp(size)
 	for i := 0; i < retries && err != nil; i++ {
-		log.Printf("createAnnotationWithTimestamp err: %v, retried times: %d", err, i+1)
+		log.Printf("CreateAnnotationWithTimestamp err: %v, retried times: %d", err, i+1)
 		time.Sleep(time.Duration(rand.Intn(i)) * 10 * time.Millisecond)
 		err = m.createAnnotationWithTimestamp(size)
 	}
@@ -707,7 +708,7 @@ func getPreferredEnvShareDeviceID(req *pluginapi.ContainerPreferredAllocationReq
 		uuid := ids[0]
 		vf, err := strconv.Atoi(ids[len(ids)-1])
 		if err != nil {
-			log.Errorf("convert value to int, error %v, value %s", err, ids[len(ids)-1])
+			log.Errorf("Convert value to int, error %v, value %s", err, ids[len(ids)-1])
 			return nil, err
 		}
 		dMap[uuid] = append(dMap[uuid], vf)

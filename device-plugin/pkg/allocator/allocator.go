@@ -27,7 +27,7 @@ const (
 	guaranteed string = "guaranteed"
 )
 
-var getRingTimeout time.Duration = 60 * time.Second
+var getRingTimeout = 60 * time.Second
 
 type Allocator interface {
 	Allocate(available []uint, required []uint, size int) ([]uint, error)

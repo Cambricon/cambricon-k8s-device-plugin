@@ -39,7 +39,7 @@ func NewSpiderAllocator(policy string, devs map[string]*cndev.Device) Allocator 
 	}
 }
 
-func (a *spiderAllocator) Allocate(available []uint, required []uint, size int) ([]uint, error) {
+func (a *spiderAllocator) Allocate(available []uint, _ []uint, size int) ([]uint, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), getRingTimeout)
 	defer cancel()
 
