@@ -81,8 +81,9 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
      - --mode=default #device plugin mode: default, env-share, mim and topology-aware
      - --virtualization-num=1 #  virtualization number for each MLU, used only in env-share mode, set to 110 to support multi cards per container in env-share mode
      - --mlulink-policy=best-effort # MLULink topology policy: best-effort, guaranteed or restricted, used only in topology-aware mode
-     - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line to avoid mounting cnmon.
+     - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line if use-runtime is enabled
      - --enable-device-type #comment to enable device registration with type info
+     #- --use-runtime # enable interaction with cambricon container runtime to complete device mounting
      #- --enable-console #uncomment to enable UART console device(/dev/ttyMS) in container
      #- --disable-health-check #uncomment to disable health check
      #- --mount-rpmsg #uncomment to mount RPMsg directory, will be deprecated in the near future
@@ -105,8 +106,7 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
    kubectl create -f examples/cambricon-device-plugin-daemonset.yaml
    ```
 
-   (Optional) If you do not want the daemonset way of deployment, edit the static pod template in examples folder and
-   put the file into your configured static pod folder (`/etc/kubernetes/manifests` by default).
+   (Optional) If you do not want the daemonset way of deployment, edit the static pod template in examples folder and put the file into your configured static pod folder (`/etc/kubernetes/manifests` by default).
 
 3. Create rbac role and config.
 

@@ -35,7 +35,7 @@ test: go-test mock-test cntopo-mock-test
 go-test: pkg/cndev/mock/libcndev.so
 	LD_LIBRARY_PATH=$(CURDIR)/pkg/cndev/mock \
 		MOCK_JSON=$(CURDIR)/test/mock.json \
-		go test -v ./...
+		go test -cover -v ./...
 
 integration-test: pkg/cndev/mock/libcndev.so pkg/cntopo/test/libcntopo.so
 	./test/device-plugin-integration-test.sh

@@ -53,9 +53,10 @@ args:
 - --mode=default # device plugin mode: default, env-share, mim, topology-aware
 - --virtualization-num=1 # virtualization number for each MLU, used only in env-share mode, set to 110 to support multi cards per container in env-share mode
 - --mlulink-policy=best-effort # MLULink topology policy: best-effort, guaranteed or restricted, used only in topology-aware mode
-- --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line to avoid mounting cnmon
+- --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line if use-runtime is enabled
 - --log-level=info # log level: trace/debug/info/warn/error/fatal/panic" default:"info"
 - --enable-device-type # enable device registration with type info
+# - --use-runtime # enable interaction with cambricon container runtime to complete device mounting
 # - --min-dsmlu-unit=0 # minimum unit for dsmu, used only in dynamic-smlu mode" default:"0" env:"MIN-DSMLU-UNIT"
 # - --enable-console # uncomment to enable UART console device(/dev/ttyMS) in container
 # - --disable-health-check # uncomment to disable health check
@@ -68,6 +69,8 @@ volumeMounts:
   mountPath: /var/lib/kubelet/pod-resources
 - name: dev
   mountPath: /dev
+- name: cndev-lib
+  mountPath: /host/usr/lib
   # mount /etc/cambricon if dynamic-smlu mode is enabled
   # - name: restore-cfg
   #   mountPath: /etc/cambricon
@@ -82,8 +85,11 @@ volumes:
 - name: dev
   hostPath:
     path: /dev
+- name: cndev-lib
+  hostPath:
+    path: /usr/lib
 
-# mount /etc/cambricon
+# mount /etc/cambricon if dynamic-smlu mode is enabled
 # - name: restore-cfg
 #   hostPath:
 #     path: /etc/cambricon

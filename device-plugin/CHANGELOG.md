@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.19
+
+- Support to mount cndev dynamically
+- Support to interact with cambricon container runtime
+
 ## v2.0.18
 
 - Bump `cndev` to version 6.5.14

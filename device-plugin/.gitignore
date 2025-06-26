@@ -10,3 +10,4 @@ cntopo
 _build/
 __pycache__/
 *-workspace
+docs/__pycache__

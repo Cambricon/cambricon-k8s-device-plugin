@@ -20,21 +20,28 @@ import (
 	"os"
 	"sort"
 	"testing"
+	"time"
 
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
-	err := Init(false)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ret := m.Run()
-	if ret != 0 {
+	var count int
+	stub := gomonkey.ApplyFunc(FetchMLUCounts, func() (uint, error) {
+		if count == 0 {
+			count++
+			return 1, nil
+		}
+		time.Sleep(100 * time.Millisecond)
+		return 8, nil
+	})
+	defer stub.Reset()
+	EnsureMLUAllOk()
+	if ret := m.Run(); ret != 0 {
 		os.Exit(ret)
 	}
-	err = Release()
-	if err != nil {
+	if err := Release(); err != nil {
 		log.Fatal(err)
 	}
 }

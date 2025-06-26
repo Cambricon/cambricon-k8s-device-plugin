@@ -20,27 +20,26 @@ import (
 	"testing"
 
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
+	"github.com/agiledragon/gomonkey/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
-	err := cndev.Init(false)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ret := m.Run()
-	if ret != 0 {
+	stub := gomonkey.ApplyFunc(cndev.FetchMLUCounts, func() (uint, error) {
+		return 8, nil
+	})
+	defer stub.Reset()
+	cndev.EnsureMLUAllOk()
+	if ret := m.Run(); ret != 0 {
 		os.Exit(ret)
 	}
-	err = cndev.Release()
-	if err != nil {
+	if err := cndev.Release(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func TestGetDevices(t *testing.T) {
-
 	devsM, devsInfoM := GetDevices(Options{Mode: Default})
 	devs := devsM[normalMlu]
 	devsInfo := devsInfoM[normalMlu]
@@ -77,6 +76,7 @@ func TestGetDevices(t *testing.T) {
 	assert.Equal(t, 1, len(devsM["4m.16gb"]))
 	assert.Equal(t, 2, len(devsM["4m.32gb"]))
 	assert.Equal(t, "MLU-10001012-1916-0000-0000-000000000000-mim-MLU-B0001012-1916-0000-0000-000000000000", devsM["2m.16gb"][0].ID)
+	assert.Equal(t, "MLU-10001012-1916-0000-0000-000000000000-mim-MLU-B0001012-1916-0000-0000-000000000000", devsInfoM["2m.16gb"]["MLU-10001012-1916-0000-0000-000000000000-mim-MLU-B0001012-1916-0000-0000-000000000000"].UUID)
 	assert.Equal(t, 3, len(devsInfoM["2m.16gb"]))
 	assert.Equal(t, "2m.16gb", devsInfoM["2m.16gb"]["MLU-10001012-1916-0000-0000-000000000000-mim-MLU-B0001012-1916-0000-0000-000000000000"].Profile)
 	assert.Equal(t, "/dev/cambricon_dev0,/dev/cambricon_ipcm0,/dev/cambricon-caps/cap_dev0_mi1", devsInfoM["2m.16gb"]["MLU-10001012-1916-0000-0000-000000000000-mim-MLU-B0001012-1916-0000-0000-000000000000"].Path)

@@ -56,3 +56,22 @@ func (dl *dlhandles) cndevRelease() C.cndevRet_t {
 	}
 	return C.CNDEV_SUCCESS
 }
+
+// Check cndev funcs exist in current '.so'
+func (dl *dlhandles) checkExist(cndevFunc ...string) C.cndevRet_t {
+	for _, funcName := range cndevFunc {
+		cFunc := C.CString(funcName)
+		defer C.free(unsafe.Pointer(cFunc))
+
+		if len(dl.handles) == 0 {
+			return C.CNDEV_ERROR_UNINITIALIZED
+		}
+		exist := C.dlsym(dl.handles[len(dl.handles)-1], cFunc)
+		if exist == C.NULL {
+			log.Printf("can't find %s in libcndev:%s", cndevFunc, C.GoString(C.dlerror()))
+			return C.CNDEV_ERROR_NOT_SUPPORTED
+		}
+	}
+
+	return C.CNDEV_SUCCESS
+}

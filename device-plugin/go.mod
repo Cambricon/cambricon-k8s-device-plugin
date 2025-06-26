@@ -3,6 +3,7 @@ module github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin
 go 1.23
 
 require (
+	github.com/agiledragon/gomonkey/v2 v2.13.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo v1.16.5
