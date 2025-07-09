@@ -82,11 +82,13 @@ It uses **libcndev.so** and **cntopo** binary on your compiling machine and gene
      - --virtualization-num=1 #  virtualization number for each MLU, used only in env-share mode, set to 110 to support multi cards per container in env-share mode
      - --mlulink-policy=best-effort # MLULink topology policy: best-effort, guaranteed or restricted, used only in topology-aware mode
      - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line if use-runtime is enabled
-     - --enable-device-type #comment to enable device registration with type info
-     #- --use-runtime # enable interaction with cambricon container runtime to complete device mounting
-     #- --enable-console #uncomment to enable UART console device(/dev/ttyMS) in container
-     #- --disable-health-check #uncomment to disable health check
-     #- --mount-rpmsg #uncomment to mount RPMsg directory, will be deprecated in the near future
+     - --enable-device-type # uncomment to enable device registration with type info
+     # - --node-label # uncomment to enable periodic checking and updating of node labels for MLU Devices, such as driver, mcu, model and cpu type
+     # - --one-shot-for-node-label # uncomment to control node label only run once not periodically, only works when node label is enable
+     # - --use-runtime # uncomment to enable interaction with cambricon container runtime to complete device mounting
+     # - --enable-console # uncomment to enable UART console device(/dev/ttyMS) in container
+     # - --disable-health-check # uncomment to disable health check
+     # - --mount-rpmsg # uncomment to mount RPMsg directory, will be deprecated in the near future
    ```
 
    supported features:
@@ -160,6 +162,15 @@ change to info
 
 ```shell
 curl -i http://{{device-plugin-pod-ip}}:30107/logLevel?level=info
+```
+
+### MLU Device Label Management
+
+Enable plugin **periodically checks and updates** Kubernetes node labels to reflect MLU Device attributes, including: "DriverVersion", "MCUVersion", "Model", "CPUType"
+
+```yaml
+- --node-label # enable periodic checking and updating of node labels for MLU Devices, such as driver, mcu, model and cpu type
+- --one-shot-for-node-label # control node label only run once not periodically, only works when node label is enable
 ```
 
 ## Upgrade Notice

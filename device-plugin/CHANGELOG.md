@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.20
+
+- Support to auto set mlu related labels for node
+- Update uuid for mim mode and health check
+
 ## v2.0.19
 
 - Support to mount cndev dynamically

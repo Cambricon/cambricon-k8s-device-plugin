@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -37,14 +36,14 @@ type Dsmlu struct {
 	executeLock sync.Mutex
 	option      mlu.Options
 
-	k8sClient *kubernetes.Clientset
+	k8sClient kubernetes.Interface
 }
 
 func NewDsmlu(o mlu.Options) *Dsmlu {
 	return &Dsmlu{
 		option: o,
 
-		k8sClient: initClientSet(),
+		k8sClient: mlu.InitClientSet(),
 	}
 }
 
@@ -171,18 +170,6 @@ func (d *Dsmlu) recycleProfileAndInstance(pod *v1.Pod) {
 			}
 		}
 	}
-}
-
-func initClientSet() *kubernetes.Clientset {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.Errorf("Failed to get in cluser config, err: %v", err)
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Errorf("Failed to init clientset, err: %v", err)
-	}
-	return clientset
 }
 
 func matchResource(pod *v1.Pod) bool {

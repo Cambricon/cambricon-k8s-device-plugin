@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -27,6 +28,7 @@ import (
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/dsmlu"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/mlu"
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/nodeLabel"
 	topo "github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/topology"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
@@ -92,6 +94,14 @@ func main() {
 	if options.Mode == mlu.DynamicSmlu {
 		dsmlu := dsmlu.NewDsmlu(options)
 		go dsmlu.SyncDsmlu()
+	}
+
+	if options.NodeLabel {
+		log.Println("Starting NodeLabel")
+		nl := nodeLabel.NewNodeLabel(options)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go nl.Run(ctx)
 	}
 
 	log.Println("Starting FS watcher.")

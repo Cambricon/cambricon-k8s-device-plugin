@@ -47,7 +47,7 @@ spec:
       hostIPC: true
       serviceAccount: cambricon-device-plugin # comment to use default rbac
       containers:
-      - image: cambricon-device-plugin:v2.0.19
+      - image: cambricon-device-plugin:v2.0.20
         name: cambricon-device-plugin-ctr
         command:
         - /usr/bin/k8s-device-plugin
@@ -58,6 +58,8 @@ spec:
         - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line if use-runtime is enabled
         - --log-level=info # log level: trace/debug/info/warn/error/fatal/panic" default:"info"
         - --enable-device-type # enable device registration with type info
+        # - --node-label # uncomment to enable periodic checking and updating of node labels for MLU Devices, such as driver, mcu, model and cpu type
+        # - --one-shot-for-node-label # uncomment to control node label only run once not periodically, only works when node label is enable
         # - --enable-console # uncomment to enable UART console device(/dev/ttyMS) in container
         # - --disable-health-check # uncomment to disable health check
         # - --mount-rpmsg # uncomment to mount RPMsg directory, will be deprecated in the near future
@@ -84,6 +86,8 @@ spec:
           mountPath: /dev
         - name: cndev-lib
           mountPath: /host/usr/lib
+        - name: host-proc
+          mountPath: /host/proc
           # mount /etc/cambricon if dynamic-smlu mode is enabled
           # - name: restore-cfg
           #   mountPath: /etc/cambricon
@@ -100,6 +104,9 @@ spec:
       - name: cndev-lib
         hostPath:
           path: /usr/lib
+      - name: host-proc
+        hostPath:
+          path: /proc
       # mount /etc/cambricon if dynamic-smlu mode is enabled
       # - name: restore-cfg
       #   hostPath:

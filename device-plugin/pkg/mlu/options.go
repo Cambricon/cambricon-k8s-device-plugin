@@ -25,20 +25,22 @@ import (
 )
 
 type Options struct {
-	CnmonPath          string     `long:"cnmon-path" description:"host cnmon path" json:"cnmonPath,omitempty"`
-	ConfigFile         string     `long:"config-file" description:"config file" env:"CONFIG_FILE"`
-	DisableHealthCheck bool       `long:"disable-health-check" description:"disable MLU health check" json:"disableHealthCheck,omitempty"`
-	EnableConsole      bool       `long:"enable-console" description:"enable UART console device(/dev/ttyMS) in container" json:"enableConsole,omitempty"`
-	EnableDeviceType   bool       `long:"enable-device-type" description:"enable device registration with type info" json:"enableDeviceType,omitempty"`
-	LogLevel           string     `long:"log-level" description:"set log level: trace/debug/info/warn/error/fatal/panic" default:"info" json:"logLevel,omitempty"`
-	MinDsmluUnit       int        `long:"min-dsmlu-unit" description:"minimum unit for dsmu, used only in dynamic-smlu mode" default:"0" env:"MIN-DSMLU-UNIT" json:"minDsmluUnit,omitempty"`
-	MLULinkPolicy      string     `long:"mlulink-policy" description:"MLULink topology policy" default:"best-effort" choice:"best-effort" choice:"restricted" choice:"guaranteed" json:"mluLinkPolicy,omitempty"`
-	Mode               pluginMode `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"dynamic-smlu" choice:"env-share" choice:"mim" choice:"topology-aware" json:"mode,omitempty"`
-	MountRPMsg         bool       `long:"mount-rpmsg" description:"mount RPMsg directory, will be deprecated in the near future" json:"mountRPMsg,omitempty"`
-	NodeName           string     `long:"node-name" description:"host node name" env:"NODE_NAME" json:"nodeName,omitempty"`
-	UseRuntime         bool       `long:"use-runtime" description:"only set enabled when cambricon container runtime is configed as the default runtime" json:"useRuntime,omitempty"`
-	Version            bool       `long:"version" description:"print out version"`
-	VirtualizationNum  int        `long:"virtualization-num" description:"the virtualization number for each MLU, used only in env-share mode" default:"1" env:"VIRTUALIZATION_NUM" json:"virtualizationNum,omitempty"`
+	CnmonPath           string     `long:"cnmon-path" description:"host cnmon path" json:"cnmonPath,omitempty"`
+	ConfigFile          string     `long:"config-file" description:"config file" env:"CONFIG_FILE"`
+	DisableHealthCheck  bool       `long:"disable-health-check" description:"disable MLU health check" json:"disableHealthCheck,omitempty"`
+	EnableConsole       bool       `long:"enable-console" description:"enable UART console device(/dev/ttyMS) in container" json:"enableConsole,omitempty"`
+	EnableDeviceType    bool       `long:"enable-device-type" description:"enable device registration with type info" json:"enableDeviceType,omitempty"`
+	LogLevel            string     `long:"log-level" description:"set log level: trace/debug/info/warn/error/fatal/panic" default:"info" json:"logLevel,omitempty"`
+	MinDsmluUnit        int        `long:"min-dsmlu-unit" description:"minimum unit for dsmu, used only in dynamic-smlu mode" default:"0" env:"MIN-DSMLU-UNIT" json:"minDsmluUnit,omitempty"`
+	MLULinkPolicy       string     `long:"mlulink-policy" description:"MLULink topology policy" default:"best-effort" choice:"best-effort" choice:"restricted" choice:"guaranteed" json:"mluLinkPolicy,omitempty"`
+	Mode                pluginMode `long:"mode" description:"device plugin mode" default:"default" choice:"default" choice:"dynamic-smlu" choice:"env-share" choice:"mim" choice:"topology-aware" json:"mode,omitempty"`
+	MountRPMsg          bool       `long:"mount-rpmsg" description:"mount RPMsg directory, will be deprecated in the near future" json:"mountRPMsg,omitempty"`
+	NodeName            string     `long:"node-name" description:"host node name" env:"NODE_NAME" json:"nodeName,omitempty"`
+	NodeLabel           bool       `long:"node-label" description:"enable node label for MLU devices" json:"nodeLabel,omitempty"`
+	OneShotForNodeLabel bool       `long:"one-shot-for-node-label" description:"enable one-shot mode for node label, only works when nodeLabel is enabled" json:"oneShotForNodeLabel,omitempty"`
+	UseRuntime          bool       `long:"use-runtime" description:"only set enabled when cambricon container runtime is configed as the default runtime" json:"useRuntime,omitempty"`
+	Version             bool       `long:"version" description:"print out version"`
+	VirtualizationNum   int        `long:"virtualization-num" description:"the virtualization number for each MLU, used only in env-share mode" default:"1" env:"VIRTUALIZATION_NUM" json:"virtualizationNum,omitempty"`
 }
 
 func LoadConfig() Options {

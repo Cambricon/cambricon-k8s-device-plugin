@@ -129,7 +129,7 @@ func (m *CambriconDevicePlugin) Start() error {
 	}
 	conn.Close()
 
-	if !m.options.DisableHealthCheck {
+	if !m.options.DisableHealthCheck && m.profile != realCounts {
 		go m.healthcheck()
 	}
 
@@ -508,7 +508,7 @@ func (m *CambriconDevicePlugin) Serve() error {
 
 	if m.options.Mode == TopologyAware {
 		m.allocator = allocator.New(m.options.MLULinkPolicy, m.devsInfo)
-		m.clientset = initClientSet()
+		m.clientset = InitClientSet()
 
 		if m.options.MLULinkPolicy != bestEffort {
 			if err := m.updateNodeMLULinkAnnotation(0); err != nil {
@@ -518,7 +518,7 @@ func (m *CambriconDevicePlugin) Serve() error {
 	}
 
 	if m.options.Mode == DynamicSmlu {
-		m.clientset = initClientSet()
+		m.clientset = InitClientSet()
 		if err := m.releaseNodeLock(); err != nil {
 			return err
 		}
@@ -689,14 +689,14 @@ func addDevice(car *pluginapi.ContainerAllocateResponse, devPath string) {
 	car.Devices = append(car.Devices, dev)
 }
 
-func initClientSet() kubernetes.Interface {
+func InitClientSet() kubernetes.Interface {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Errorf("Failed to get in cluser config, err: %v", err)
+		log.Panicf("Failed to get in cluster config, err: %v", err)
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Errorf("Failed to init clientset, err: %v", err)
+		log.Panicf("Failed to init clientset, err: %v", err)
 	}
 	return clientset
 }

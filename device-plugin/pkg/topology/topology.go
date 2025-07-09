@@ -35,7 +35,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1alpha1"
 )
@@ -61,7 +60,7 @@ type Topology struct {
 	option      mlu.Options
 	topoRule    map[int]int
 
-	k8sClient  *kubernetes.Clientset
+	k8sClient  kubernetes.Interface
 	topoClient cntopo.Cntopo
 }
 
@@ -86,7 +85,7 @@ func NewTopology(o mlu.Options, num uint) *Topology {
 		option:     o,
 		topoRule:   topoRule,
 
-		k8sClient:  initClientSet(),
+		k8sClient:  mlu.InitClientSet(),
 		topoClient: cntopo.New(),
 	}
 }
@@ -250,18 +249,6 @@ func (t *Topology) execute() {
 	if err := t.UpdateNodeAnnotation(); err != nil {
 		log.Errorf("Failed to update node annotation %v", err)
 	}
-}
-
-func initClientSet() *kubernetes.Clientset {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.Errorf("Failed to get in cluser config, err: %v", err)
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Errorf("Failed to init clientset, err: %v", err)
-	}
-	return clientset
 }
 
 func connectToServer(socket string, timeout time.Duration, maxSize int) (*grpc.ClientConn, error) {

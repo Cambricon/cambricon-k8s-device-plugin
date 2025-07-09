@@ -56,8 +56,8 @@ args:
 - --cnmon-path=/usr/bin/cnmon # host machine cnmon path, must be absolute path. comment out this line if use-runtime is enabled
 - --log-level=info # log level: trace/debug/info/warn/error/fatal/panic" default:"info"
 - --enable-device-type # enable device registration with type info
-# - --use-runtime # enable interaction with cambricon container runtime to complete device mounting
-# - --min-dsmlu-unit=0 # minimum unit for dsmu, used only in dynamic-smlu mode" default:"0" env:"MIN-DSMLU-UNIT"
+# - --node-label # uncomment to enable periodic checking and updating of node labels for MLU Devices, such as driver, mcu, model and cpu type
+# - --one-shot-for-node-label # uncomment to control node label only run once not periodically, only works when node label is enable
 # - --enable-console # uncomment to enable UART console device(/dev/ttyMS) in container
 # - --disable-health-check # uncomment to disable health check
 # - --mount-rpmsg # uncomment to mount RPMsg directory, will be deprecated in the near future
@@ -71,6 +71,8 @@ volumeMounts:
   mountPath: /dev
 - name: cndev-lib
   mountPath: /host/usr/lib
+- name: host-proc
+  mountPath: /host/proc
   # mount /etc/cambricon if dynamic-smlu mode is enabled
   # - name: restore-cfg
   #   mountPath: /etc/cambricon
@@ -88,6 +90,9 @@ volumes:
 - name: cndev-lib
   hostPath:
     path: /usr/lib
+- name: host-proc
+  hostPath:
+    path: /proc
 
 # mount /etc/cambricon if dynamic-smlu mode is enabled
 # - name: restore-cfg

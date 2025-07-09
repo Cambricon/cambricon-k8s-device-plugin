@@ -256,7 +256,7 @@ func watchUnhealthy(ctx context.Context, devsInfo map[string]*cndev.Device, heal
 					ID:     dm.UUID,
 					Health: pluginapi.Healthy,
 				}
-				log.Debugf("Device %s health state changes from health to unhealth in time %s", dm.UUID, time.Now())
+				log.Debugf("Device %s health state changes from unhealth to health in time %s", dm.UUID, time.Now())
 				health <- &dev
 			}
 		}

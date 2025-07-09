@@ -335,6 +335,17 @@ func GetDeviceUUID(idx uint) (string, error) {
 	return C.GoString((*C.char)(unsafe.Pointer(&uuidInfo.uuid))), nil
 }
 
+func GetDeviceVersion(idx uint) (uint, uint, uint, uint, uint, uint, error) {
+	if ret := dl.checkExist("cndevGetVersionInfo"); ret != C.CNDEV_SUCCESS {
+		return 0, 0, 0, 0, 0, 0, errorString(ret)
+	}
+
+	var versionInfo C.cndevVersionInfo_t
+	versionInfo.version = C.CNDEV_VERSION_6
+	r := C.cndevGetVersionInfo(&versionInfo, cndevHandleMap[idx])
+	return uint(versionInfo.mcuMajorVersion), uint(versionInfo.mcuMinorVersion), uint(versionInfo.mcuBuildVersion), uint(versionInfo.driverMajorVersion), uint(versionInfo.driverMinorVersion), uint(versionInfo.driverBuildVersion), errorString(r)
+}
+
 func GetExistProfile(pl *DsmluProfile, memUnit int) (*DsmluProfileInfo, bool) {
 	infos, err := GetDeviceProfileInfo(uint(pl.Slot))
 	if err != nil {
@@ -608,6 +619,10 @@ func FetchMLUCounts() (uint, error) {
 	var count uint
 	for _, entry := range entries {
 		devicePath := filepath.Join(pciDevicesPath, entry.Name())
+		if _, err := os.Stat(filepath.Join(devicePath, "physfn")); err == nil {
+			log.Debugf("Skip SR-IOV VF device: %s", devicePath)
+			continue
+		}
 		vendorID, err := readHexFile(filepath.Join(devicePath, "vendor"))
 		if err != nil {
 			log.Warnf("Can't read vendor file: %v", err)
