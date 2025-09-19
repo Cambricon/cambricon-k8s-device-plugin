@@ -45,7 +45,7 @@ extern "C" {
 #define CNDEV_NAME_BUFFER_SIZE 200
 #define CNDEV_MLU_CLUSTER_FREQUENCY_COUNT 20
 typedef __int32_t cndevDevice_t;        /**< Defines \p cndevDevice_t as \p __int32, used for device handle of CNDev.*/
-typedef __int32_t cndevMluInstance_t;   /**< Defines \p cndevMluInstance_t as \p __int32_t, used for MLU instance of CNDev.*/ 
+typedef __int32_t cndevMluInstance_t;   /**< Defines \p cndevMluInstance_t as \p __int32_t, used for MLU instance of CNDev.*/
 
 #if defined(__DOXYGEN_ONLY__)
 #define CNDEV_EXPORT
@@ -210,13 +210,13 @@ typedef enum {
 
 /** Topology relationship types.*/
 typedef enum {
-	SELF = 0,        /**< Same devices.*/
+	SELF = 0,        /**< Same device.*/
 	INTERNAL = 1,    /**< Devices that are on the same board.*/
-	SINGLE = 2,      /**< All devices that only need to traverse a single PCIe switch.*/
-	MULTIPLE = 3,    /**< All devices that need not traverse a host bridge.*/
-	HOST_BRIDGE = 4, /**< All devices that are connected to the same host bridge.*/
-	CPU = 5,         /**< All devices that are connected to the same CPU but possibly multiple host bridges.*/
-	SYSTEM = 6,      /**< All devices in the system.*/
+	SINGLE = 2,      /**< Devices that only need to traverse a single PCIe switch.*/
+	MULTIPLE = 3,    /**< Devices that need not traverse a host bridge.*/
+	HOST_BRIDGE = 4, /**< Devices that are connected to the same host bridge.*/
+	CPU = 5,         /**< Devices that are connected to the same CPU but possibly multiple host bridges.*/
+	SYSTEM = 6,      /**< Devices that are in the system.*/
 } cndevTopologyRelationshipEnum_t;
 
 /** Display formats for MLU-Link speed.*/
@@ -225,7 +225,7 @@ typedef enum {
 	SPEED_FMT_PM4 = 1,    /**< Transmission speed show by PM4 format.*/
 } cndevMLULinkSpeedEnum_t;
 
-/** 
+/**
  * @brief Count types for MLU-Link.
 
  * It is deprecated and will be removed in future release.
@@ -287,34 +287,20 @@ typedef enum {
 							  */
 } cndevDeviceConfigsTypeEnum_t;
 
-/**
- * @brief Gets the error message.
- * 
- * This API takes an error ID as input and returns the corresponding error message if found.
- * If the error message cannot be found, it returns "Cndev_ERROR not found!".
- *
- * @param[in] errorId The error ID.
- *
- * @return
- * - The corresponding error message if found, otherwise "Cndev_ERROR not found!".
- */
-CNDEV_EXPORT
-const char *cndevGetErrorString(cndevRet_t errorId);
-
 #ifdef WIN32
 #define basename(file) "UNSUPPORTED"
 #endif
 
 #ifndef cndevCheckErrors
 #define __cndevCheckErrors(err, file, line)                                                                                    \
-  do {                                                                                                                         \
-    cndevRet_t _err = (err);                                                                                                   \
-    if (CNDEV_SUCCESS != _err) {                                                                                               \
-      fprintf(stderr, "cndevCheckErrors(%d): %s, from file <%s>, line %i.\n",                                                  \
-      _err, cndevGetErrorString(_err), basename((char*)file), line);                                                           \
-      exit(1);                                                                                                                 \
-    }                                                                                                                          \
-  } while (0)
+	do {                                                                                                                         \
+		cndevRet_t _err = (err);                                                                                                   \
+		if (_err != CNDEV_SUCCESS) {                                                                                               \
+			fprintf(stderr, "cndevCheckErrors(%d): %s, from file <%s>, line %i.\n",                                                  \
+			_err, cndevGetErrorString(_err), basename((char *)file), line);                                                           \
+			exit(1);                                                                                                                 \
+		}                                                                                                                          \
+	} while (0)
 #define cndevCheckErrors(err) __cndevCheckErrors((err), __FILE__, __LINE__)
 #endif
 #ifndef UUID_SIZE
@@ -324,223 +310,223 @@ const char *cndevGetErrorString(cndevRet_t errorId);
 #ifndef IP_ADDRESS_LEN
 #define IP_ADDRESS_LEN 40
 #endif
-#define CNDEV_IP_ADDRESS_LEN                   (40)
-#define CNDEV_MLU_REMOTE_PORT_NAME_LEN         (256)
-#define CNDEV_MAC_ADDRESS_LEN                  (6)
-#define CNDEV_HOST_SN_LEN                      (128)
-#define CNDEV_IFACE_NAME_LEN                   (16)
+#define CNDEV_IP_ADDRESS_LEN                   40
+#define CNDEV_MLU_REMOTE_PORT_NAME_LEN         256
+#define CNDEV_MAC_ADDRESS_LEN                  6
+#define CNDEV_HOST_SN_LEN                      128
+#define CNDEV_IFACE_NAME_LEN                   16
 
 /** Card information.*/
 typedef struct {
-	__int32_t version;     /**< API version.*/
-	__uint32_t number;     /**< The count of devices.*/
+	__int32_t version;     /**< IN: API version.*/
+	__uint32_t number;     /**< OUT: The count of devices.*/
 } cndevCardInfo_t;
 
 /** UUID information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__uint8_t uuid[CNDEV_UUID_SIZE];  /**< The information of the device UUID.*/
-	__uint64_t ncsUUID64;             /**< The information of the ncs device UUID.*/
+	__int32_t version;                /**< IN: API version.*/
+	__uint8_t uuid[CNDEV_UUID_SIZE];  /**< OUT: The information of the device UUID.*/
+	__uint64_t ncsUUID64;             /**< OUT: The information of the ncs device UUID.*/
 } cndevUUID_t;
 
 /** Memory information V2.*/
 typedef struct {
-	__int64_t physicalMemoryTotal;    /**< The physical total memory size of MLU, unit: MB.*/
-	__int64_t physicalMemoryUsed;     /**< The physical used memory size of MLU, unit: MB.*/
-	__int64_t reservedMemory;         /**< The reserved memory size of MLU, unit: MB.*/
-	__int64_t virtualMemoryTotal;     /**< The virtual total memory size of MLU, unit: MB.*/
-	__int64_t virtualMemoryUsed;      /**< The virtual used memory size of MLU, unit: MB.*/
-	__uint64_t globalMemory;          /**< The SMT memory size, unit: MB.*/
+	__int64_t physicalMemoryTotal;    /**< OUT: The physical total memory size of MLU, unit: MB.*/
+	__int64_t physicalMemoryUsed;     /**< OUT: The physical used memory size of MLU, unit: MB.*/
+	__int64_t reservedMemory;         /**< OUT: The reserved memory size of MLU, unit: MB.*/
+	__int64_t virtualMemoryTotal;     /**< OUT: The virtual total memory size of MLU, unit: MB.*/
+	__int64_t virtualMemoryUsed;      /**< OUT: The virtual used memory size of MLU, unit: MB.*/
+	__uint64_t globalMemory;          /**< OUT: The SMT memory size, unit: MB.*/
 	__uint64_t reserved[16];          /**< Reserved.*/
 } cndevMemoryInfoV2_t;
 
 /** Version information.*/
 typedef struct {
-	__int32_t version;             /**< API version.*/
-	__uint32_t mcuMajorVersion;    /**< The major version number of the MCU.*/
-	__uint32_t mcuMinorVersion;    /**< The minor version number of the MCU.*/
-	__uint32_t mcuBuildVersion;    /**< The patch version number of the MCU.*/
-	__uint32_t driverMajorVersion; /**< The major version number of MLU Driver.*/
-	__uint32_t driverMinorVersion; /**< The minor version number of MLU Driver.*/
-	__uint32_t driverBuildVersion; /**< The build version number of MLU Driver.*/
+	__int32_t version;             /**< IN: API version.*/
+	__uint32_t mcuMajorVersion;    /**< OUT: The major version number of the MCU.*/
+	__uint32_t mcuMinorVersion;    /**< OUT: The minor version number of the MCU.*/
+	__uint32_t mcuBuildVersion;    /**< OUT: The patch version number of the MCU.*/
+	__uint32_t driverMajorVersion; /**< OUT: The major version number of MLU Driver.*/
+	__uint32_t driverMinorVersion; /**< OUT: The minor version number of MLU Driver.*/
+	__uint32_t driverBuildVersion; /**< OUT: The build version number of MLU Driver.*/
 } cndevVersionInfo_t;
 
 /** ECC information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__uint64_t oneBitError;           /**< The count of single single-bit errors.*/
-	__uint64_t multipleOneError;      /**< The count of multiple single-bit errors.*/
-	__uint64_t multipleError;         /**< The count of single multiple-bits errors.*/
-	__uint64_t multipleMultipleError; /**< The count of multiple multiple-bits errors.*/
-	__uint64_t correctedError;        /**< The count of corrected errors ( ``oneBitError`` + ``multipleOneError``).*/
-	__uint64_t uncorrectedError;      /**< The count of uncorrected errors ( ``multipleError`` + ``multipleMultipleError``).*/
-	__uint64_t totalError;            /**< Total ECC errors ( ``correctedError`` + ``uncorrectedError``).*/
-	__uint64_t addressForbiddenError; /**< The count of access illegal addresses.*/
+	__int32_t version;                /**< IN: API version.*/
+	__uint64_t oneBitError;           /**< OUT: The count of single single-bit errors.*/
+	__uint64_t multipleOneError;      /**< OUT: The count of multiple single-bit errors.*/
+	__uint64_t multipleError;         /**< OUT: The count of single multiple-bits errors.*/
+	__uint64_t multipleMultipleError; /**< OUT: The count of multiple multiple-bits errors.*/
+	__uint64_t correctedError;        /**< OUT: The count of corrected errors ( ``oneBitError`` + ``multipleOneError``).*/
+	__uint64_t uncorrectedError;      /**< OUT: The count of uncorrected errors ( ``multipleError`` + ``multipleMultipleError``).*/
+	__uint64_t totalError;            /**< OUT: Total ECC errors ( ``correctedError`` + ``uncorrectedError``).*/
+	__uint64_t addressForbiddenError; /**< OUT: The count of access illegal addresses.*/
 } cndevECCInfo_t;
 
 /** ECC mode information.*/
 typedef struct {
-	__int32_t version;              /**< API version.*/
-	cndevEnableStatusEnum_t mode;   /**< The status of the ECC mode.*/
+	__int32_t version;              /**< IN: API version.*/
+	cndevEnableStatusEnum_t mode;   /**< IN/OUT: The status of the ECC mode.*/
 } cndevEccMode_t;
 
 /** Power information.*/
 typedef struct {
-	__int32_t usage;              /**< Current power dissipation of MLU device, unit: W.*/
-	__int32_t cap;                /**< Current set power cap of MLU device, unit: W.*/
-	__int32_t machine;            /**< Current power dissipation of OAM machine, unit: W.*/
-	__int32_t tdp;                /**< Thermal design power of MLU device, unit: W.*/
-	__int32_t maxPower;           /**< Maximum power dissipation of MLU device for customer evaluation of power supply, unit: W.*/
+	__int32_t usage;              /**< OUT: Current power dissipation of MLU device, unit: W.*/
+	__int32_t cap;                /**< OUT: Current set power cap of MLU device, unit: W.*/
+	__int32_t machine;            /**< OUT: Current power dissipation of OAM machine, unit: W.*/
+	__int32_t tdp;                /**< OUT: Thermal design power of MLU device, unit: W.*/
+	__int32_t maxPower;           /**< OUT: Maximum power dissipation of MLU device for customer evaluation of power supply, unit: W.*/
 	__int32_t reserved[16];       /**< Reserved.*/
 } cndevDevicePowerInfo_t;
 
 /** Temperature information.*/
 typedef struct {
-	__int32_t version;			/**< API version.*/
-	__int32_t board;			/**<
-						  * Board temperature, unit: ℃. Collects statistics on multiple temperature information
+	__int32_t version;			/**< IN: API version.*/
+	__int32_t board;			/**< OUT: Board temperature, unit: ℃. Collects statistics on multiple temperature information
 						  * on the board and reports the maximum value.
 						  */
-	__int32_t cluster[20];			/**< Cluster temperature, unit: ℃. To count the temperature of each IPU Core PVT sensor,
+	__int32_t cluster[20];			/**< OUT: Cluster temperature, unit: ℃. To count the temperature of each IPU Core PVT sensor,
 						  * take the maximum value and report it.
 						  * In the case of Full MLU, the effective length is 1. Only in the case of
 						  * Multi-Instance MLU virtualization, multiple temperature information will be returned.
 						  */
 	__int32_t memoryDie[8];			/**< reserved.*/
-	__int32_t chip;				/**< Chip top temperature, unit: ℃.
+	__int32_t chip;				/**< OUT: Chip top temperature, unit: ℃.
 						  * To collect statistics on multiple temperature information of Chip Top,
 						  * the maximum value is reported.
 						  */
-	__int32_t airInlet;			/**< The air inlet temperature of the whole machine transmitted by BMC, unit: ℃*/
-	__int32_t airOutlet;			/**< The air outlet temperature of the whole machine transmitted by BMC, unit: ℃.*/
-	__int32_t memory;			/**< The memory temperature, unit: ℃. To count the temperature of each DRAM Sys,
+	__int32_t airInlet;			/**< OUT: The air inlet temperature of the whole machine transmitted by BMC, unit: ℃.*/
+	__int32_t airOutlet;			/**< OUT: The air outlet temperature of the whole machine transmitted by BMC, unit: ℃.*/
+	__int32_t memory;			/**< OUT: The memory temperature, unit: ℃. To count the temperature of each DRAM Sys,
 						  * the maximum value is reported.
 						  */
-	__int32_t videoInput;			/**< The temperature of video input, unit: ℃. Only edge products are valid.*/
-	__int32_t cpu;				/**< The temperature of CPU, unit: ℃. Only edge products are valid.*/
-	__int32_t isp;				/**< The temperature of ISP (Image Signal Processor), unit: ℃. Only edge products are valid.*/
+	__int32_t videoInput;			/**< OUT: The temperature of video input, unit: ℃. Only edge products are valid.*/
+	__int32_t cpu;				/**< OUT: The temperature of CPU, unit: ℃. Only edge products are valid.*/
+	__int32_t isp;				/**< OUT: The temperature of ISP (Image Signal Processor), unit: ℃. Only edge products are valid.*/
 } cndevTemperatureInfo_t;
 
 /** Fan speed information.*/
 typedef struct {
-	__int32_t version;		/**< API version.*/
+	__int32_t version;		/**< IN: API version.*/
 	__int32_t fanSpeed;		/**< Reserved.*/
-	__int32_t chassisFanCount;	/**< The count of chassis fans, only valid on OAM machine.*/
-	__int32_t chassisFan[28];	/**< The speed information of each chassis fan, unit: rpm, only valid on OAM machine.
+	__int32_t chassisFanCount;	/**< OUT: The count of chassis fans, only valid on OAM machine.*/
+	__int32_t chassisFan[28];	/**< OUT: The speed information of each chassis fan, unit: rpm, only valid on OAM machine.
 					  * chassisFan[0]-chassisFan[19] are 8086 fan, and chassisFan[20]-chassisFan[27] are 4028 fan.
 					  */
 } cndevFanSpeedInfo_t;
 
 /** MLU utilization information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__int32_t averageCoreUtilization; /**< The average utilization of MLU core.*/
-	__int32_t coreUtilization[80];    /**< The utilization of each MLU core.
+	__int32_t version;                /**< IN: API version.*/
+	__int32_t averageCoreUtilization; /**< OUT: The average utilization of MLU core.*/
+	__int32_t coreUtilization[80];    /**< OUT: The utilization of each MLU core.
 					    * The valid array index range is [0, MLU core - 1].
 					    */
 } cndevUtilizationInfo_t;
 
 /** MLU frequency information.*/
 typedef struct {
-	__int32_t version;		/**< API version.*/
-	__int32_t boardFreq;		/**< The current operating IPU frequency, unit: MHz.*/
-	__int32_t ddrFreq;		/**< MLU DDR transfer rate, unit: MBps (operating max MLU DDR frequency, unit: MHz).*/
-	__uint8_t overtempDfsFlag;	/**< Over-temperature reducing frequency flag, only valid on MLU220.*/
-	__uint8_t fastDfsFlag;		/**< Fast reducing frequency flag, only valid on MLU220.*/
-	__uint16_t mluClusterFreqCount;	/**< The count of MLU clusters.*/
-	__uint16_t mluClusterFreq[CNDEV_MLU_CLUSTER_FREQUENCY_COUNT];	/**< The frequency of each MLU cluster.
+	__int32_t version;		/**< IN: API version.*/
+	__int32_t boardFreq;		/**< OUT: The current operating IPU frequency, unit: MHz.*/
+	__int32_t ddrFreq;		/**< OUT: MLU DDR transfer rate, unit: MBps (operating max MLU DDR frequency, unit: MHz).*/
+	__uint8_t overtempDfsFlag;	/**< OUT: Over-temperature reducing frequency flag, only valid on MLU220.*/
+	__uint8_t fastDfsFlag;		/**< OUT: Fast reducing frequency flag, only valid on MLU220.*/
+	__uint16_t mluClusterFreqCount;	/**< OUT: The count of MLU clusters.*/
+	__uint16_t mluClusterFreq[CNDEV_MLU_CLUSTER_FREQUENCY_COUNT];	/**< OUT: The frequency of each MLU cluster.
 									  * The valid array index range is [0, ``mluClusterFreqCount`` - 1],
 									  * unit: MHz.
 									  */
-	__int32_t boardDefaultFreq;	/**< IPU default frequency, unit: MHz.*/
-	__int32_t boardFreqArange[2];	/**< The range of adjustable operating frequency, boardFreqArange[0] means the minimum operating frequency,
+	__int32_t boardDefaultFreq;	/**< OUT: IPU default frequency, unit: MHz.*/
+	__int32_t boardFreqArange[2];	/**< OUT: The range of adjustable operating frequency,
+					  * boardFreqArange[0] means the minimum operating frequency,
 					  * boardFreqArange[1] means the maximum operating frequency unit: MHz.
 					  */
 } cndevFrequencyInfo_t;
 
 /** Process information.*/
 typedef struct {
-	__int32_t version;             /**< API version.*/
-	__uint32_t pid;                /**< Process ID.*/
-	__uint64_t physicalMemoryUsed; /**< MLU physical memory used by the process, unit: KiB.*/
-	__uint64_t virtualMemoryUsed;  /**< MLU virtual memory used by the process, unit: KiB.*/
+	__int32_t version;             /**< IN: API version.*/
+	__uint32_t pid;                /**< OUT: Process ID.*/
+	__uint64_t physicalMemoryUsed; /**< OUT: MLU physical memory used by the process, unit: KiB.*/
+	__uint64_t virtualMemoryUsed;  /**< OUT: MLU virtual memory used by the process, unit: KiB.*/
 } cndevProcessInfo_t;
 
 /** Library version information.*/
 typedef struct {
-	__int32_t version;           /**< API version.*/
-	__uint32_t libMajorVersion;  /**< Library major version.*/
-	__uint32_t libMinorVersion;  /**< Library minor version.*/
-	__uint32_t libBuildVersion;  /**< Library build version.*/
+	__int32_t version;           /**< IN: API version.*/
+	__uint32_t libMajorVersion;  /**< OUT: Library major version.*/
+	__uint32_t libMinorVersion;  /**< OUT: Library minor version.*/
+	__uint32_t libBuildVersion;  /**< OUT: Library build version.*/
 } cndevLibVersionInfo_t;
 
 /** Card core count.*/
 typedef struct {
-	__int32_t version; /**< API version.*/
-	__int32_t count;   /**< Core count of devices.*/
+	__int32_t version; /**< IN: API version.*/
+	__int32_t count;   /**< OUT: Core count of devices.*/
 } cndevCardCoreCount_t;
 
 /** Card cluster count.*/
 typedef struct {
-	__int32_t version; /**< API version.*/
-	__int32_t count;   /**< Cluster count of devices.*/
+	__int32_t version; /**< IN: API version.*/
+	__int32_t count;   /**< OUT: Cluster count of devices.*/
 } cndevCardClusterCount_t;
 
 /** Card name.*/
 typedef struct {
-	__int32_t version;  /**< API version.*/
-	cndevNameEnum_t id; /**< Card name.*/
+	__int32_t version;  /**< IN: API version.*/
+	cndevNameEnum_t id; /**< OUT: Card name.*/
 } cndevCardName_t;
 
 /** Serial number and related information.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	__uint64_t sn;              /**< Card's serial number in hexadecimal format.*/
-	__uint64_t motherBoardSn;   /**< Motherboard's serial number in hexadecimal format.*/
+	__int32_t version;          /**< IN: API version.*/
+	__uint64_t sn;              /**< OUT: Card's serial number in hexadecimal format.*/
+	__uint64_t motherBoardSn;   /**< OUT: Motherboard's serial number in hexadecimal format.*/
 } cndevCardSN_t;
 
 /** Part number information of card.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	char partNumber[32];        /**< Part number of card.*/
+	__int32_t version;          /**< IN: API version.*/
+	char partNumber[32];        /**< OUT: Part number of card.*/
 } cndevCardPartNumber_t;
 
 /** Device form.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	__uint64_t device_form;     /**< The form of device.*/
+	__int32_t version;          /**< IN: API version.*/
+	__uint64_t device_form;     /**< OUT: The form of device.*/
 } cndevCardForm_t;
 
 /** Device information of PCIe.*/
 typedef struct {
-	__uint32_t subsystemId;           /**< The sub-system ID of PCIe.*/
-	__uint32_t deviceId;              /**< The device ID of PCIe.*/
-	__uint16_t vendor;                /**< The vendor ID of PCIe.*/
-	__uint16_t subsystemVendor;       /**< The sub-system Vendor ID of PCIe.*/
-	__uint32_t domain;                /**< The domain number of PCIe.*/
-	__uint32_t bus;                   /**< The bus number of PCIe.*/
-	__uint32_t device;                /**< The device number of PCIe.*/
-	__uint32_t function;              /**< The function number of PCIe.*/
-	__uint16_t moduleId;              /**< The module ID on an OAM machine. This information is valid only on OAM machine.*/
-	__uint16_t slotId;                /**< The physical slot ID obtained from DMI interface. 0xFFFF is an invalid slot ID.*/
+	__uint32_t subsystemId;           /**< OUT: The sub-system ID of PCIe.*/
+	__uint32_t deviceId;              /**< OUT: The device ID of PCIe.*/
+	__uint16_t vendor;                /**< OUT: The vendor ID of PCIe.*/
+	__uint16_t subsystemVendor;       /**< OUT: The sub-system Vendor ID of PCIe.*/
+	__uint32_t domain;                /**< OUT: The domain number of PCIe.*/
+	__uint32_t bus;                   /**< OUT: The bus number of PCIe.*/
+	__uint32_t device;                /**< OUT: The device number of PCIe.*/
+	__uint32_t function;              /**< OUT: The function number of PCIe.*/
+	__uint16_t moduleId;              /**< OUT: The module ID on an OAM machine. This information is valid only on OAM machine.*/
+	__uint16_t slotId;                /**< OUT: The physical slot ID obtained from DMI interface. 0xFFFF is an invalid slot ID.*/
 	__uint32_t reserved[8];           /**< Reserved.*/
 } cndevPCIeInfoV2_t;
 
 /** PCie throughput information.*/
 typedef struct {
-	__int64_t pcieRead;         /**< The throughput of reading data in the past 20ms, unit: Byte.*/
-	__int64_t pcieWrite;        /**< The throughput of writing data in the past 20ms, unit: Byte.*/
-	__int64_t pcieReadTotal;    /**< The total throughput of reading data since load driver, unit: Byte.*/
-	__int64_t pcieWriteTotal;   /**< The total throughput of writing data since load driver, unit: Byte.*/
-	__uint64_t timestamp;       /**< The timestamp of throughput since 1970 (in microseconds).*/
+	__int64_t pcieRead;         /**< OUT: The throughput of reading data in the past 20ms, unit: Byte.*/
+	__int64_t pcieWrite;        /**< OUT: The throughput of writing data in the past 20ms, unit: Byte.*/
+	__int64_t pcieReadTotal;    /**< OUT: The total throughput of reading data since load driver, unit: Byte.*/
+	__int64_t pcieWriteTotal;   /**< OUT: The total throughput of writing data since load driver, unit: Byte.*/
+	__uint64_t timestamp;       /**< OUT: The timestamp of throughput since 1970 (in microseconds).*/
 	__int64_t reserved[8];      /**< Reserved.*/
 } cndevPCIethroughputV2_t;
 
 /** Device affinity information.*/
 typedef struct {
-	__int32_t version;	/**< API version.*/
-	__uint32_t cpuCount;	/**< The CPU count.*/
-	__uint32_t cpuAffinityBitMap[1024];	/**< If there are 80 CPUs in the system, bitmap's format is:
+	__int32_t version;	/**< IN: API version.*/
+	__uint32_t cpuCount;	/**< OUT: The CPU count.*/
+	__uint32_t cpuAffinityBitMap[1024];	/**< OUT: If there are 80 CPUs in the system, bitmap's format is:
 						  * bitmap[0]:31-16:not used, 15-0:cpu79-cpu64
 						  * bitmap[1]:31-0:cpu63-cpu32
 						  * bitmap[2]:31-0:cpu31-cpu0.
@@ -549,64 +535,64 @@ typedef struct {
 
 /** Topology relationship information.*/
 typedef struct {
-	__int32_t version;                        /**< API version.*/
-	cndevTopologyRelationshipEnum_t relation; /**< The topology relation.*/
+	__int32_t version;                        /**< IN: API version.*/
+	cndevTopologyRelationshipEnum_t relation; /**< OUT: The topology relation.*/
 } cndevTopologyRelationship_t;
 
 /** Device current PCI information.*/
 typedef struct {
-	__int32_t version;      /**< API version.*/
-	__int32_t currentSpeed; /**< PCIe generation.*/
-	__int32_t currentWidth; /**< PCIe link width.*/
+	__int32_t version;      /**< IN: API version.*/
+	__int32_t currentSpeed; /**< OUT: PCIe generation.*/
+	__int32_t currentWidth; /**< OUT: PCIe link width.*/
 } cndevCurrentPCIInfo_t;
 
 /** Device Max PCI information.**/
 typedef struct {
-	__int32_t version;     /**< API version.*/
-	__int32_t maxSpeed;    /**< PCIe generation.*/
-	__int32_t maxWidth;    /**< PCIe link width.*/
-}cndevPCIInfo_t;
+	__int32_t version;     /**< IN: API version.*/
+	__int32_t maxSpeed;    /**< OUT: PCIe generation.*/
+	__int32_t maxWidth;    /**< OUT: PCIe link width.*/
+} cndevPCIInfo_t;
 
 /** Topology node capability information.*/
 typedef struct cndevTopologyNodeCapInfo_t {
-	struct cndevTopologyNodeCapInfo_t *next;         /**< The pointer of the next node.*/
-	__uint8_t id;                             /**< The capability ID of the current node.*/
-	__uint16_t cap;                           /**< The capability value of the current node.*/
+	struct cndevTopologyNodeCapInfo_t *next;         /**< OUT: The pointer of the next node.*/
+	__uint8_t id;                             /**< OUT: The capability ID of the current node.*/
+	__uint16_t cap;                           /**< OUT: The capability value of the current node.*/
 } cndevTopologyNodeCapInfo_t;
 
 /** Topology node information.*/
 typedef struct cndevTopologyNode_t {
-	__int32_t virtualRootNode;      /**< The value is set to 1 when it is the virtual root node, and set to 0 when it is the real node.*/
-	__int32_t domain;               /**< Domain in PCIe.*/
-	__int32_t bus;                  /**< Bus number in PCIe.*/
-	__int32_t device;               /**< Device in PCIe.*/
-	__int32_t function;             /**< Function in PCIe.*/
-	__uint32_t subsystemId;         /**< Subsystem ID.*/
-	__uint32_t deviceId;            /**< Device ID of PCIe.*/
-	__uint32_t vendor;              /**< Vendor ID of PCIe.*/
-	__uint32_t subsystemVendor;     /**< Subsystem vendor ID of PCIe.*/
-	char const *deviceName;         /**< Device name.*/
-	__uint32_t classVal;            /**< Value of the class register of PCIe.*/
-	char const *className;          /**< Class name.*/
-	struct cndevTopologyNodeCapInfo_t *firstCap; /**< First capability.*/
-	struct cndevTopologyNode_t *parent;          /**< Parent node of this node.*/
-	struct cndevTopologyNode_t *left;            /**< Left node of this node.*/
-	struct cndevTopologyNode_t *right;           /**< Right node of this node.*/
-	struct cndevTopologyNode_t *child;           /**< Child node of this node.*/
-	__uint32_t linkSpeed;     /**< Link Speed of the device.*/
-	__int32_t isBridge;       /**< The value is set to true when the component is a bridge, and set to false when it is not a bridge.*/
-	__int32_t isCardbus;      /**< The value is set to true when the component is a CardBus, and set to false when it is not a CardBus.*/
-	__uint8_t primaryBus;     /**< Primary Bus.*/
-	__uint8_t secondaryBus;   /**< Secondary Bus.*/
-	__uint8_t subordinateBus; /**< Subordinate Bus.*/
-	__int32_t acsCtrl;        /**<ACS control information.*/
+	__int32_t virtualRootNode;      /**< OUT: The value is set to 1 when it is the virtual root node, and set to 0 when it is the real node.*/
+	__int32_t domain;               /**< OUT: Domain in PCIe.*/
+	__int32_t bus;                  /**< OUT: Bus number in PCIe.*/
+	__int32_t device;               /**< OUT: Device in PCIe.*/
+	__int32_t function;             /**< OUT: Function in PCIe.*/
+	__uint32_t subsystemId;         /**< OUT: Subsystem ID.*/
+	__uint32_t deviceId;            /**< OUT: Device ID of PCIe.*/
+	__uint32_t vendor;              /**< OUT: Vendor ID of PCIe.*/
+	__uint32_t subsystemVendor;     /**< OUT: Subsystem vendor ID of PCIe.*/
+	char const *deviceName;         /**< OUT: Device name.*/
+	__uint32_t classVal;            /**< OUT: Value of the class register of PCIe.*/
+	char const *className;          /**< OUT: Class name.*/
+	struct cndevTopologyNodeCapInfo_t *firstCap; /**< OUT: First capability.*/
+	struct cndevTopologyNode_t *parent;          /**< OUT: Parent node of this node.*/
+	struct cndevTopologyNode_t *left;            /**< OUT: Left node of this node.*/
+	struct cndevTopologyNode_t *right;           /**< OUT: Right node of this node.*/
+	struct cndevTopologyNode_t *child;           /**< OUT: Child node of this node.*/
+	__uint32_t linkSpeed;     /**< OUT: Link Speed of the device.*/
+	__int32_t isBridge;       /**< OUT: The value is set to true when the component is a bridge, and set to false when it is not a bridge.*/
+	__int32_t isCardbus;      /**< OUT: The value is set to true when the component is a CardBus, and set to false when it is not a CardBus.*/
+	__uint8_t primaryBus;     /**< OUT: Primary Bus.*/
+	__uint8_t secondaryBus;   /**< OUT: Secondary Bus.*/
+	__uint8_t subordinateBus; /**< OUT: Subordinate Bus.*/
+	__int32_t acsCtrl;        /**< OUT: ACS control information.*/
 } cndevTopologyNode_t;
 
 /** Topology node capability information.*/
 typedef struct {
-	__int32_t version;      /**< API version */
-	__uint8_t id;           /**< Capability ID */
-	__uint16_t cap;         /**< Capability value */
+	__int32_t version;      /**< IN: API version.*/
+	__uint8_t id;           /**< IN: Capability ID.*/
+	__uint16_t cap;         /**< OUT: Capability value.*/
 } cndevCapabilityInfo_t;
 
 /** Health status of the device.*/
@@ -630,10 +616,10 @@ typedef enum {
 
 /** Device and MLU Driver health information.*/
 typedef struct {
-	__int32_t version;                           /**< API version.*/
-	__int32_t health;                                  /**< The health flag.*/
-	cndevHealthStateEnum_t deviceState;          /**< The health status of the device.*/
-	cndevDriverHealthStateEnum_t driverState;    /**< The health status of MLU Driver.*/
+	__int32_t version;                           /**< IN: API version.*/
+	__int32_t health;                                  /**< OUT: The health flag.*/
+	cndevHealthStateEnum_t deviceState;          /**< OUT: The health status of the device.*/
+	cndevDriverHealthStateEnum_t driverState;    /**< OUT: The health status of MLU Driver.*/
 } cndevCardHealthState_t;
 
 /** Health diagnosis error codes of the incidents.*/
@@ -673,117 +659,117 @@ typedef enum {
 
 /** Health check results.*/
 typedef enum {
-  CNDEV_HEALTH_RESULT_PASS = 0,          /**< All results within this system are normal.*/
-  CNDEV_HEALTH_RESULT_WARN = 10,         /**< A warning has been issued.*/
-  CNDEV_HEALTH_RESULT_FAIL = 20,         /**< A failure has been issued.*/
+	CNDEV_HEALTH_RESULT_PASS = 0,          /**< All results within this system are normal.*/
+	CNDEV_HEALTH_RESULT_WARN = 10,         /**< A warning has been issued.*/
+	CNDEV_HEALTH_RESULT_FAIL = 20,         /**< A failure has been issued.*/
 } cndevHealthResult_t;
 
 /** Health check system.*/
 typedef enum {
-  CNDEV_HEALTH_SYSTEM_PCIE       = 0x1,   /**< PCIe system.*/
-  CNDEV_HEALTH_SYSTEM_NCS        = 0x2,   /**< MLU-Link system.*/
-  CNDEV_HEALTH_SYSTEM_PMU        = 0x4,   /**< Power management unit.*/
-  CNDEV_HEALTH_SYSTEM_MCU        = 0x8,   /**< Micro-controller unit.*/
-  CNDEV_HEALTH_SYSTEM_MEM        = 0x10,  /**< Memory.*/
-  CNDEV_HEALTH_SYSTEM_THERMAL    = 0x20,  /**< Thermal.*/
-  CNDEV_HEALTH_SYSTEM_POWER      = 0x40,  /**< Power.*/
-  CNDEV_HEALTH_SYSTEM_DRIVER     = 0x80,  /**< Driver-related.*/
+	CNDEV_HEALTH_SYSTEM_PCIE       = 0x1,   /**< PCIe system.*/
+	CNDEV_HEALTH_SYSTEM_NCS        = 0x2,   /**< MLU-Link system.*/
+	CNDEV_HEALTH_SYSTEM_PMU        = 0x4,   /**< Power management unit.*/
+	CNDEV_HEALTH_SYSTEM_MCU        = 0x8,   /**< Micro-controller unit.*/
+	CNDEV_HEALTH_SYSTEM_MEM        = 0x10,  /**< Memory.*/
+	CNDEV_HEALTH_SYSTEM_THERMAL    = 0x20,  /**< Thermal.*/
+	CNDEV_HEALTH_SYSTEM_POWER      = 0x40,  /**< Power.*/
+	CNDEV_HEALTH_SYSTEM_DRIVER     = 0x80,  /**< Driver-related.*/
 } cndevHealthSystem_t;
 
 #define CNDEV_ERR_MSG_LENGTH 512
 
 /** Health diagnosis information about the error.*/
 typedef struct {
-	char msg[CNDEV_ERR_MSG_LENGTH];      /**< Messages for the error codes.*/
-	__uint32_t device_id;                /**< Device ID of the incidents.*/
-	__uint32_t bdf;                      /**< Device BDF of the incidents.*/
-	cndevHealthError_t code;             /**< Error codes of the incidents.*/
+	char msg[CNDEV_ERR_MSG_LENGTH];      /**< OUT: Messages for the error codes.*/
+	__uint32_t device_id;                /**< OUT: Device ID of the incidents.*/
+	__uint32_t bdf;                      /**< OUT: Device BDF of the incidents.*/
+	cndevHealthError_t code;             /**< OUT: Error codes of the incidents.*/
 	__uint32_t category;                 /**< Reserved.*/
 	__uint32_t severity;                 /**< Reserved.*/
 } cndevDiagErrorDetail_t;
 
 /** Health diagnosis incident information.*/
 typedef struct {
-	cndevHealthSystem_t system;          /**< System to which this information belongs.*/
-	cndevHealthResult_t health;          /**< Health diagnosis of this incident.*/
-	cndevDiagErrorDetail_t error;        /**< Information about this error and its error code.*/
+	cndevHealthSystem_t system;          /**< OUT: System to which this information belongs.*/
+	cndevHealthResult_t health;          /**< OUT: Health diagnosis of this incident.*/
+	cndevDiagErrorDetail_t error;        /**< OUT: Information about this error and its error code.*/
 } cndevIncidentInfo_t;
 
 #define CNDEV_HEALTH_SYSTEM_MAX_INCIDENTS 64
 
 /** Device and MLU Driver health information, which includes the health incidents of each system.*/
 typedef struct {
-	__int32_t health;                                                  /**< The health flag.*/
-	cndevHealthStateEnum_t deviceState;                                /**< The health status of the device.*/
-	cndevDriverHealthStateEnum_t driverState;                          /**< The health status of MLU Driver.*/
-	cndevHealthResult_t overallHealth;                                 /**< The overall health status.*/
-	__uint32_t incident_count;                                         /**< The number of health incidents reported.*/
-	cndevIncidentInfo_t incidents[CNDEV_HEALTH_SYSTEM_MAX_INCIDENTS];  /**< Report of the errors detected.*/
+	__int32_t health;                                                  /**< OUT: The health flag.*/
+	cndevHealthStateEnum_t deviceState;                                /**< OUT: The health status of the device.*/
+	cndevDriverHealthStateEnum_t driverState;                          /**< OUT: The health status of MLU Driver.*/
+	cndevHealthResult_t overallHealth;                                 /**< OUT: The overall health status.*/
+	__uint32_t incident_count;                                         /**< OUT: The number of health incidents reported.*/
+	cndevIncidentInfo_t incidents[CNDEV_HEALTH_SYSTEM_MAX_INCIDENTS];  /**< OUT: Report of the errors detected.*/
 	__uint32_t reserved[8];                                            /**< Reserved.*/
 } cndevCardHealthStateV2_t;
 
 /** Heartbeat information.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	__uint32_t heartbeatCount;  /**< The count of heartbeats.*/
+	__int32_t version;          /**< IN: API version.*/
+	__uint32_t heartbeatCount;  /**< OUT: The count of heartbeats.*/
 } cndevCardHeartbeatCount_t;
 
 /** Device Link speed.*/
 typedef struct {
-	__int32_t version;     /**< API version.*/
-	__int32_t linkSpeed;   /**< The speed that can be 1-2.5GT/s, 2-5GT/s, 3-8GT/s or 4-16GT/s.*/
-} cndevLinkSpeed_t;  
+	__int32_t version;     /**< IN: API version.*/
+	__int32_t linkSpeed;   /**< OUT: The speed that can be 1-2.5GT/s, 2-5GT/s, 3-8GT/s, 4-16GT/s or 5-32GT/s.*/
+} cndevLinkSpeed_t;
 
 /** Device VPU utilization.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__int32_t vpuCount;               /**< The count of VPUs.*/
-	__int32_t vpuCodecUtilization[20];/**< The utilization of each VPU. The valid array index range is [0, ``vpuCount`` - 1].*/
-	__int32_t encoderCount;           /**< The count of video encoders.*/
-	__int32_t encoderUtilization[20]; /**< The utilization of each encoder. The valid array index range is [0, ``encoderCount`` - 1].*/
-	__int32_t decoderCount;           /**< The count of video decoders.*/
-	__int32_t decoderUtilization[20]; /**< The utilization of each decoder. The valid array index range is [0, ``decoderCount`` - 1].*/
-}cndevVideoCodecUtilization_t;
+	__int32_t version;                /**< IN: API version.*/
+	__int32_t vpuCount;               /**< OUT: The count of VPUs.*/
+	__int32_t vpuCodecUtilization[20];/**< OUT: The utilization of each VPU. The valid array index range is [0, ``vpuCount`` - 1].*/
+	__int32_t encoderCount;           /**< OUT: The count of video encoders.*/
+	__int32_t encoderUtilization[20]; /**< OUT: The utilization of each encoder. The valid array index range is [0, ``encoderCount`` - 1].*/
+	__int32_t decoderCount;           /**< OUT: The count of video decoders.*/
+	__int32_t decoderUtilization[20]; /**< OUT: The utilization of each decoder. The valid array index range is [0, ``decoderCount`` - 1].*/
+} cndevVideoCodecUtilization_t;
 
 /** Device JPU utilization.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__int32_t jpuCount;               /**< The count of JPUs.*/
-	__int32_t jpuCodecUtilization[20];/**< The utilization of each JPU. The valid array index range is [0, ``jpuCount`` - 1].*/
-}cndevImageCodecUtilization_t;
+	__int32_t version;                /**< IN: API version.*/
+	__int32_t jpuCount;               /**< OUT: The count of JPUs.*/
+	__int32_t jpuCodecUtilization[20];/**< OUT: The utilization of each JPU. The valid array index range is [0, ``jpuCount`` - 1].*/
+} cndevImageCodecUtilization_t;
 
 /** Device Fast memory allocation.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	__int32_t fastMemoryTotal;  /**< The total size of fast memory in KByte.*/
-	__int32_t fastMemoryFree;   /**< The size of free fast memory available for allocation in KByte.*/
-}cndevFastAlloc_t;
+	__int32_t version;          /**< IN: API version.*/
+	__int32_t fastMemoryTotal;  /**< OUT: The total size of fast memory in KByte.*/
+	__int32_t fastMemoryFree;   /**< OUT: The size of free fast memory available for allocation in KByte.*/
+} cndevFastAlloc_t;
 
 /** NUMA node ID.*/
 typedef struct {
-	__int32_t version;   /**< API version.*/
-	__int32_t nodeId;    /**< NUMA node ID.*/
+	__int32_t version;   /**< IN: API version.*/
+	__int32_t nodeId;    /**< OUT: NUMA node ID.*/
 } cndevNUMANodeId_t;
 
 /** Device Scaler utilization.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__int32_t scalerCount;            /**< The count of scalers.*/
-	__int32_t scalerUtilization[20];  /**< The utilization of each scaler. The valid array index range is [0, ``scalerCount`` - 1].*/
-}cndevScalerUtilization_t;
+	__int32_t version;                /**< IN: API version.*/
+	__int32_t scalerCount;            /**< OUT: The count of scalers.*/
+	__int32_t scalerUtilization[20];  /**< OUT: The utilization of each scaler. The valid array index range is [0, ``scalerCount`` - 1].*/
+} cndevScalerUtilization_t;
 
 /** Codec Turbo information.*/
 typedef struct {
-	__int32_t version;        /**< API version.*/
-	__int32_t codecTurbo;     /**< Codec Turbo status. \p 0 represents \p DISABLE, and \p 1 represents \p ENABLE.*/
-}cndevCodecTurbo_t;
+	__int32_t version;        /**< IN: API version.*/
+	__int32_t codecTurbo;     /**< OUT: Codec Turbo status. \p 0 represents \p DISABLE, and \p 1 represents \p ENABLE.*/
+} cndevCodecTurbo_t;
 
 /** MLU-Link version.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	__uint32_t majorVersion;    /**< The major version number.*/
-	__uint32_t minorVersion;    /**< The minor version number.*/
-	__uint32_t buildVersion;    /**< The patch version number.*/
+	__int32_t version;          /**< IN: API version.*/
+	__uint32_t majorVersion;    /**< OUT: The major version number.*/
+	__uint32_t minorVersion;    /**< OUT: The minor version number.*/
+	__uint32_t buildVersion;    /**< OUT: The patch version number.*/
 } cndevMLULinkVersion_t;
 
 
@@ -811,10 +797,10 @@ typedef enum {
 
 /** MLU-Link status information.*/
 typedef struct {
-	cndevMLULinkMACStateEnum_t macState;		/**< The MAC status of the MLU-Link.*/
-	cndevMLULinkSerdesStateEnum_t serdesState;	/**< The SerDes status of the MLU-Link.*/
-	cndevMLULinkPresenceStateEnum_t presenceState;	/**< The Presence status of the MLU-Link.*/
-	__uint32_t serdesProgress;			/**< The status of establishing an MLU-Link.
+	cndevMLULinkMACStateEnum_t macState;		/**< OUT: The MAC status of the MLU-Link.*/
+	cndevMLULinkSerdesStateEnum_t serdesState;	/**< OUT: The SerDes status of the MLU-Link.*/
+	cndevMLULinkPresenceStateEnum_t presenceState;	/**< OUT: The Presence status of the MLU-Link.*/
+	__uint32_t serdesProgress;			/**< OUT: The status of establishing an MLU-Link.
 							  * It is valid when \p serdesState is CNDEV_MLULINK_SERDES_STATE_ONGOING.
 							  * The valid value is in range of [0, 1000], where 1000 indicates the link is established.
 							  */
@@ -840,296 +826,296 @@ typedef struct {
 
 /** Optical information.*/
 typedef struct {
-	__uint8_t qdd_idx;			/**< The scale out port index.*/
-	__uint8_t split_idx;			/**< The splitting index of the optical module.*/
-	__uint8_t present;			/**< Installation status of the optical module.*/
-	char vendor_name[16];			/**< Vendor name.*/
-	char vendor_pn[16];			/**< Vendor device ID.*/
-	char vendor_sn[16];			/**< Vendor serial number.*/
-	__uint8_t vendor_oui[3];		/**< Unique identifier of the vendor organization.*/
-	__uint8_t identifier;			/**< Identity information of the optical module.*/
-	float wave_length;			/**< Optical module wavelength, unit: nm.*/
-	char manu_dc[8];			/**< Manufacturing date code.*/
-	float temp;				/**< Optical module temperature, degrees Celsius.*/
-	cndevOpticalStatusEnum_t temp_state;	/**< The temperature status of optical module.*/
-	cndevOpticalThres_t temp_thresh;	/**< Temperature monitor thresholds.*/
-	float volt;				/**< Power voltage of the optical module, unit: V.*/
-	cndevOpticalStatusEnum_t volt_state;	/**< The voltage status of optical module.*/
-	cndevOpticalThres_t volt_thresh;	/**< Supply 3.3-volt monitor thresholds.*/
-	__int32_t valid_lane_num;		/**< The valid number of lane information for
+	__uint8_t qdd_idx;			/**< OUT: The scale out port index.*/
+	__uint8_t split_idx;			/**< OUT: The splitting index of the optical module.*/
+	__uint8_t present;			/**< OUT: Installation status of the optical module.*/
+	char vendor_name[16];			/**< OUT: Vendor name.*/
+	char vendor_pn[16];			/**< OUT: Vendor device ID.*/
+	char vendor_sn[16];			/**< OUT: Vendor serial number.*/
+	__uint8_t vendor_oui[3];		/**< OUT: Unique identifier of the vendor organization.*/
+	__uint8_t identifier;			/**< OUT: Identity information of the optical module.*/
+	float wave_length;			/**< OUT: Optical module wavelength, unit: nm.*/
+	char manu_dc[8];			/**< OUT: Manufacturing date code.*/
+	float temp;				/**< OUT: Optical module temperature, degrees Celsius.*/
+	cndevOpticalStatusEnum_t temp_state;	/**< OUT: The temperature status of optical module.*/
+	cndevOpticalThres_t temp_thresh;	/**< OUT: Temperature monitor thresholds.*/
+	float volt;				/**< OUT: Power voltage of the optical module, unit: V.*/
+	cndevOpticalStatusEnum_t volt_state;	/**< OUT: The voltage status of optical module.*/
+	cndevOpticalThres_t volt_thresh;	/**< OUT: Supply 3.3-volt monitor thresholds.*/
+	__int32_t valid_lane_num;		/**< OUT: The valid number of lane information for
 						  * ``txpwr``, ``txpwr_state``, ``txbias``, ``txbias_state``, ``rxpwr`` and ``rxpwr_state``.
 						  */
-	float txpwr[8];				/**< TX[1:8] output optical power, unit: dBm.*/
-	cndevOpticalStatusEnum_t txpwr_state[8];/**< TX[1:8] optical power status.*/
-	cndevOpticalThres_t txpwr_thresh;	/**< TX optical power monitor thresholds.*/
-	float txbias[8];			/**< TX[1:8] bias current, unit: mA.*/
-	cndevOpticalStatusEnum_t txbias_state[8];/**< TX[1:8] bias current status.*/
-	cndevOpticalThres_t txbias_thresh;	/**< TX bias current monitor thresholds.*/
-	float rxpwr[8];				/**< RX[1:8] input optical power, unit: dBm.*/
-	cndevOpticalStatusEnum_t rxpwr_state[8];/**< RX[1:8] optical power status.*/
-	cndevOpticalThres_t rxpwr_thresh;	/**< RX optical power thresholds.*/
-	__uint8_t txlos_flag;			/**< TX[1:8] optical power loss flag.*/
-	__uint8_t rxlos_flag;			/**< RX[1:8] optical power loss flag.*/
+	float txpwr[8];				/**< OUT: TX[1:8] output optical power, unit: dBm.*/
+	cndevOpticalStatusEnum_t txpwr_state[8];/**< OUT: TX[1:8] optical power status.*/
+	cndevOpticalThres_t txpwr_thresh;	/**< OUT: TX optical power monitor thresholds.*/
+	float txbias[8];			/**< OUT: TX[1:8] bias current, unit: mA.*/
+	cndevOpticalStatusEnum_t txbias_state[8];/**< OUT: TX[1:8] bias current status.*/
+	cndevOpticalThres_t txbias_thresh;	/**< OUT: TX bias current monitor thresholds.*/
+	float rxpwr[8];				/**< OUT: RX[1:8] input optical power, unit: dBm.*/
+	cndevOpticalStatusEnum_t rxpwr_state[8];/**< OUT: RX[1:8] optical power status.*/
+	cndevOpticalThres_t rxpwr_thresh;	/**< OUT: RX optical power thresholds.*/
+	__uint8_t txlos_flag;			/**< OUT: TX[1:8] optical power loss flag.*/
+	__uint8_t rxlos_flag;			/**< OUT: RX[1:8] optical power loss flag.*/
 	__uint64_t reserved[8];		/**< Reserved.*/
 } cndevOpticalInfo_t;
 
 /** MLU-Link speed.*/
 typedef struct {
-	__int32_t version;                    /**< API version.*/
-	float speedValue;                     /**< The max speed of MLU-Link port, unit: GB/s.*/
-	cndevMLULinkSpeedEnum_t speedFormat;  /**< The format of speed.*/
+	__int32_t version;                    /**< IN: API version.*/
+	float speedValue;                     /**< OUT: The max speed of MLU-Link port, unit: GB/s.*/
+	cndevMLULinkSpeedEnum_t speedFormat;  /**< OUT: The format of speed.*/
 } cndevMLULinkSpeed_t;
 
 /** MLU-Link capability, only valid on MLU370.*/
 typedef struct {
-	__int32_t version;            /**< API version.*/
-	__uint32_t p2pTransfer;       /**< The capability of p2p Transfer.*/
-	__uint32_t interlakenSerdes;  /**< The capability of interlaken SerDes.*/
+	__int32_t version;            /**< IN: API version.*/
+	__uint32_t p2pTransfer;       /**< OUT: The capability of p2p Transfer.*/
+	__uint32_t interlakenSerdes;  /**< OUT: The capability of interlaken SerDes.*/
 } cndevMLULinkCapability_t;
 
-/** 
+/**
  * @brief MLU-Link statistical count.
 
  * It is deprecated and will be removed in future release.
-*/
+ */
 typedef struct {
-	__int32_t version;              /**< API version.*/
-	__uint64_t cntrReadByte;        /**< The count of read bytes.*/
-	__uint64_t cntrReadPackage;     /**< The count of read packages.*/
-	__uint64_t cntrWriteByte;       /**< The count of write bytes.*/
-	__uint64_t cntrWritePackage;    /**< The count of write packages.*/
-	__uint64_t errReplay;           /**< The count of replay packages.*/
-	__uint64_t errFatal;            /**< The count of failures.*/
-	__uint64_t errEccDouble;        /**< The count of ECC Double errors.*/
-	__uint64_t errCRC24;            /**< The count of CRC24 errors.*/
-	__uint64_t errCRC32;            /**< The count of CRC32 errors.*/
-	__uint64_t errCorrected;        /**< The count of corrected errors.*/
-	__uint64_t errUncorrected;      /**< The count of uncorrected errors.*/
-	__uint64_t errReadPackage;      /**< The count of failed attempts to read packages.*/
-	__uint64_t errWritePackage;     /**< The count of failed attempts to write packages.*/
-	__uint64_t errIllegalAccess;    /**< The count of illegal access.*/
-	__uint64_t cntrCnpPackage;      /**< The count of CNP packages.*/
-	__uint64_t cntrPfcPackage;      /**< The count of PFC packages.*/
-	__uint64_t statQPInUsing;       /**< The count of QPs in use.*/
-	__uint64_t statTaskAlive;       /**< The count of active tasks.*/
+	__int32_t version;              /**< IN: API version.*/
+	__uint64_t cntrReadByte;        /**< OUT: The count of read bytes.*/
+	__uint64_t cntrReadPackage;     /**< OUT: The count of read packages.*/
+	__uint64_t cntrWriteByte;       /**< OUT: The count of write bytes.*/
+	__uint64_t cntrWritePackage;    /**< OUT: The count of write packages.*/
+	__uint64_t errReplay;           /**< OUT: The count of replay packages.*/
+	__uint64_t errFatal;            /**< OUT: The count of failures.*/
+	__uint64_t errEccDouble;        /**< OUT: The count of ECC Double errors.*/
+	__uint64_t errCRC24;            /**< OUT: The count of CRC24 errors.*/
+	__uint64_t errCRC32;            /**< OUT: The count of CRC32 errors.*/
+	__uint64_t errCorrected;        /**< OUT: The count of corrected errors.*/
+	__uint64_t errUncorrected;      /**< OUT: The count of uncorrected errors.*/
+	__uint64_t errReadPackage;      /**< OUT: The count of failed attempts to read packages.*/
+	__uint64_t errWritePackage;     /**< OUT: The count of failed attempts to write packages.*/
+	__uint64_t errIllegalAccess;    /**< OUT: The count of illegal access.*/
+	__uint64_t cntrCnpPackage;      /**< OUT: The count of CNP packages.*/
+	__uint64_t cntrPfcPackage;      /**< OUT: The count of PFC packages.*/
+	__uint64_t statQPInUsing;       /**< OUT: The count of QPs in use.*/
+	__uint64_t statTaskAlive;       /**< OUT: The count of active tasks.*/
 } cndevMLULinkCounter_t;
 
 /** MLU-Link statistics information.*/
 typedef struct {
-	__uint64_t rxPfcOkPkt;            /**< The total count of received OK PFC packets.*/
-	__uint64_t rxPfc0Pkt;             /**< The count of received PFC packets with priority 0.*/
-	__uint64_t rxPfc1Pkt;             /**< The count of received PFC packets with priority 1.*/
-	__uint64_t rxPfc2Pkt;             /**< The count of received PFC packets with priority 2.*/
-	__uint64_t rxPfc3Pkt;             /**< The count of received PFC packets with priority 3.*/
-	__uint64_t rxPfc4Pkt;             /**< The count of received PFC packets with priority 4.*/
-	__uint64_t rxPfc5Pkt;             /**< The count of received PFC packets with priority 5.*/
-	__uint64_t rxPfc6Pkt;             /**< The count of received PFC packets with priority 6.*/
-	__uint64_t rxPfc7Pkt;             /**< The count of received PFC packets with priority 7.*/
-	__uint64_t txPfcOkPkt;            /**< The total count of sent OK PFC packets.*/
-	__uint64_t txPfc0Pkt;             /**< The count of sent PFC packets with priority 0.*/
-	__uint64_t txPfc1Pkt;             /**< The count of sent PFC packets with priority 1.*/
-	__uint64_t txPfc2Pkt;             /**< The count of sent PFC packets with priority 2.*/
-	__uint64_t txPfc3Pkt;             /**< The count of sent PFC packets with priority 3.*/
-	__uint64_t txPfc4Pkt;             /**< The count of sent PFC packets with priority 4.*/
-	__uint64_t txPfc5Pkt;             /**< The count of sent PFC packets with priority 5.*/
-	__uint64_t txPfc6Pkt;             /**< The count of sent PFC packets with priority 6.*/
-	__uint64_t txPfc7Pkt;             /**< The count of sent PFC packets with priority 7.*/
-	__uint64_t rxRocePkt;             /**< The count of packets received by RoCE.*/
-	__uint64_t txRocePkt;             /**< The count of packets sent by RoCE.*/
-	__uint64_t roceVerificationErrPkt;/**< The count of error packets verified by RoCE.*/
+	__uint64_t rxPfcOkPkt;            /**< OUT: The total count of received OK PFC packets.*/
+	__uint64_t rxPfc0Pkt;             /**< OUT: The count of received PFC packets with priority 0.*/
+	__uint64_t rxPfc1Pkt;             /**< OUT: The count of received PFC packets with priority 1.*/
+	__uint64_t rxPfc2Pkt;             /**< OUT: The count of received PFC packets with priority 2.*/
+	__uint64_t rxPfc3Pkt;             /**< OUT: The count of received PFC packets with priority 3.*/
+	__uint64_t rxPfc4Pkt;             /**< OUT: The count of received PFC packets with priority 4.*/
+	__uint64_t rxPfc5Pkt;             /**< OUT: The count of received PFC packets with priority 5.*/
+	__uint64_t rxPfc6Pkt;             /**< OUT: The count of received PFC packets with priority 6.*/
+	__uint64_t rxPfc7Pkt;             /**< OUT: The count of received PFC packets with priority 7.*/
+	__uint64_t txPfcOkPkt;            /**< OUT: The total count of sent OK PFC packets.*/
+	__uint64_t txPfc0Pkt;             /**< OUT: The count of sent PFC packets with priority 0.*/
+	__uint64_t txPfc1Pkt;             /**< OUT: The count of sent PFC packets with priority 1.*/
+	__uint64_t txPfc2Pkt;             /**< OUT: The count of sent PFC packets with priority 2.*/
+	__uint64_t txPfc3Pkt;             /**< OUT: The count of sent PFC packets with priority 3.*/
+	__uint64_t txPfc4Pkt;             /**< OUT: The count of sent PFC packets with priority 4.*/
+	__uint64_t txPfc5Pkt;             /**< OUT: The count of sent PFC packets with priority 5.*/
+	__uint64_t txPfc6Pkt;             /**< OUT: The count of sent PFC packets with priority 6.*/
+	__uint64_t txPfc7Pkt;             /**< OUT: The count of sent PFC packets with priority 7.*/
+	__uint64_t rxRocePkt;             /**< OUT: The count of packets received by RoCE.*/
+	__uint64_t txRocePkt;             /**< OUT: The count of packets sent by RoCE.*/
+	__uint64_t roceVerificationErrPkt;/**< OUT: The count of error packets verified by RoCE.*/
 	__uint64_t reserved[64];          /**< Reserved.*/
 } cndevMLULinkCounterExt_t;
 
 /** MLU-Link basic counter information.*/
 typedef struct {
-	__uint64_t rxByte;           /**< The total number of bytes of all packets received with no error.*/
-	__uint64_t rxPkt;            /**< The count of all packets received with no error.*/
-	__uint64_t txByte;           /**< The total number of bytes of all packets transmitted with no error.*/
-	__uint64_t txPkt;            /**< The count of all packets sent with no error.*/
-	__uint64_t rxRocePkt;        /**< The count of all packets received by RoCE with no error.*/
-	__uint64_t txRocePkt;        /**< The count of all packets transmitted by RoCE with no error.*/
-	__uint64_t timestamp;        /**< The timestamp of getting basic counters since 1970 (in microseconds).*/
+	__uint64_t rxByte;           /**< OUT: The total number of bytes of all packets received with no error.*/
+	__uint64_t rxPkt;            /**< OUT: The count of all packets received with no error.*/
+	__uint64_t txByte;           /**< OUT: The total number of bytes of all packets transmitted with no error.*/
+	__uint64_t txPkt;            /**< OUT: The count of all packets sent with no error.*/
+	__uint64_t rxRocePkt;        /**< OUT: The count of all packets received by RoCE with no error.*/
+	__uint64_t txRocePkt;        /**< OUT: The count of all packets transmitted by RoCE with no error.*/
+	__uint64_t timestamp;        /**< OUT: The timestamp of getting basic counters since 1970 (in microseconds).*/
 	__uint64_t reserved[25];     /**< Reserved.*/
 } cndevMLULinkBasicCounter_t;
 
 /** MLU-Link congestion control counter information.*/
 typedef struct {
-	__uint64_t rxCnpPkt;      /**< The count of Congestion Notification Packets received.*/
+	__uint64_t rxCnpPkt;      /**< OUT: The count of Congestion Notification Packets received.*/
 	__uint64_t reserved[7];   /**< Reserved.*/
 } cndevMLULinkCongestionCtrlCounter_t;
 
 /** MLU-Link event counter information.*/
 typedef struct {
-	__uint64_t correctFecCnt;       /**< The count of corrected codewords by FEC correction algorithms.*/
-	__uint64_t uncorrectFecCnt;     /**< The count of uncorrected codewords by FEC correction algorithms.*/
-	__uint64_t rxBadFcsPkt;         /**< The total count of packets received with bad FCS.*/
-	__uint64_t txBadFcsPkt;         /**< The total count of packets transmitted with bad FCS.*/
-	__uint64_t illegalAccessCnt;    /**< The count of illegal memory accesses detected while receiving data.*/
+	__uint64_t correctFecCnt;       /**< OUT: The count of corrected codewords by FEC correction algorithms.*/
+	__uint64_t uncorrectFecCnt;     /**< OUT: The count of uncorrected codewords by FEC correction algorithms.*/
+	__uint64_t rxBadFcsPkt;         /**< OUT: The total count of packets received with bad FCS.*/
+	__uint64_t txBadFcsPkt;         /**< OUT: The total count of packets transmitted with bad FCS.*/
+	__uint64_t illegalAccessCnt;    /**< OUT: The count of illegal memory accesses detected while receiving data.*/
 	__uint64_t reserved[11];        /**< Reserved.*/
 } cndevMLULinkErrorCounter_t;
 
 /** MLU-Link flow control counter information.*/
 typedef struct {
-	__uint64_t rxPfcPkt;         /**< The total count of received PFC packets.*/
-	__uint64_t rxPfc0Pkt;        /**< The count of received PFC packets with priority 0.*/
-	__uint64_t rxPfc1Pkt;        /**< The count of received PFC packets with priority 1.*/
-	__uint64_t rxPfc2Pkt;        /**< The count of received PFC packets with priority 2.*/
-	__uint64_t rxPfc3Pkt;        /**< The count of received PFC packets with priority 3.*/
-	__uint64_t rxPfc4Pkt;        /**< The count of received PFC packets with priority 4.*/
-	__uint64_t rxPfc5Pkt;        /**< The count of received PFC packets with priority 5.*/
-	__uint64_t rxPfc6Pkt;        /**< The count of received PFC packets with priority 6.*/
-	__uint64_t rxPfc7Pkt;        /**< The count of received PFC packets with priority 7.*/
-	__uint64_t txPfcPkt;         /**< The total count of sent OK PFC packets.*/
-	__uint64_t txPfc0Pkt;        /**< The count of sent PFC packets with priority 0.*/
-	__uint64_t txPfc1Pkt;        /**< The count of sent PFC packets with priority 1.*/
-	__uint64_t txPfc2Pkt;        /**< The count of sent PFC packets with priority 2.*/
-	__uint64_t txPfc3Pkt;        /**< The count of sent PFC packets with priority 3.*/
-	__uint64_t txPfc4Pkt;        /**< The count of sent PFC packets with priority 4.*/
-	__uint64_t txPfc5Pkt;        /**< The count of sent PFC packets with priority 5.*/
-	__uint64_t txPfc6Pkt;        /**< The count of sent PFC packets with priority 6.*/
-	__uint64_t txPfc7Pkt;        /**< The count of sent PFC packets with priority 7.*/
+	__uint64_t rxPfcPkt;         /**< OUT: The total count of received PFC packets.*/
+	__uint64_t rxPfc0Pkt;        /**< OUT: The count of received PFC packets with priority 0.*/
+	__uint64_t rxPfc1Pkt;        /**< OUT: The count of received PFC packets with priority 1.*/
+	__uint64_t rxPfc2Pkt;        /**< OUT: The count of received PFC packets with priority 2.*/
+	__uint64_t rxPfc3Pkt;        /**< OUT: The count of received PFC packets with priority 3.*/
+	__uint64_t rxPfc4Pkt;        /**< OUT: The count of received PFC packets with priority 4.*/
+	__uint64_t rxPfc5Pkt;        /**< OUT: The count of received PFC packets with priority 5.*/
+	__uint64_t rxPfc6Pkt;        /**< OUT: The count of received PFC packets with priority 6.*/
+	__uint64_t rxPfc7Pkt;        /**< OUT: The count of received PFC packets with priority 7.*/
+	__uint64_t txPfcPkt;         /**< OUT: The total count of sent OK PFC packets.*/
+	__uint64_t txPfc0Pkt;        /**< OUT: The count of sent PFC packets with priority 0.*/
+	__uint64_t txPfc1Pkt;        /**< OUT: The count of sent PFC packets with priority 1.*/
+	__uint64_t txPfc2Pkt;        /**< OUT: The count of sent PFC packets with priority 2.*/
+	__uint64_t txPfc3Pkt;        /**< OUT: The count of sent PFC packets with priority 3.*/
+	__uint64_t txPfc4Pkt;        /**< OUT: The count of sent PFC packets with priority 4.*/
+	__uint64_t txPfc5Pkt;        /**< OUT: The count of sent PFC packets with priority 5.*/
+	__uint64_t txPfc6Pkt;        /**< OUT: The count of sent PFC packets with priority 6.*/
+	__uint64_t txPfc7Pkt;        /**< OUT: The count of sent PFC packets with priority 7.*/
 	__uint64_t reserved[14];     /**< Reserved.*/
 } cndevMLULinkFlowCtrlCounter_t;
 
 /** MLU-Link event counter information.*/
 typedef struct {
-	__uint64_t linkDown;        /**< The count of MLU-Link disconnections.*/
-	__uint64_t replay;          /**< The total count of task replays.*/
-	__uint64_t replayFail;      /**< The count of task replay failures.*/
+	__uint64_t linkDown;        /**< OUT: The count of MLU-Link disconnections.*/
+	__uint64_t replay;          /**< OUT: The total count of task replays.*/
+	__uint64_t replayFail;      /**< OUT: The count of task replay failures.*/
 	__uint64_t reserved[13];    /**< Reserved.*/
 } cndevMLULinkEventCounter_t;
 
 /** MLU-Link task statistics counter information.*/
 typedef struct {
-	__uint64_t qpInUsing;       /**< The count of QPs in use on an MLU-Link.*/
-	__uint64_t taskAlive;       /**< The count of tasks on an MLU-Link.*/
+	__uint64_t qpInUsing;       /**< OUT: The count of QPs in use on an MLU-Link.*/
+	__uint64_t taskAlive;       /**< OUT: The count of tasks on an MLU-Link.*/
 	__uint64_t reserved[14];    /**< Reserved.*/
 } cndevMLULinkTaskStatsCounter_t;
 
-/** 
+/**
  * @brief MLU-Link count information.
 
  * It is deprecated and will be removed in future release.
-*/
+ */
 typedef struct {
-	__int32_t version;                    /**< API version.*/
-	cndevMLULinkCounterEnum_t setCounter; /**< The count type.*/
+	__int32_t version;                    /**< IN: API version.*/
+	cndevMLULinkCounterEnum_t setCounter; /**< IN: The count type.*/
 } cndevMLULinkSetCounter_t;
 
 /** MLU-Link remote information.*/
 typedef struct {
-	__int32_t version;                          /**< API version.*/
-	__uint64_t mcSn;                            /**< The mezzanine device SN of the device that is connected with MLU-Link.*/
-	__uint64_t baSn;                            /**< The board SN of the device that is connected with MLU-Link.*/
-	__uint32_t slotId;                          /**< The slot ID of the device that is connected with MLU-Link.*/
-	__uint32_t portId;                          /**< The port ID of the device that is connected with MLU-Link.*/
-	__uint8_t devIp[16];                        /**< The IP address of the device that is connected with MLU-Link.*/
-	__uint8_t uuid[CNDEV_UUID_SIZE];            /**< The UUID of the device that is connected with MLU-Link.*/
-	__uint32_t devIpVersion;                    /**< The IP version of the device that is connected with MLU-Link.*/
-	__uint32_t isIpValid;                       /**< The valid flag of the IP address of the device that is connected with MLU-Link.*/
-	__int32_t connectType;                      /**< The connection type of the device that is connected with MLU-Link.*/
-	__uint64_t ncsUUID64;                       /**< The ncs UUID of the device that is connected with MLU-Link.*/
-	__uint8_t  mac_addr[CNDEV_MAC_ADDRESS_LEN]; /**< The MAC address of the device that is connected with MLU-Link.*/
-	char port_name[CNDEV_MLU_REMOTE_PORT_NAME_LEN];  /**< The port name of the device that is connected with MLU-Link.*/
+	__int32_t version;                          /**< IN: API version.*/
+	__uint64_t mcSn;                            /**< OUT: The mezzanine device SN of the device that is connected with MLU-Link.*/
+	__uint64_t baSn;                            /**< OUT: The board SN of the device that is connected with MLU-Link.*/
+	__uint32_t slotId;                          /**< OUT: The slot ID of the device that is connected with MLU-Link.*/
+	__uint32_t portId;                          /**< OUT: The port ID of the device that is connected with MLU-Link.*/
+	__uint8_t devIp[16];                        /**< OUT: The IP address of the device that is connected with MLU-Link.*/
+	__uint8_t uuid[CNDEV_UUID_SIZE];            /**< OUT: The UUID of the device that is connected with MLU-Link.*/
+	__uint32_t devIpVersion;                    /**< OUT: The IP version of the device that is connected with MLU-Link.*/
+	__uint32_t isIpValid;                       /**< OUT: The valid flag of the IP address of the device that is connected with MLU-Link.*/
+	__int32_t connectType;                      /**< OUT: The connection type of the device that is connected with MLU-Link.*/
+	__uint64_t ncsUUID64;                       /**< OUT: The ncs UUID of the device that is connected with MLU-Link.*/
+	__uint8_t  mac_addr[CNDEV_MAC_ADDRESS_LEN]; /**< OUT: The MAC address of the device that is connected with MLU-Link.*/
+	char port_name[CNDEV_MLU_REMOTE_PORT_NAME_LEN];  /**< OUT: The port name of the device that is connected with MLU-Link.*/
 } cndevMLULinkRemoteInfo_t;
 
 /** MLU-Link management network address.*/
 typedef struct {
-	__uint32_t ip_version;           /**< IP address version. 4: IPv4, 6: IPv6, and 1: IPv4 and IPv6.*/
-	struct in_addr ip_addr;          /**< IPv4 address, valid when ip_version is IPv4 or IPv4 and IPv6.*/
-	struct in6_addr ipv6_addr;       /**< IPv6 address, valid when ip_version is IPv6 or IPv4 and IPv6.*/
+	__uint32_t ip_version;           /**< OUT: IP address version. 4: IPv4, 6: IPv6, and 1: IPv4 and IPv6.*/
+	struct in_addr ip_addr;          /**< OUT: IPv4 address, valid when ip_version is IPv4 or IPv4 and IPv6.*/
+	struct in6_addr ipv6_addr;       /**< OUT: IPv6 address, valid when ip_version is IPv6 or IPv4 and IPv6.*/
 } cndevMLULinkMgmtAddr_t;
 
 /** MLU-Link host SN.*/
 typedef struct {
-	char sn[CNDEV_HOST_SN_LEN]; /**< Serial number.*/
+	char sn[CNDEV_HOST_SN_LEN]; /**< OUT: Serial number.*/
 } cndevMLULinkHostSN_t;
 
 /** MLU-Link port physical index name.*/
 typedef struct {
-	char ppi[CNDEV_IFACE_NAME_LEN];		/**< Port physical index name by main index and spilt index, such as 0:1.
+	char ppi[CNDEV_IFACE_NAME_LEN];		/**< OUT: Port physical index name by main index and spilt index, such as 0:1.
 						  * It is "N/A" for non scale-out MLU-Links.
 						  */
 } cndevMLULinkPPI_t;
 
 /** MLU-Link OAM port name.*/
 typedef struct {
-	char opn[CNDEV_IFACE_NAME_LEN]; /**< OAM port name.*/
+	char opn[CNDEV_IFACE_NAME_LEN]; /**< OUT: OAM port name.*/
 } cndevMLULinkOPN_t;
 
 /** MLU-Link devices SN.*/
 typedef struct {
-	__int32_t version;               /**< API version.*/
-	__uint64_t mlulinkMcSn[8];       /**< The mezzanine device SN of the device that is connected with MLU-Link.*/
-	__uint64_t mlulinkBaSn[8];       /**< The board SN of the device that is connected with MLU-Link.*/
+	__int32_t version;               /**< IN: API version.*/
+	__uint64_t mlulinkMcSn[8];       /**< OUT: The mezzanine device SN of the device that is connected with MLU-Link.*/
+	__uint64_t mlulinkBaSn[8];       /**< OUT: The board SN of the device that is connected with MLU-Link.*/
 } cndevMLULinkDevSN_t;
 
 /** NVME information.*/
 typedef struct {
-	__uint8_t nvmeSn[21];             /**< The NVME SSD SN.*/
-	__uint8_t nvmeModel[17];          /**< The NVME SSD model.*/
-	__uint8_t nvmeFw[9];              /**< The NVME SSD firmware version.*/
-	__uint8_t nvmeMfc[9];             /**< The NVME SSD manufacturer.*/
+	__uint8_t nvmeSn[21];             /**< OUT: The NVME SSD SN.*/
+	__uint8_t nvmeModel[17];          /**< OUT: The NVME SSD model.*/
+	__uint8_t nvmeFw[9];              /**< OUT: The NVME SSD firmware version.*/
+	__uint8_t nvmeMfc[9];             /**< OUT: The NVME SSD manufacturer.*/
 } cndevNvmeSsdInfo_t;
 
 /** PSU information.*/
 typedef struct {
-	__uint8_t psuSn[17];              /**< The PSU SN.*/
-	__uint8_t psuModel[17];           /**< The PSU model.*/
-	__uint8_t psuFw[17];              /**< The PSU firmware version.*/
-	__uint8_t psuMfc[17];             /**< The PSU manufacturer.*/
+	__uint8_t psuSn[17];              /**< OUT: The PSU SN.*/
+	__uint8_t psuModel[17];           /**< OUT: The PSU model.*/
+	__uint8_t psuFw[17];              /**< OUT: The PSU firmware version.*/
+	__uint8_t psuMfc[17];             /**< OUT: The PSU manufacturer.*/
 } cndevPsuInfo_t;
 
 /** IB information.*/
 typedef struct {
-	__uint8_t ibSn[25];               /**< The IB SN.*/
-	__uint8_t ibModel[17];            /**< The IB model.*/
-	__uint8_t ibFw[5];                /**< The IB firmware version.*/
-	__uint8_t ibMfc[9];               /**< The IB manufacturer.*/
+	__uint8_t ibSn[25];               /**< OUT: The IB SN.*/
+	__uint8_t ibModel[17];            /**< OUT: The IB model.*/
+	__uint8_t ibFw[5];                /**< OUT: The IB firmware version.*/
+	__uint8_t ibMfc[9];               /**< OUT: The IB manufacturer.*/
 } cndevIbInfo_t;
 
 /** Chassis information.*/
 typedef struct {
-	__int32_t version;                     /**< API version.*/
-	__uint64_t chassisSn;                  /**< Chassis SN.*/
-	char chassisProductDate[12];           /**< Chassis product date.*/
-	char chassisPartNum[13];               /**< Chassis production model.*/
-	char chassisVendorName[17];            /**< Chassis manufacturer.*/
-	__uint8_t nvmeSsdNum;                  /**< The count of NVME SSDs.*/
-	cndevNvmeSsdInfo_t nvmeInfo[8];        /**< The information of NVME SSD.*/
-	__uint8_t ibBoardNum;                  /**< The count of IBs.*/
-	cndevIbInfo_t ibInfo[8];               /**< The information of IB.*/
-	__uint8_t psuNum;                      /**< The count of PSUs.*/
-	cndevPsuInfo_t psuInfo[6];             /**< The information of PSU.*/
-	__uint8_t bmcIPVersion;                /**< The Falcon chassis BMC IP address version.*/
-	__uint8_t bmcIP[CNDEV_IP_ADDRESS_LEN]; /**< The Falcon chassis BMC IP address.*/
+	__int32_t version;                     /**< IN: API version.*/
+	__uint64_t chassisSn;                  /**< OUT: Chassis SN.*/
+	char chassisProductDate[12];           /**< OUT: Chassis product date.*/
+	char chassisPartNum[13];               /**< OUT: Chassis production model.*/
+	char chassisVendorName[17];            /**< OUT: Chassis manufacturer.*/
+	__uint8_t nvmeSsdNum;                  /**< OUT: The count of NVME SSDs.*/
+	cndevNvmeSsdInfo_t nvmeInfo[8];        /**< OUT: The information of NVME SSD.*/
+	__uint8_t ibBoardNum;                  /**< OUT: The count of IBs.*/
+	cndevIbInfo_t ibInfo[8];               /**< OUT: The information of IB.*/
+	__uint8_t psuNum;                      /**< OUT: The count of PSUs.*/
+	cndevPsuInfo_t psuInfo[6];             /**< OUT: The information of PSU.*/
+	__uint8_t bmcIPVersion;                /**< OUT: The Falcon chassis BMC IP address version.*/
+	__uint8_t bmcIP[CNDEV_IP_ADDRESS_LEN]; /**< OUT: The Falcon chassis BMC IP address.*/
 } cndevChassisInfo_t;
 
 /** Chassis information V2.*/
 typedef struct {
-	__int32_t version;                      /**< API version.*/
-	__uint64_t chassisSn;                   /**< Chassis SN.*/
-	char chassisProductDate[12];            /**< Chassis product date.*/
-	char chassisProductName[13];            /**< Chassis product name.*/
-	char chassisVendorName[17];             /**< Chassis manufacturer.*/
-	__uint8_t nvmeSsdNum;                   /**< The count of NVME SSDs.*/
-	cndevNvmeSsdInfo_t nvmeInfo[8];         /**< The information of NVME SSD.*/
-	__uint8_t ibBoardNum;                   /**< The count of IBs.*/
-	cndevIbInfo_t ibInfo[8];                /**< The information of IB.*/
-	__uint8_t psuNum;                       /**< The count of PSUs.*/
-	cndevPsuInfo_t psuInfo[6];              /**< The information of PSU.*/
-	__uint8_t bmcIPVersion;                 /**< The Falcon chassis BMC IP address version.*/
-	__uint8_t bmcIP[CNDEV_IP_ADDRESS_LEN];  /**< The Falcon chassis BMC IP address.*/
-	char chassisPartNumber[32];             /**< Chassis part number.*/
+	__int32_t version;                      /**< IN: API version.*/
+	__uint64_t chassisSn;                   /**< OUT: Chassis SN.*/
+	char chassisProductDate[12];            /**< OUT: Chassis product date.*/
+	char chassisProductName[13];            /**< OUT: Chassis product name.*/
+	char chassisVendorName[17];             /**< OUT: Chassis manufacturer.*/
+	__uint8_t nvmeSsdNum;                   /**< OUT: The count of NVME SSDs.*/
+	cndevNvmeSsdInfo_t nvmeInfo[8];         /**< OUT: The information of NVME SSD.*/
+	__uint8_t ibBoardNum;                   /**< OUT: The count of IBs.*/
+	cndevIbInfo_t ibInfo[8];                /**< OUT: The information of IB.*/
+	__uint8_t psuNum;                       /**< OUT: The count of PSUs.*/
+	cndevPsuInfo_t psuInfo[6];              /**< OUT: The information of PSU.*/
+	__uint8_t bmcIPVersion;                 /**< OUT: The Falcon chassis BMC IP address version.*/
+	__uint8_t bmcIP[CNDEV_IP_ADDRESS_LEN];  /**< OUT: The Falcon chassis BMC IP address.*/
+	char chassisPartNumber[32];             /**< OUT: Chassis part number.*/
 	__uint64_t reserved[16];                /**< Reserved.*/
 } cndevChassisInfoV2_t;
 
 /** PCIe firmware information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__uint16_t pcieReversion;         /**< PCIe firmware reversion.*/
-	__uint16_t pcieBuildID;           /**< PCIe firmware build ID.*/
-	__uint16_t pcieEngineeringId;     /**< PCIe firmware engineering ID.*/
+	__int32_t version;                /**< IN: API version.*/
+	__uint16_t pcieReversion;         /**< OUT: PCIe firmware reversion.*/
+	__uint16_t pcieBuildID;           /**< OUT: PCIe firmware build ID.*/
+	__uint16_t pcieEngineeringId;     /**< OUT: PCIe firmware engineering ID.*/
 } cndevPCIeFirmwareVersion_t;
 
 typedef enum {
@@ -1145,19 +1131,19 @@ typedef enum {
 
 /** Device CPU utilization V2.*/
 typedef struct {
-	__int32_t version;                               /**< API version.*/
-	__uint16_t chipUtilization;                      /**< The average utilization of CPU.*/
-	__uint8_t coreNumber;                            /**< The count of CPU cores.*/
-	__uint8_t coreUtilization[CNDEV_MAX_CORE_COUNT]; /**< The utilization of each CPU core.
+	__int32_t version;                               /**< IN: API version.*/
+	__uint16_t chipUtilization;                      /**< OUT: The average utilization of CPU.*/
+	__uint8_t coreNumber;                            /**< OUT: The count of CPU cores.*/
+	__uint8_t coreUtilization[CNDEV_MAX_CORE_COUNT]; /**< OUT: The utilization of each CPU core.
 							   * The valid array index range is [0, ``coreNumber`` - 1].
 							   */
-	__uint8_t coreStateUtilization[CNDEV_MAX_CORE_COUNT][CNDEV_CPUSTATE_MAX]; /**< The detailed state percentage for each CPU core.*/
+	__uint8_t coreStateUtilization[CNDEV_MAX_CORE_COUNT][CNDEV_CPUSTATE_MAX]; /**< OUT: The detailed state percentage for each CPU core.*/
 } cndevDeviceCPUUtilizationV2_t;
 
 /** Device CPU sampling interval.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__uint32_t samplingInterval;      /**< The sampling interval for CPU utilization, unit: ms.*/
+	__int32_t version;                /**< IN: API version.*/
+	__uint32_t samplingInterval;      /**< IN/OUT: The sampling interval for CPU utilization, unit: ms.*/
 } cndevDeviceCPUSamplingInterval_t;
 
 /** Reasons of retired page.*/
@@ -1168,24 +1154,24 @@ typedef enum {
 
 /** Retired page information.*/
 typedef struct {
-	__int32_t version;                  /**< API version.*/
-	cndevRetirePageCauseEnum_t cause;   /**< The cause is input parameter, which represents the reason of retired page.*/
-	__uint32_t pageCount;               /**< The number of retired pages matching specific cause.*/
-	__uint64_t pageAddress[512];        /**< The list of physical addresses for the retired pages.*/
+	__int32_t version;                  /**< IN: API version.*/
+	cndevRetirePageCauseEnum_t cause;   /**< IN: The cause is input parameter, which represents the reason of retired page.*/
+	__uint32_t pageCount;               /**< OUT: The number of retired pages matching specific cause.*/
+	__uint64_t pageAddress[512];        /**< OUT: The list of physical addresses for the retired pages.*/
 } cndevRetiredPageInfo_t;
 
 /** Retire page status.*/
 typedef struct {
-	__int32_t version;		/**< API version.*/
-	__uint32_t isPending;		/**< Flag indicating if the page retire operation is pending.
+	__int32_t version;		/**< IN: API version.*/
+	__uint32_t isPending;		/**< OUT: Flag indicating if the page retire operation is pending.
 					  * True if a page retire process is pending. False otherwise.
 					  */
-	__uint32_t isFailure;		/**< Flag indicating if the page retire operation failed.
+	__uint32_t isFailure;		/**< OUT: Flag indicating if the page retire operation failed.
 					  * True if an error occurred during the page retire process. False otherwise.
 					  */
 } cndevRetiredPageStatus_t;
 
-/** X-axis labels of repair resource histogram. 
+/** X-axis labels of repair resource histogram.
  * This value varies in different structures: In @p cndevAddressSwap_t, it represents the number of
  * channels in different repair resource usage situations, and in @p cndevRemappedRowV2_t, it represents
  * the number of banks in different repair resource usage situations.
@@ -1199,31 +1185,31 @@ typedef enum {
 
 /** Remaped row information.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	__uint32_t correctRows;     /**< The count of row remapping resources used by repairing correctable memory errors.*/
-	__uint32_t uncorrectRows;   /**< The count of row remapping resources used by repairing uncorrectable memory errors.*/
+	__int32_t version;          /**< IN: API version.*/
+	__uint32_t correctRows;     /**< OUT: The count of row remapping resources used by repairing correctable memory errors.*/
+	__uint32_t uncorrectRows;   /**< OUT: The count of row remapping resources used by repairing uncorrectable memory errors.*/
 	__uint32_t pendingRows;     /**< Reserved.*/
 	__uint32_t failedRows;      /**< Reserved.*/
 } cndevRemappedRow_t;
 
 /** The remapped row information.*/
 typedef struct {
-	__int32_t version;            /**< API version.*/
-	__uint32_t correctCounts;     /**< The count of memory error repair resources used by repairing correctable memory errors.*/
-	__uint32_t uncorrectCounts;   /**< The count of memory error repair resources used by repairing uncorrectable memory errors.*/
-	__uint32_t histogram[CNDEV_AVAILABILITY_XLABLE_ALL]; /**< The histogram value of memory error repair resources.*/
+	__int32_t version;            /**< IN: API version.*/
+	__uint32_t correctCounts;     /**< OUT: The count of memory error repair resources used by repairing correctable memory errors.*/
+	__uint32_t uncorrectCounts;   /**< OUT: The count of memory error repair resources used by repairing uncorrectable memory errors.*/
+	__uint32_t histogram[CNDEV_AVAILABILITY_XLABLE_ALL]; /**< OUT: The histogram value of memory error repair resources.*/
 } cndevRemappedRowV2_t;
 
 /** Memory error repair status.*/
 typedef struct {
-	__int32_t version;	/**< API version.*/
-	bool isRetirePending;	/**< Flag indicating if the memory error retire operation is pending.
+	__int32_t version;	/**< IN: API version.*/
+	bool isRetirePending;	/**< OUT: Flag indicating if the memory error retire operation is pending.
 				  * True if a retire process is pending. False otherwise.
 				  */
-	bool isPending;		/**< Flag indicating if the memory error repair operation is pending.
+	bool isPending;		/**< OUT: Flag indicating if the memory error repair operation is pending.
 				  * True if a repair process is pending. False otherwise.
 				  */
-	bool isFailure;		/**< Flag indicating if the memory error repair operation failed.
+	bool isFailure;		/**< OUT: Flag indicating if the memory error repair operation failed.
 				  * True if an error occurred during the repair process. False otherwise.
 				  */
 } cndevRepairStatus_t;
@@ -1233,26 +1219,26 @@ typedef cndevRemappedRowV2_t cndevAddressSwap_t;
 
 /** The remapped row information.*/
 typedef struct {
-	__uint32_t correctCounts;     /**< The count of memory error repair resources used by repairing correctable memory errors.*/
-	__uint32_t uncorrectCounts;   /**< The count of memory error repair resources used by repairing uncorrectable memory errors.*/
-	__uint32_t histogramMax;      /**< The number of channels where repair resources are unused.*/
-	__uint32_t histogramHigh;     /**< The number of channels where the remaining repair resources are more.*/
-	__uint32_t histogramPartial;  /**< The number of channels where repair resources are partially used.*/
-	__uint32_t histogramLow;      /**< The number of channels where the remaining repair resources are fewer.*/
-	__uint32_t histogramNone;     /**< The number of channels where repair resources are used up.*/
+	__uint32_t correctCounts;     /**< OUT: The count of memory error repair resources used by repairing correctable memory errors.*/
+	__uint32_t uncorrectCounts;   /**< OUT: The count of memory error repair resources used by repairing uncorrectable memory errors.*/
+	__uint32_t histogramMax;      /**< OUT: The number of channels where repair resources are unused.*/
+	__uint32_t histogramHigh;     /**< OUT: The number of channels where the remaining repair resources are more.*/
+	__uint32_t histogramPartial;  /**< OUT: The number of channels where repair resources are partially used.*/
+	__uint32_t histogramLow;      /**< OUT: The number of channels where the remaining repair resources are fewer.*/
+	__uint32_t histogramNone;     /**< OUT: The number of channels where repair resources are used up.*/
 	__uint32_t reserved[6];       /**< Reserved.*/
 } cndevAddressSwapV2_t;
 
 /** Retire page switch.*/
 typedef struct {
-	__int32_t version;                          /**< API version.*/
-	cndevEnableStatusEnum_t retirePageOption;   /**< The enable of retire page.*/
+	__int32_t version;                          /**< IN: API version.*/
+	cndevEnableStatusEnum_t retirePageOption;   /**< OUT: The enable of retire page.*/
 } cndevRetiredPageOperation_t;
 
 /** VF status.*/
 typedef struct {
-	__int32_t version;        /**< API version.*/
-	__int32_t vfState;        /**< Virtualization state bitmap.*/
+	__int32_t version;        /**< IN: API version.*/
+	__int32_t vfState;        /**< OUT: Virtualization state bitmap.*/
 } cndevCardVfState_t;
 
 /** MLU-Link types.*/
@@ -1265,8 +1251,8 @@ typedef enum {
 
 /** MLU-Link port mode information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	cndevPortModeEnum_t mode;         /**< The current work mode of MLU-Link port.*/
+	__int32_t version;                /**< IN: API version.*/
+	cndevPortModeEnum_t mode;         /**< OUT: The current work mode of MLU-Link port.*/
 	cndevPortModeEnum_t supportMode;  /**< Reserved.*/
 } cndevMLULinkPortMode_t;
 
@@ -1300,135 +1286,121 @@ typedef enum {
 
 /** MLU-Link RoCE ctrl information.*/
 typedef struct {
-	__int32_t version;                      /**< API version.*/
-	cndevMLULinkOverRoCEFieldEnum_t field;  /**< The field name of MLU-Link over RoCE port.*/
-	__uint32_t value;                       /**< The value of field name.*/
+	__int32_t version;                      /**< IN: API version.*/
+	cndevMLULinkOverRoCEFieldEnum_t field;  /**< IN: The field name of MLU-Link over RoCE port.*/
+	__uint32_t value;                       /**< OUT: The value of field name.*/
 } cndevMLULinkOverRoCECtrl_t;
 
 /** TinyCore utilization.*/
 typedef struct {
-	__int32_t version;		/**< API version.*/
-	__int32_t tinyCoreCount;	/**< The count of tiny cores.*/
-	__int32_t tinyCoreUtilization[CNDEV_TINYCOREMAXCOUNT];	/**< The utilization of each tiny core.
+	__int32_t version;		/**< IN: API version.*/
+	__int32_t tinyCoreCount;	/**< OUT: The count of tiny cores.*/
+	__int32_t tinyCoreUtilization[CNDEV_TINYCOREMAXCOUNT];	/**< OUT: The utilization of each tiny core.
 								  * The valid array index range is [0, ``tinyCoreCount`` - 1].
 								  */
 } cndevTinyCoreUtilization_t;
 
 /** Device OS memory information.*/
 typedef struct {
-	__uint32_t deviceSystemMemoryTotal;   /**< Device system total memory, unit: KB.*/
-	__uint32_t deviceSystemMemoryUsed;    /**< Device system used memory, unit: KB.*/
+	__uint32_t deviceSystemMemoryTotal;   /**< OUT: Device system total memory, unit: KB.*/
+	__uint32_t deviceSystemMemoryUsed;    /**< OUT: Device system used memory, unit: KB.*/
 	__uint32_t reserved[8];               /**< Reserved.*/
 } cndevDeviceOsMemoryInfo_t;
 
 /** Chip ID information.*/
 typedef struct {
-	__int32_t version;     /**< API version.*/
-	__uint8_t chipId;      /**< Chip ID.*/
+	__int32_t version;     /**< IN: API version.*/
+	__uint8_t chipId;      /**< OUT: Chip ID.*/
 } cndevChipId_t;
 
 /** Frequency status.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__uint8_t mluFrequencyLockStatus; /**< MLU frequency lock status.*/
+	__int32_t version;                /**< IN: API version.*/
+	__uint8_t mluFrequencyLockStatus; /**< OUT: MLU frequency lock status.*/
 } cndevMLUFrequencyStatus_t;
 
 /** MLU-Link port IP information.*/
 typedef struct {
-	__int32_t version;             /**< API version.*/
-	__uint8_t ipVersion;           /**< IP version: IPV4 or IPV6.*/
-	char ip[CNDEV_IP_ADDRESS_LEN]; /**< IP address of the MLU-Link port.*/
+	__int32_t version;             /**< IN: API version.*/
+	__uint8_t ipVersion;           /**< OUT: IP version: IPV4 or IPV6.*/
+	char ip[CNDEV_IP_ADDRESS_LEN]; /**< OUT: IP address of the MLU-Link port.*/
 } cndevMLULinkPortIP_t;
 
 /** CRC error information.*/
 typedef struct {
-	__int32_t version;                   /**< API version.*/
-	__uint64_t die2dieCRCError;          /**< The count of D2D CRC errors.*/
-	__uint64_t die2dieCRCErrorOverflow;  /**< The count of D2D CRC error overflows.*/
+	__int32_t version;                   /**< IN: API version.*/
+	__uint64_t die2dieCRCError;          /**< OUT: The count of D2D CRC errors.*/
+	__uint64_t die2dieCRCErrorOverflow;  /**< OUT: The count of D2D CRC error overflows.*/
 } cndevCRCInfo_t;
 
 /** DDR information.*/
 typedef struct {
-	__int32_t version;            /**< API version.*/
-	__uint32_t dataWidth;         /**< DDR data width.*/
-	__uint32_t bandWidth;         /**< DDR band width, unit: GB/s.*/
-	__uint32_t bandWidthDecimal;  /**< The decimal of DDR band width, unit: GB/s.*/
+	__int32_t version;            /**< IN: API version.*/
+	__uint32_t dataWidth;         /**< OUT: DDR data width.*/
+	__uint32_t bandWidth;         /**< OUT: DDR band width, unit: GB/s.*/
+	__uint32_t bandWidthDecimal;  /**< OUT: The decimal of DDR band width, unit: GB/s.*/
 } cndevDDRInfo_t;
 
 /** Process utilization.*/
 typedef struct {
-	__int32_t version;      /**< API version.*/
-	__uint32_t pid;         /**< Process ID.*/
-	__uint32_t ipuUtil;     /**< The MLU utilization of the process.*/
-	__uint32_t jpuUtil;     /**< The JPU utilization of the process.*/
-	__uint32_t vpuDecUtil;  /**< The VPU decoder utilization of the process.*/
-	__uint32_t vpuEncUtil;  /**< The VPU encoder utilization of the process.*/
-	__uint32_t memUtil;     /**< The memory utilization of the process.*/
+	__int32_t version;      /**< IN: API version.*/
+	__uint32_t pid;         /**< OUT: Process ID.*/
+	__uint32_t ipuUtil;     /**< OUT: The MLU utilization of the process.*/
+	__uint32_t jpuUtil;     /**< OUT: The JPU utilization of the process.*/
+	__uint32_t vpuDecUtil;  /**< OUT: The VPU decoder utilization of the process.*/
+	__uint32_t vpuEncUtil;  /**< OUT: The VPU encoder utilization of the process.*/
+	__uint32_t memUtil;     /**< OUT: The memory utilization of the process.*/
 } cndevProcessUtilization_t;
 
 /** Information about process average utilization.*/
 typedef struct {
-	__uint32_t pid;         /**< Process ID.*/
-	__uint32_t ipuUtil;     /**< The MLU average utilization of the process.*/
-	__uint32_t jpuUtil;     /**< The JPU average utilization of the process.*/
-	__uint32_t vpuDecUtil;  /**< The VPU decoder average utilization of the process.*/
-	__uint32_t vpuEncUtil;  /**< The VPU encoder average utilization of the process.*/
-	__uint32_t memUtil;     /**< The memory utilization of the process.*/
-	__uint64_t timestamp;   /**< The timestamp of the interface call for the device since 1970 (in microseconds).*/
+	__uint32_t pid;         /**< OUT: Process ID.*/
+	__uint32_t ipuUtil;     /**< OUT: The MLU average utilization of the process.*/
+	__uint32_t jpuUtil;     /**< OUT: The JPU average utilization of the process.*/
+	__uint32_t vpuDecUtil;  /**< OUT: The VPU decoder average utilization of the process.*/
+	__uint32_t vpuEncUtil;  /**< OUT: The VPU encoder average utilization of the process.*/
+	__uint32_t memUtil;     /**< OUT: The memory utilization of the process.*/
+	__uint64_t timestamp;   /**< OUT: The timestamp of the interface call for the device since 1970 (in microseconds).*/
 } cndevProcessUtilizationInfo_t;
-
-/** Supported IPU frequency.*/
-typedef struct {
-	__int32_t version;            /**< API version.*/
-	__uint32_t supportedIpuFreq;  /**< Supported MLU Core frequency in MHz.*/
-} cndevSupportedIpuFrequency_t;
-
-/** For cleaning Xid status.*/
-typedef struct {
-	__int32_t version;                      /**< API version.*/
-	__uint32_t selectAll;                   /**< Selects all Xid error switch status.*/
-	__uint32_t selectedXid;                 /**< Selects one Xid error switch status.*/
-	cndevEnableStatusEnum_t setXidStatus;   /**< Xid error switch status.*/
-} cndevSetXid_t;
 
 /** Power management limitations range information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__uint16_t minPowerLimit;         /**< Minimum power setting, unit: W.*/
+	__int32_t version;                /**< IN: API version.*/
+	__uint16_t minPowerLimit;         /**< OUT: Minimum power setting, unit: W.*/
 	__uint16_t minPowerLimitDecimal;  /**< Reserved. Decimal part is not supported.*/
-	__uint16_t maxPowerLimit;         /**< Maximum power setting, unit: W.*/
+	__uint16_t maxPowerLimit;         /**< OUT: Maximum power setting, unit: W.*/
 	__uint16_t maxPowerLimitDecimal;  /**< Reserved. Decimal part is not supported.*/
 } cndevPowerManagementLimitationRange_t;
 
 /** Power management limitations information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	__uint16_t powerLimit;            /**< Power management limitations, unit: W.*/
-	__uint16_t powerLimitDecimal;     /**< Reserved. Decimal part is not supported.*/
+	__int32_t version;                /**< IN: API version.*/
+	__uint16_t powerLimit;            /**< OUT: Power management limitations, unit: W.*/
+	__uint16_t powerLimitDecimal;     /**< OUT: Reserved. Decimal part is not supported.*/
 } cndevPowerManagementLimitation_t;
 
 /** Over temperature information.*/
 typedef struct {
-	__int32_t version;		/**< API version.*/
-	__uint32_t powerOffCounter;	/**< The power-off times because of over-temperature, from loading driver to the current moment.*/
-	__uint32_t underClockCounter;	/**< The underclocking times because of over-temperature, from loading driver to the current moment.*/
-	__int16_t powerOffTemp;		/**< Over temperature causing poweroff will record the current temperature of IPU, the powerOffTemp
+	__int32_t version;		/**< IN: API version.*/
+	__uint32_t powerOffCounter;	/**< OUT: The power-off times because of over-temperature, from loading driver to the current moment.*/
+	__uint32_t underClockCounter;	/**< OUT: The underclocking times because of over-temperature, from loading driver to the current moment.*/
+	__int16_t powerOffTemp;		/**< OUT: Over temperature causing poweroff will record the current temperature of IPU, the powerOffTemp
 					  * is the highest value in the records, unit: ℃.
 					  */
-	__int16_t underClockTemp;	/**< Over temperature causing underClock will record the current temperature of IPU, the underClockTemp
+	__int16_t underClockTemp;	/**< OUT: Over temperature causing underClock will record the current temperature of IPU, the underClockTemp
 					  * is the highest value in the records, unit: ℃.
 					  */
 } cndevOverTemperatureInfo_t;
 
 /** Performance throttle reason information.*/
 typedef struct {
-	__int32_t version;                          /**< API version.*/
-	cndevEnableStatusEnum_t tdp;                /**< Throttle reason by TDP.*/
-	cndevEnableStatusEnum_t powerSetting;       /**< Throttle reason by setting power capping.*/
-	cndevEnableStatusEnum_t clockSetting;       /**< Throttle reason by setting max frequency.*/
-	cndevEnableStatusEnum_t frequencyLocked;    /**< Throttle reason by setting locked frequency.*/
-	cndevEnableStatusEnum_t powerBrake;         /**< Throttle reason by power brake.*/
-	cndevEnableStatusEnum_t thermalSlowdown;    /**< Throttle reason by thermal slowdown.*/
+	__int32_t version;                          /**< IN: API version.*/
+	cndevEnableStatusEnum_t tdp;                /**< OUT: Throttle reason by TDP.*/
+	cndevEnableStatusEnum_t powerSetting;       /**< OUT: Throttle reason by setting power capping.*/
+	cndevEnableStatusEnum_t clockSetting;       /**< OUT: Throttle reason by setting max frequency.*/
+	cndevEnableStatusEnum_t frequencyLocked;    /**< OUT: Throttle reason by setting locked frequency.*/
+	cndevEnableStatusEnum_t powerBrake;         /**< OUT: Throttle reason by power brake.*/
+	cndevEnableStatusEnum_t thermalSlowdown;    /**< OUT: Throttle reason by thermal slowdown.*/
 } cndevPerformanceThrottleReason_t;
 
 /** Compute mode types.*/
@@ -1441,94 +1413,94 @@ typedef enum {
 
 /** Compute mode information.*/
 typedef struct {
-	__int32_t version;            /**< API version.*/
-	cndevComputeModeEnum_t mode;  /**< The compute mode of the device.*/
+	__int32_t version;            /**< IN: API version.*/
+	cndevComputeModeEnum_t mode;  /**< IN/OUT: The compute mode of the device.*/
 } cndevComputeMode_t;
 
 /** PCIe replay information.*/
 typedef struct {
-	__int32_t version;        /**< API version.*/
-	__uint32_t counter;       /**< The count of PCIe replays.*/
+	__int32_t version;        /**< IN: API version.*/
+	__uint32_t counter;       /**< OUT: The count of PCIe replays.*/
 } cndevPcieReplayCounter_t;
 
 /** SR-IOV mode information.*/
 typedef struct {
-	__int32_t version;                  /**< API version.*/
-	cndevEnableStatusEnum_t sriovMode;  /**< The switch of SR-IOV mode.*/
+	__int32_t version;                  /**< IN: API version.*/
+	cndevEnableStatusEnum_t sriovMode;  /**< IN/OUT: The switch of SR-IOV mode.*/
 } cndevSRIOVMode_t;
 
 /** MIM mode information.*/
 typedef struct {
-	__int32_t version;                  /**< API version.*/
-	cndevEnableStatusEnum_t mimMode;    /**< The switch of MIM mode.*/
+	__int32_t version;                  /**< IN: API version.*/
+	cndevEnableStatusEnum_t mimMode;    /**< IN/OUT: The switch of MIM mode.*/
 } cndevMimMode_t;
 
 /** MIM instance placement information.*/
 typedef struct {
-	__int32_t version;                  /**< API version.*/
-	__int32_t start;                    /**< The start placement of MIM instance.*/
-	__int32_t size;                     /**< The size of MIM instance.*/
+	__int32_t version;                  /**< IN: API version.*/
+	__int32_t start;                    /**< IN/OUT: The start placement of MIM instance.*/
+	__int32_t size;                     /**< IN/OUT: The size of MIM instance.*/
 } cndevMluInstancePlacement_t;
 
 /** MIM profile information.*/
 typedef struct {
-	__int32_t version;                                          /**< API version.*/
-	__int32_t profileId;                                        /**< MIM instance profile ID.*/
-	__int32_t mluCoreCount;                                     /**< The MIM core count of profile.*/
-	__int32_t vpuCount;                                         /**< The VPU count of profile.*/
-	__int32_t jpuCount;                                         /**< The JPU count of profile.*/
-	__int32_t gdmaCount;                                        /**< The GDMA count of profile.*/
-	__int32_t memorySize;                                       /**< The memory size of profile.*/
-	char name[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];      /**< The name of profile.*/
+	__int32_t version;                                          /**< IN: API version.*/
+	__int32_t profileId;                                        /**< OUT: MIM instance profile ID.*/
+	__int32_t mluCoreCount;                                     /**< OUT: The MIM core count of profile.*/
+	__int32_t vpuCount;                                         /**< OUT: The VPU count of profile.*/
+	__int32_t jpuCount;                                         /**< OUT: The JPU count of profile.*/
+	__int32_t gdmaCount;                                        /**< OUT: The GDMA count of profile.*/
+	__int32_t memorySize;                                       /**< OUT: The memory size of profile.*/
+	char name[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];      /**< OUT: The name of profile.*/
 } cndevMluInstanceProfileInfo_t;
 
 /** MIM instance information.*/
 typedef struct {
-	__int32_t version;                                                          /**< API version.*/
-	cndevDevice_t parentDevice;                                                 /**< Parent device.*/
-	__int32_t instanceId;                                                       /**< MIM instance Id.*/
-	__int32_t profileId;                                                        /**< MIM instance created base on the profile.*/
-	__uint8_t uuid[CNDEV_UUID_SIZE];                                            /**< The UUID of MIM instance.*/
-	__int32_t domain;                                                           /**< The domain ID of MIM instance.*/
-	__int32_t bus;                                                              /**< The bus ID of MIM instance.*/
-	__int32_t device;                                                           /**< The device ID of MIM instance.*/
-	__int32_t function;                                                         /**< The function ID of MIM instance.*/
-	cndevMluInstancePlacement_t placement;                                      /**< The placement information of MIM instance.*/
-	__int32_t mluCoreCount;                                                     /**< The MLU core count of MIM instance.*/
-	__int32_t vpuCount;                                                         /**< The VPU count of MIM instance.*/
-	__int32_t jpuCount;                                                         /**< The JPU count of MIM instance.*/
-	__int32_t gdmaCount;                                                        /**< The GDMA count of MIM instance.*/
-	__int32_t memorySize;                                                       /**< The memory size of MIM instance.*/
-	char profileName[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];               /**< The name of MIM profile.*/
-	char devNodeName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];           /**< The device node of MIM instance.*/
-	char ipcmDevNodeName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];       /**< The ipcm node of MIM instance.*/
-	char instanceName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];          /**< The name of MIM instance.*/
+	__int32_t version;                                                          /**< IN: API version.*/
+	cndevDevice_t parentDevice;                                                 /**< OUT: Parent device.*/
+	__int32_t instanceId;                                                       /**< OUT: MIM instance Id.*/
+	__int32_t profileId;                                                        /**< OUT: MIM instance created base on the profile.*/
+	__uint8_t uuid[CNDEV_UUID_SIZE];                                            /**< OUT: The UUID of MIM instance.*/
+	__int32_t domain;                                                           /**< OUT: The domain ID of MIM instance.*/
+	__int32_t bus;                                                              /**< OUT: The bus ID of MIM instance.*/
+	__int32_t device;                                                           /**< OUT: The device ID of MIM instance.*/
+	__int32_t function;                                                         /**< OUT: The function ID of MIM instance.*/
+	cndevMluInstancePlacement_t placement;                                      /**< OUT: The placement information of MIM instance.*/
+	__int32_t mluCoreCount;                                                     /**< OUT: The MLU core count of MIM instance.*/
+	__int32_t vpuCount;                                                         /**< OUT: The VPU count of MIM instance.*/
+	__int32_t jpuCount;                                                         /**< OUT: The JPU count of MIM instance.*/
+	__int32_t gdmaCount;                                                        /**< OUT: The GDMA count of MIM instance.*/
+	__int32_t memorySize;                                                       /**< OUT: The memory size of MIM instance.*/
+	char profileName[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];               /**< OUT: The name of MIM profile.*/
+	char devNodeName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];           /**< OUT: The device node of MIM instance.*/
+	char ipcmDevNodeName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];       /**< OUT: The ipcm node of MIM instance.*/
+	char instanceName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];          /**< OUT: The name of MIM instance.*/
 	__uint32_t reserved[128];                                                   /**< Reserved.*/
 } cndevMluInstanceInfo_t;
 
 /** Parity error information.*/
 typedef struct {
-	__int32_t version;  /**< API version.*/
-	__int32_t counter;  /**< The count of parity errors.*/
+	__int32_t version;  /**< IN: API version.*/
+	__int32_t counter;  /**< OUT: The count of parity errors.*/
 } cndevParityError_t;
 
 /** Docker parameter information.*/
 typedef struct {
-	__int32_t version;                          /**< API version.*/
-	char dockerParam[CNDEV_NAME_BUFFER_SIZE];   /**< The parameter of the running docker.*/
+	__int32_t version;                          /**< IN: API version.*/
+	char dockerParam[CNDEV_NAME_BUFFER_SIZE];   /**< OUT: The parameter of the running docker.*/
 } cndevDockerParam_t;
 
 /** sMLU mode information.*/
 typedef struct {
-	__int32_t version;                /**< API version.*/
-	cndevEnableStatusEnum_t smluMode; /**< The switch of sMLU mode.*/
+	__int32_t version;                /**< IN: API version.*/
+	cndevEnableStatusEnum_t smluMode; /**< IN/OUT: The switch of sMLU mode.*/
 } cndevSMLUMode_t;
 
 /** sMLU profile mluQuota and memorySize information for creating new profile.*/
 typedef struct {
-	__int32_t version;      /**< API version.*/
-	__uint32_t mluQuota;    /**< The utilization of sMLU profile.*/
-	__uint64_t memorySize;  /**< The memory size of sMLU profile, unit: B.*/
+	__int32_t version;      /**< IN: API version.*/
+	__uint32_t mluQuota;    /**< IN/OUT: The utilization of sMLU profile.*/
+	__uint64_t memorySize;  /**< IN/OUT: The memory size of sMLU profile, unit: B.*/
 } cndevSMluSet_t;
 
 /** sMLU array indices for mluQuota and memorySize.*/
@@ -1540,74 +1512,76 @@ typedef enum {
 
 /** sMLU instance information.*/
 typedef struct {
-	__int32_t version;                                                    /**< API version.*/
-	__int32_t profileId;                                                  /**< sMLU instance created base on the profile.*/
-	__int32_t instanceId;                                                 /**< sMLU instance ID.*/
-	__uint8_t uuid[CNDEV_UUID_SIZE];                                      /**< The UUID of sMLU instance.*/
-	__int32_t domain;                                                     /**< The domain of sMLU instance.*/
-	__int32_t bus;                                                        /**< The bus of sMLU instance.*/
-	__int32_t device;                                                     /**< The device of sMLU instance.*/
-	__int32_t function;                                                   /**< The function of sMLU instance.*/
-	char profileName[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];         /**< The name of sMLU profile.*/
-	char instanceName[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];        /**< The name of sMLU instance.*/
-	char devNodeName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];     /**< The device node of sMLU instance.*/
-	__uint32_t mluQuota[CNDEV_SMLU_ITEM_COUNT];                           /**< The utilization of sMLU instance.*/
-	__uint64_t memorySize[CNDEV_SMLU_ITEM_COUNT];                         /**< The memory size of sMLU instance, unit: B.*/
+	__int32_t version;                                                    /**< IN: API version.*/
+	__int32_t profileId;                                                  /**< OUT: sMLU instance created base on the profile.*/
+	__int32_t instanceId;                                                 /**< OUT: sMLU instance ID.*/
+	__uint8_t uuid[CNDEV_UUID_SIZE];                                      /**< OUT: The UUID of sMLU instance.*/
+	__int32_t domain;                                                     /**< OUT: The domain of sMLU instance.*/
+	__int32_t bus;                                                        /**< OUT: The bus of sMLU instance.*/
+	__int32_t device;                                                     /**< OUT: The device of sMLU instance.*/
+	__int32_t function;                                                   /**< OUT: The function of sMLU instance.*/
+	char profileName[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];         /**< OUT: The name of sMLU profile.*/
+	char instanceName[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];        /**< OUT: The name of sMLU instance.*/
+	char devNodeName[CNDEV_MLUINSTANCE_DEVICE_NODE_NAME_BUFFER_SIZE];     /**< OUT: The device node of sMLU instance.*/
+	__uint32_t mluQuota[CNDEV_SMLU_ITEM_COUNT];                           /**< OUT: The utilization of sMLU instance.*/
+	__uint64_t memorySize[CNDEV_SMLU_ITEM_COUNT];                         /**< OUT: The memory size of sMLU instance, unit: B.*/
 	__uint32_t reserved[128];                                             /**< Reserved.*/
 } cndevSMluInfo_t;
 
 /** sMLU instance ID information.*/
 typedef struct {
-	__int32_t version;          /**< API version.*/
-	__int32_t count;            /**< The profile count of sMLU.*/
-	__int32_t profileId[128];   /**< The profile ID information of sMLU.*/
+	__int32_t version;          /**< IN: API version.*/
+	__int32_t count;            /**< OUT: The profile count of sMLU.*/
+	__int32_t profileId[128];   /**< OUT: The profile ID information of sMLU.*/
 } cndevSMluProfileIdInfo_t;
 
 /** sMLU profile information.*/
 typedef struct {
-	__int32_t version;	/**< API version.*/
-	__int32_t profileId;	/**< Profile ID.*/
-	char name[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];	/**< Profile name.*/
-	__uint32_t totalCapacity;	/**< The total count of sMLU instances that were created based on the profile.*/
-	__uint32_t remainCapacity;	/**< The remain count of sMLU instances that were created based on the profile.*/
-	__uint32_t mluQuota[CNDEV_SMLU_ITEM_COUNT];	/**< MluQuota[0] is the utilization of sMLU profile, mluQuota[1] is reserved.*/
-	__uint64_t memorySize[CNDEV_SMLU_ITEM_COUNT];	/**< MemorySize[0] is the memory size of sMLU profile, unit: B, memorySize[1] is reserved.*/
+	__int32_t version;	/**< IN: API version.*/
+	__int32_t profileId;	/**< OUT: Profile ID.*/
+	char name[CNDEV_MLUINSTANCE_PROFILE_NAME_BUFFER_SIZE];	/**< OUT: Profile name.*/
+	__uint32_t totalCapacity;	/**< OUT: The total count of sMLU instances that were created based on the profile.*/
+	__uint32_t remainCapacity;	/**< OUT: The remain count of sMLU instances that were created based on the profile.*/
+	__uint32_t mluQuota[CNDEV_SMLU_ITEM_COUNT];	/**< OUT: MluQuota[0] is the utilization of sMLU profile, mluQuota[1] is reserved.*/
+	__uint64_t memorySize[CNDEV_SMLU_ITEM_COUNT];	/**< OUT: MemorySize[0] is the memory size of sMLU profile, unit: B,
+							  * memorySize[1] is reserved.
+							  */
 } cndevSMluProfileInfo_t;
 
 /** Memory ECC information.*/
 typedef struct {
-	__int32_t version;			/**< API version.*/
-	__uint32_t volatileSramEccSbeCounter;	/**< The count of volatile SRAM ECC SBE.
+	__int32_t version;			/**< IN: API version.*/
+	__uint32_t volatileSramEccSbeCounter;	/**< OUT: The count of volatile SRAM ECC SBE.
 						  * This number is accumulated count from loading MLU Driver to the current time.
 						  */
-	__uint32_t volatileSramEccDbeCounter;	/**< The count of volatile SRAM ECC DBE.
+	__uint32_t volatileSramEccDbeCounter;	/**< OUT: The count of volatile SRAM ECC DBE.
 						  * This number is accumulated count from loading MLU Driver to the current time.
 						  */
-	__uint32_t volatileSramEccParityCounter;	/**< The count of volatile SRAM ECC PARITY.
+	__uint32_t volatileSramEccParityCounter;	/**< OUT: The count of volatile SRAM ECC PARITY.
 							  * This number is accumulated count from loading MLU Driver to the current time.
 							  */
-	__uint32_t volatileDramEccSbeCounter;	/**< The count of volatile DRAM ECC SBE.
+	__uint32_t volatileDramEccSbeCounter;	/**< OUT: The count of volatile DRAM ECC SBE.
 						  * This number is accumulated count from loading MLU Driver to the current time.
 						  */
-	__uint32_t volatileDramEccDbeCounter;	/**< The count of volatile DRAM ECC DBE.
+	__uint32_t volatileDramEccDbeCounter;	/**< OUT: The count of volatile DRAM ECC DBE.
 						  * This number is accumulated count from loading MLU Driver to the current time.
 						  */
-	__uint64_t aggregateDramEccSbeCounter;	/**< The count of aggregate DRAM ECC SBE.
+	__uint64_t aggregateDramEccSbeCounter;	/**< OUT: The count of aggregate DRAM ECC SBE.
 						  * This number is accumulated count from the manufacturing date to the current time.
 						  */
-	__uint64_t aggregateDramEccDbeCounter;	/**< The count of aggregate DRAM ECC DBE.
+	__uint64_t aggregateDramEccDbeCounter;	/**< OUT: The count of aggregate DRAM ECC DBE.
 						  * This number is accumulated count from the manufacturing date to the current time.
 						  */
-	__uint64_t aggregateSramEccSbeCounter;	/**< The count of aggregate SRAM ECC SBE.
+	__uint64_t aggregateSramEccSbeCounter;	/**< OUT: The count of aggregate SRAM ECC SBE.
 						  * This number is accumulated count from the manufacturing date to the current time.
 						  */
-	__uint64_t aggregateSramEccDbeCounter;	/**< The count of aggregate SRAM ECC DBE.
+	__uint64_t aggregateSramEccDbeCounter;	/**< OUT: The count of aggregate SRAM ECC DBE.
 						  * This number is accumulated count from the manufacturing date to the current time.
 						  */
-	__uint64_t aggregateSramEccParityCounter;	/**< The count of aggregate SRAM ECC PARITY.
+	__uint64_t aggregateSramEccParityCounter;	/**< OUT: The count of aggregate SRAM ECC PARITY.
 							  * This number is accumulated count from the manufacturing date to the current time.
 							  */
-	bool aggregateSramEccThresholdExceeded;	/**< The identifier that indicates whether the aggregate SRAM ECCs exceeded the threshold.*/
+	bool aggregateSramEccThresholdExceeded;	/**< OUT: The identifier that indicates whether the aggregate SRAM ECCs exceeded the threshold.*/
 	__uint64_t reserved[11];		/**< Reserved.*/
 } cndevMemEccCounter_t;
 
@@ -1622,20 +1596,20 @@ typedef enum {
 /** SRAM ECC histogram information.*/
 typedef struct {
 	struct {
-	__uint32_t max;                 /**< The count of instances on which ECC errors are greater than or equal to @p threshold.*/
-	__uint32_t high;                /**< The count of instances on which ECC errors are equal to @p threshold - 1.*/
-	__uint32_t partial;             /**< The count of instances on which ECC errors are between @p low and @p high.*/
-	__uint32_t low;                 /**< The count of instances on which ECC error is equal to 1.*/
-	__uint32_t threshold;           /**< The current ECC error threshold.*/
-	__uint32_t defaultThreshold;    /**< The default ECC error threshold.*/
+	__uint32_t max;                 /**< OUT: The count of instances on which ECC errors are greater than or equal to @p threshold.*/
+	__uint32_t high;                /**< OUT: The count of instances on which ECC errors are equal to @p threshold - 1.*/
+	__uint32_t partial;             /**< OUT: The count of instances on which ECC errors are between @p low and @p high.*/
+	__uint32_t low;                 /**< OUT: The count of instances on which ECC error is equal to 1.*/
+	__uint32_t threshold;           /**< OUT: The current ECC error threshold.*/
+	__uint32_t defaultThreshold;    /**< OUT: The default ECC error threshold.*/
 	__uint32_t reserved[8];         /**< Reserved.*/
 	} histogram[CNDEV_ECC_MAX_TYPE];
 } cndevSramEccHistogram_t;
 
 typedef struct {
-	__uint64_t total_size;            /**< Total BAR4 Memory in bytes.*/
-	__uint64_t used_size;             /**< Used BAR4 Memory in bytes.*/
-	__uint64_t free_size;             /**< Free BAR4 Memory in bytes.*/
+	__uint64_t total_size;            /**< OUT: Total BAR4 Memory in bytes.*/
+	__uint64_t used_size;             /**< OUT: Used BAR4 Memory in bytes.*/
+	__uint64_t free_size;             /**< OUT: Free BAR4 Memory in bytes.*/
 } cndevBAR4Memory_t;
 
 /** Clock types, all speeds are in MHz.*/
@@ -1645,41 +1619,42 @@ typedef enum {
 
 /** Event information.*/
 typedef struct {
-	__uint32_t version;                           /**< API version.*/
-	cndevDevice_t device;                         /**< Specific device where the event occurred.*/
-	__uint64_t eventData;                         /**< Stores Xid error data for the device.*/
-	__uint64_t eventType;                         /**< Stores Xid type for the device.*/
-	__uint64_t timestamp;                         /**< Stores Xid timestamp for the device since 1970 (in microseconds).*/
-	__uint32_t computeInstanceId;                 /**< When MIM is enabled, the event is attributable to a CPU.*/
-	__uint32_t mluInstanceId;                     /**< When MIM is enabled, the event is attributable to an MLU.*/
+	__uint32_t version;                           /**< IN: API version.*/
+	cndevDevice_t device;                         /**< OUT: Specific device where the event occurred.*/
+	__uint64_t eventData;                         /**< OUT: Stores Xid error data for the device.*/
+	__uint64_t eventType;                         /**< OUT: Stores Xid type for the device.*/
+	__uint64_t timestamp;                         /**< OUT: Stores Xid timestamp for the device since 1970 (in microseconds).*/
+	__uint32_t computeInstanceId;                 /**< OUT: When MIM is enabled, the event is attributable to a CPU.*/
+	__uint32_t mluInstanceId;                     /**< OUT: When MIM is enabled, the event is attributable to an MLU.*/
 	__uint64_t reserved[8];                       /**< Reserved.*/
 } cndevEventData_t;
 
 /** Device voltage information.*/
 typedef struct {
-	__int16_t ipuCoreVoltage;   /**< The voltage of IPU core, unit mV.*/
-	__int16_t socVoltage;       /**< The voltage of SoC, unit mV.*/
+	__int16_t ipuCoreVoltage;   /**< OUT: The voltage of IPU core, unit mV.*/
+	__int16_t socVoltage;       /**< OUT: The voltage of SoC, unit mV.*/
 	__int16_t hbmVccVoltage;    /**< Reserved.*/
-	__int16_t hbmVddVoltage;    /**< The voltage of DRAM, unit mV.*/
+	__int16_t hbmVddVoltage;    /**< OUT: The voltage of DRAM, unit mV.*/
 	__int16_t reserved[16];     /**< Reserved.*/
 } cndevVoltageInfo_t;
 
 /** Device current information.*/
 typedef struct {
-	__int32_t ipuCoreCurrent;   /**< The current of IPU core, unit mA.*/
-	__int32_t socCurrent;       /**< The current of SoC, unit mA.*/
-	__int32_t hbmCurrent;       /**< The current of DRAM, unit mA.*/
+	__int32_t ipuCoreCurrent;   /**< OUT: The current of IPU core, unit mA.*/
+	__int32_t socCurrent;       /**< OUT: The current of SoC, unit mA.*/
+	__int32_t hbmCurrent;       /**< OUT: The current of DRAM, unit mA.*/
 	__int32_t reserved[16];     /**< Reserved.*/
 } cndevCurrentInfo_t;
 
 /** The event handle data type.*/
-typedef void * cndevEventHandle;
+typedef void *cndevEventHandle;
 
 #define cndevEventTypeAll      0xffffffffffffffffULL
 #define cndevEventTypeNone     0x0000000000000000ULL
 #define cndevEventTypeXidError 0x0000000000000001ULL
 
-typedef union  {
+/** Union to represent different types of Value.*/
+typedef union {
 	double              dVal;         /**< Double value.*/
 	unsigned int        uiVal;        /**< Unsigned int value.*/
 	unsigned long       ulVal;        /**< Unsigned long value.*/
@@ -1742,8 +1717,9 @@ typedef enum {
 	cndevFieldDDRBandWidth = 27,		/**< MLU DDR band width, unit: GB/s.*/
 	cndevFieldComputeMode = 28,		/**<
 						  * The compute mode of the device.
-						  * 0 represents default mode, and
+						  * 0 represents default mode.
 						  * 1 represents exclusive mode.
+						  * 2 represents prohibited mode.
 						  */
 	cndevFieldPcieReplay = 29,			/**< The count of PCIe replays.*/
 	cndevFieldOverTemperaturePowerOffTemp = 30,	/**< Over-temperature power-off temperature, unit: ℃.*/
@@ -1782,17 +1758,44 @@ typedef enum {
 	cndevFieldMLULinkTxByte = 63,			/**< The total number of bytes of all packets transmitted with no error.*/
 	cndevFieldMLULinkRxByte = 64,			/**< The total number of bytes of all packets received with no error.*/
 	cndevFieldTensorAverageUtilization = 65,	/**< MLU average tensor utilization.*/
-	cndevFieldNum = 200,				/**< The max ID of Field.*/
+	cndevFieldMLUUtilization = 66,			/**< MLU utilization.*/
+	cndevFieldPCIeAuxiliaryPowerConnectorSenseState = 67,	/**< PCIe auxiliary power connector sense state.*/
+	cndevFieldMLUMaxOperatingTemperature = 68,	/**< MLU maximum operating temperature, unit: ℃.*/
+	cndevFieldMemMaxOperatingTemperature = 69,	/**< Memory maximum operating temperature, unit: ℃.*/
+	cndevFieldMarginTemperature = 70,		/**< Thermal margin temperature, unit: ℃.*/
+	cndevFieldTotalEnergyConsumption = 71,		/**<
+							  * Total energy consumption for the MLU since the driver
+							  * was last reloaded, unit: mJ.
+							  */
+	cndevFieldPowerViolation = 72,			/**<
+							  * Total time that power violations cause the MLU Core to be below
+							  * the maximum frequency or frequency cap, unit: ns.
+							  */
+	cndevFieldThermalViolation = 73,		/**<
+							  * Total time that thermal violations cause the MLU Core to be below
+							  * the maximum frequency or frequency cap, unit: ns.
+							  */
+	cndevFieldBoardLimitViolation = 74,		/**<
+							  * Total time that the board limit causes the MLU Core to be below
+							  * the maximum frequency or frequency cap, unit: ns.
+							  */
+	cndevFieldBaseClocksViolation = 75,		/**<
+							  * Total time that any limit causes the MLU Core to be below
+							  * the maximum frequency or frequency cap, unit: ns.
+							  */
+	cndevFieldNum = 200,				/**< The maximum ID of Field.*/
 } cndevFieldIdNum_t;
 
 typedef struct {
-	cndevFieldIdNum_t fieldId;	/**< ID of the CNDev field to retrieve. It must be set before any function call the uses this struct.*/
-	cndevRet_t ret;			/**< Return code for retrieving this field.*/
-	cndevValue_t value;	/**< Value for this field. It is only valid when @p ret is ::CNDEV_SUCCESS.*/
-	cndevFieldValuesTypeNum_t valueType;	/**< Type of the value stored in value. It is only valid when @p ret is ::CNDEV_SUCCESS.*/
-	long long latencyUsec;	/**< The time taken to update this field value (in microseconds). It is only valid when @p ret is ::CNDEV_SUCCESS.*/
-	long long timestamp;	/**< CPU timestamp of this value since 1970 (in microseconds). It is only valid when @p ret is ::CNDEV_SUCCESS.*/
-	unsigned int scopeId;	/**< @p scopeId represents:
+	cndevFieldIdNum_t fieldId;	/**< IN: ID of the CNDev field to retrieve. It must be set before any function call the uses this struct.*/
+	cndevRet_t ret;			/**< OUT: Return code for retrieving this field.*/
+	cndevValue_t value;	/**< OUT: Value for this field. It is only valid when @p ret is ::CNDEV_SUCCESS.*/
+	cndevFieldValuesTypeNum_t valueType;	/**< OUT: Type of the value stored in value. It is only valid when @p ret is ::CNDEV_SUCCESS.*/
+	long long latencyUsec;	/**< OUT: The time taken to update this field value (in microseconds).
+				  * It is only valid when @p ret is ::CNDEV_SUCCESS.
+				  */
+	long long timestamp;	/**< OUT: CPU timestamp of this value since 1970 (in microseconds). It is only valid when @p ret is ::CNDEV_SUCCESS.*/
+	unsigned int scopeId;	/**< IN: @p scopeId represents:
 				  *- Link ID when used for getting MLU-Link status.
 				  *- Core ID when used for getting MLU core utilization.
 				  *- Memory die ID when used for getting memory die temperature.
@@ -1804,9 +1807,97 @@ typedef cndevFieldValue_t cndevFieldVaule_t;
 
 /** The callback function for traverse topology.*/
 typedef __int32_t (*CNDEV_TRAVERSE_CALLBACK)(cndevTopologyNode_t *current, void *userdata);
+
+/** MPM metric identifiers.*/
+typedef enum {
+	CNDEV_MPM_METRIC_IPU_UTIL                 = 1,   /**< MLU core average utilization.*/
+	CNDEV_MPM_METRIC_MLU_UTIL                 = 2,   /**< MLU utilization.*/
+	CNDEV_MPM_METRIC_TENSOR_UTIL              = 3,   /**< MLU tensor average utilization.*/
+	CNDEV_MPM_METRIC_PCIE_TX_PER_SEC          = 20,  /**< PCIe traffic from this MLU, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_PCIE_RX_PER_SEC          = 21,  /**< PCIe traffic to this MLU, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_TOTAL_TX_PER_SEC = 60,  /**< MLULink write bandwidth for all links, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_TOTAL_RX_PER_SEC = 61,  /**< MLULink read bandwidth for all links, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L0_TX_PER_SEC    = 62,  /**< MLULink write bandwidth for link 0, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L0_RX_PER_SEC    = 63,  /**< MLULink read bandwidth for link 0, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L1_TX_PER_SEC    = 64,  /**< MLULink write bandwidth for link 1, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L1_RX_PER_SEC    = 65,  /**< MLULink read bandwidth for link 1, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L2_TX_PER_SEC    = 66,  /**< MLULink write bandwidth for link 2, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L2_RX_PER_SEC    = 67,  /**< MLULink read bandwidth for link 2, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L3_TX_PER_SEC    = 68,  /**< MLULink write bandwidth for link 3, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L3_RX_PER_SEC    = 69,  /**< MLULink read bandwidth for link 3, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L4_TX_PER_SEC    = 70,  /**< MLULink write bandwidth for link 4, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L4_RX_PER_SEC    = 71,  /**< MLULink read bandwidth for link 4, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L5_TX_PER_SEC    = 72,  /**< MLULink write bandwidth for link 5, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L5_RX_PER_SEC    = 73,  /**< MLULink read bandwidth for link 5, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L6_TX_PER_SEC    = 74,  /**< MLULink write bandwidth for link 6, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L6_RX_PER_SEC    = 75,  /**< MLULink read bandwidth for link 6, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L7_TX_PER_SEC    = 76,  /**< MLULink write bandwidth for link 7, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L7_RX_PER_SEC    = 77,  /**< MLULink read bandwidth for link 7, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L8_TX_PER_SEC    = 78,  /**< MLULink write bandwidth for link 8, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L8_RX_PER_SEC    = 79,  /**< MLULink read bandwidth for link 8, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L9_TX_PER_SEC    = 80,  /**< MLULink write bandwidth for link 9, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L9_RX_PER_SEC    = 81,  /**< MLULink read bandwidth for link 9, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L10_TX_PER_SEC   = 82,  /**< MLULink write bandwidth for link 10, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L10_RX_PER_SEC   = 83,  /**< MLULink read bandwidth for link 10, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L11_TX_PER_SEC   = 84,  /**< MLULink write bandwidth for link 11, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L11_RX_PER_SEC   = 85,  /**< MLULink read bandwidth for link 11, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L12_TX_PER_SEC   = 86,  /**< MLULink write bandwidth for link 12, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L12_RX_PER_SEC   = 87,  /**< MLULink read bandwidth for link 12, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L13_TX_PER_SEC   = 88,  /**< MLULink write bandwidth for link 13, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L13_RX_PER_SEC   = 89,  /**< MLULink read bandwidth for link 13, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L14_TX_PER_SEC   = 90,  /**< MLULink write bandwidth for link 14, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L14_RX_PER_SEC   = 91,  /**< MLULink read bandwidth for link 14, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L15_TX_PER_SEC   = 92,  /**< MLULink write bandwidth for link 15, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L15_RX_PER_SEC   = 93,  /**< MLULink read bandwidth for link 15, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L16_TX_PER_SEC   = 94,  /**< MLULink write bandwidth for link 16, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L16_RX_PER_SEC   = 95,  /**< MLULink read bandwidth for link 16, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L17_TX_PER_SEC   = 96,  /**< MLULink write bandwidth for link 17, unit: MiB/sec.*/
+	CNDEV_MPM_METRIC_MLULINK_L17_RX_PER_SEC   = 97,  /**< MLULink read bandwidth for link 17, unit: MiB/sec.*/
+} cndevMpmMetricId_t;
+
+#define CNDEV_MPM_METRIC_MAX 256 /**< MPM metric maximum value.
+				   * Note that changing this should also change CNDEV_MPM_METRICS_GET_VERSION
+				   * due to struct size change.
+				   */
+
+/** Handle to an allocated MPM sample allocated with ::cndevMpmSampleAlloc. Free this with ::cndevMpmSampleFree.*/
+typedef void *cndevMpmSample_t;
+
+/** MPM metric name and unit.*/
+typedef struct {
+	char *shortName;   /**< OUT: The short name of metric.*/
+	char *longName;    /**< OUT: The long name of metric.*/
+	char *unit;        /**< OUT: The unit of metric.*/
+} cndevMpmMetricInfo_t;
+
+/** MPM metric information.*/
+typedef struct {
+	cndevMpmMetricId_t metricId;        /**< IN: The ID of the metric to retrieve.*/
+	cndevRet_t ret;                     /**< OUT: Status of this metric. If this is non-zero, then the value is not valid.*/
+	double value;                       /**< OUT: Value of this metric. It is only valid when @p ret is ::CNDEV_SUCCESS.*/
+	cndevMpmMetricInfo_t metricInfo;    /**< OUT: Metric name and unit. Those can be NULL if not defined.*/
+} cndevMpmMetric_t;
+
+/** MPM buffer information.*/
+typedef struct {
+	unsigned int version;                              /**< IN: Set to CNDEV_MPM_METRICS_GET_VERSION.*/
+	unsigned int numMetrics;                           /**< IN: How many metrics to retrieve in metrics[].*/
+	cndevMpmSample_t sample1;                          /**< IN: Sample buffer.*/
+	cndevMpmSample_t sample2;                          /**< IN: Sample buffer.*/
+	cndevMpmMetric_t metrics[CNDEV_MPM_METRIC_MAX];    /**< IN/OUT: Array of metrics. Set @p metricId on call.
+							     * See @p ret and @p value on return.
+							     */
+} cndevMpmMetricsGet_t;
+
+#define CNDEV_MPM_METRICS_GET_VERSION 1
+
+/*************************************************************************
+ * Initialization Management
+ *************************************************************************/
+// Group: Initialization Management
 /**
  * @brief Completes initialization work, and check whether the API version and the MLU Driver version could be supported.
- * 
+ *
  * @param[in] reserved Initialization flag for CNDev.
  *
  * @return
@@ -1818,6 +1909,8 @@ typedef __int32_t (*CNDEV_TRAVERSE_CALLBACK)(cndevTopologyNode_t *current, void 
  */
 CNDEV_EXPORT
 cndevRet_t cndevInit(__int32_t reserved);
+
+// Group: Initialization Management
 /**
  * @brief Completes exit work.
  *
@@ -1827,8 +1920,40 @@ cndevRet_t cndevInit(__int32_t reserved);
  * - ::CNDEV_ERROR_UNKNOWN
  */
 CNDEV_EXPORT
-cndevRet_t cndevRelease();
+cndevRet_t cndevRelease(void);
 
+/*************************************************************************
+ * Error Code Management
+ *************************************************************************/
+// Group: Error Code Management
+/**
+ * @brief Returns the calling thread's last-error code.
+ *
+ * @return
+ * - The value of the last error that occurred during the execution of this program.
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetLastError(void);
+
+// Group: Error Code Management
+/**
+ * @brief Gets the error message.
+ *
+ * This API takes an error ID as input and returns the corresponding error message if found.
+ * If the error message cannot be found, it returns "Cndev_ERROR not found!".
+ *
+ * @param[in] errorId The error ID.
+ *
+ * @return
+ * - The corresponding error message if found, otherwise "Cndev_ERROR not found!".
+ */
+CNDEV_EXPORT
+const char *cndevGetErrorString(cndevRet_t errorId);
+
+/******************************************************************************
+ * Version Management
+ ******************************************************************************/
+// Group: Version Management
 /**
  * @brief Gets the information of the MLU Driver version.
  *
@@ -1844,65 +1969,7 @@ cndevRet_t cndevRelease();
 CNDEV_EXPORT
 cndevRet_t cndevGetDriverVersion(__uint32_t *majorVersion, __uint32_t *minorVersion, __uint32_t *buildVersion);
 
-/**
- * @brief Gets the amount of devices.
- *
- * @param[out] cardNum The pointer which stores the amount of devices after the function ends.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDeviceCount(cndevCardInfo_t *cardNum);
-
-/**
- * @brief Gets the minor number of the device.
- *
- * @param[out] minor The pointer which stores the minor number of the device after the function ends.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT
- */
-CNDEV_EXPORT
-cndevRet_t cndevDeviceGetMinorNumber(__uint32_t *minor, cndevDevice_t device);
-
-/**
- * @brief Gets the device information of PCIe.
- *
- * @param[out] deviceInfo The pointer which stores the information of the device ID after the function ends.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNKNOWN
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetPCIeInfoV2(cndevPCIeInfoV2_t *deviceInfo, cndevDevice_t device);
-
-/**
- * @brief Gets the memory information of the device.
- *
- * @param[in,out] memInfo The pointer which stores the information of the devices' memory after the function ends.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetMemoryUsageV2(cndevMemoryInfoV2_t *memInfo, cndevDevice_t device);
-
+// Group: Version Management
 /**
  * @brief Gets the information of the device's MCU version and MLU Driver version.
  *
@@ -1921,10 +1988,29 @@ cndevRet_t cndevGetMemoryUsageV2(cndevMemoryInfoV2_t *memInfo, cndevDevice_t dev
 CNDEV_EXPORT
 cndevRet_t cndevGetVersionInfo(cndevVersionInfo_t *versInfo, cndevDevice_t device);
 
+// Group: Version Management
 /**
- * @brief Gets the information of the device's ECC.
+ * @brief Gets the information of the CNDev library version.
  *
- * @param[in,out] eccInfo The pointer which stores the information of the device's ECC.
+ * @param[in,out] libVerInfo The pointer which stores the information of the CNDev library version after the
+ *function ends.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetLibVersion(cndevLibVersionInfo_t *libVerInfo);
+
+// Group: Version Management
+/**
+ * @brief Gets the PCIe firmware version information.
+ *
+ * @param[in,out] version The pointer to the structure storing the PCIe firmware version information.
  * @param[in] device The identifier of the target device.
  *
  * @return
@@ -1933,114 +2019,85 @@ cndevRet_t cndevGetVersionInfo(cndevVersionInfo_t *versInfo, cndevDevice_t devic
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
  * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetPCIeFirmwareVersion(cndevPCIeFirmwareVersion_t *version, cndevDevice_t device);
+
+// Group: Version Management
+/**
+ * @brief Gets the lowest MLU Driver version which the CNDev library supports.
+ *
+ * @param[in,out] versInfo The pointer which stores the lowest MLU Driver version after the function ends.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetLowestSupportDriverVersion(cndevVersionInfo_t *versInfo);
+
+/******************************************************************************
+ * Device Management
+ ******************************************************************************/
+// Group: Device Management
+/**
+ * @brief Gets the amount of devices.
+ *
+ * @param[in,out] cardNum The pointer which stores the amount of devices after the function ends.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceCount(cndevCardInfo_t *cardNum);
+
+// Group: Device Management
+/**
+ * @brief Gets the minor number of the device.
+ *
+ * @param[out] minor The pointer which stores the minor number of the device after the function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT
+ */
+CNDEV_EXPORT
+cndevRet_t cndevDeviceGetMinorNumber(__uint32_t *minor, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the memory information of the device.
+ *
+ * @param[in,out] memInfo The pointer which stores the information of the devices' memory after the function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_NOT_SUPPORTED
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetECCInfo(cndevECCInfo_t *eccInfo, cndevDevice_t device);
+cndevRet_t cndevGetMemoryUsageV2(cndevMemoryInfoV2_t *memInfo, cndevDevice_t device);
 
-/**
- * @brief Sets the mode of the device's ECC.
- *
- * @param[in,out] eccMode The pointer which stores the mode of the device's ECC.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_NO_PERMISSION,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevSetEccMode(cndevEccMode_t *eccMode, cndevDevice_t device);
-
-/**
- * @brief Gets the ECC mode of the device.
- *
- * @param[in,out] currentMode The pointer which stores the current ECC mode of the device.
- * @param[in,out] pendingMode The pointer which stores the pending ECC mode of the device.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetEccMode(cndevEccMode_t *currentMode, cndevEccMode_t *pendingMode, cndevDevice_t device);
-
-/**
- * @brief Gets the ECC count of the device.
- *
- * @param[in,out] eccCounter The pointer which stores the ECC count of the device.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT 
-cndevRet_t cndevGetMemEccCounter(cndevMemEccCounter_t *eccCounter, cndevDevice_t device);
-
-/**
- * @brief Gets the SRAM ECC histogram of the device.
- *
- * @param[out] eccHistogram The pointer which stores the SRAM ECC histogram of the device.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetSramEccHistogram(cndevSramEccHistogram_t *eccHistogram, cndevDevice_t device);
-
-/**
- * @brief Gets the information of the device's power consumption. @p maxPower in @p powerInfo greater than 0 is valid.
- *
- * @param[out] powerInfo The pointer which stores the information of the device's power consumption after the
- * function ends.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDevicePowerInfo(cndevDevicePowerInfo_t *powerInfo, cndevDevice_t device);
-
+// Group: Device Management
 /**
  * @brief Gets the information of the device's frequency.
  *
  * @param[in,out] freqInfo The pointer which stores the information of the device's frequency after the function ends.
  * @param[in] device The identifier of the target device.
- * 
+ *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
@@ -2054,6 +2111,7 @@ cndevRet_t cndevGetDevicePowerInfo(cndevDevicePowerInfo_t *powerInfo, cndevDevic
 CNDEV_EXPORT
 cndevRet_t cndevGetFrequencyInfo(cndevFrequencyInfo_t *freqInfo, cndevDevice_t device);
 
+// Group: Device Management
 /**
  * @brief Gets the information of the device's temperature.
  *
@@ -2073,25 +2131,7 @@ cndevRet_t cndevGetFrequencyInfo(cndevFrequencyInfo_t *freqInfo, cndevDevice_t d
 CNDEV_EXPORT
 cndevRet_t cndevGetTemperatureInfo(cndevTemperatureInfo_t *tempInfo, cndevDevice_t device);
 
-/**
- * @brief Gets the information of the device's utilization.
- *
- * @param[in,out] utilInfo The pointer which stores the information of the  devices' utilization after the function ends.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDeviceUtilizationInfo(cndevUtilizationInfo_t *utilInfo, cndevDevice_t device);
-
+// Group: Device Management
 /**
  * @brief Gets the information of the device's fan speed.
  *
@@ -2111,6 +2151,7 @@ cndevRet_t cndevGetDeviceUtilizationInfo(cndevUtilizationInfo_t *utilInfo, cndev
 CNDEV_EXPORT
 cndevRet_t cndevGetFanSpeedInfo(cndevFanSpeedInfo_t *fanInfo, cndevDevice_t device);
 
+// Group: Device Management
 /**
  * @brief Gets the information of the device's processes.
  *
@@ -2131,23 +2172,7 @@ cndevRet_t cndevGetFanSpeedInfo(cndevFanSpeedInfo_t *fanInfo, cndevDevice_t devi
 CNDEV_EXPORT
 cndevRet_t cndevGetProcessInfo(__uint32_t *infoCount, cndevProcessInfo_t *procInfo, cndevDevice_t device);
 
-/**
- * @brief Gets the information of the CNDev library version.
- *
- * @param[in,out] libVerInfo The pointer which stores the information of the CNDev library version after the
- *function ends.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetLibVersion(cndevLibVersionInfo_t *libVerInfo);
-
+// Group: Device Management
 /**
  * @brief Gets the count of the device's cores which the user selects.
  *
@@ -2166,6 +2191,7 @@ cndevRet_t cndevGetLibVersion(cndevLibVersionInfo_t *libVerInfo);
 CNDEV_EXPORT
 cndevRet_t cndevGetCoreCount(cndevCardCoreCount_t *cardCoreCount, cndevDevice_t device);
 
+// Group: Device Management
 /**
  * @brief Gets the count of the device's clusters which the user selects.
  *
@@ -2184,21 +2210,7 @@ cndevRet_t cndevGetCoreCount(cndevCardCoreCount_t *cardCoreCount, cndevDevice_t 
 CNDEV_EXPORT
 cndevRet_t cndevGetClusterCount(cndevCardClusterCount_t *clusCount, cndevDevice_t device);
 
-/**
- * @brief Gets the lowest MLU Driver version which the CNDev library supports.
- * 
- * @param[in,out] versInfo The pointer which stores the lowest MLU Driver version after the function ends.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetLowestSupportDriverVersion(cndevVersionInfo_t *versInfo);
-
+// Group: Device Management
 /**
  * @brief Gets the index of the device's name.
  *
@@ -2216,10 +2228,11 @@ cndevRet_t cndevGetLowestSupportDriverVersion(cndevVersionInfo_t *versInfo);
 CNDEV_EXPORT
 cndevRet_t cndevGetCardName(cndevCardName_t *cardName, cndevDevice_t device);
 
+// Group: Device Management
 /**
  * @brief Translates the index of a device's name to the string of the device's name.
  *
- * @param cardName The index of a device's name.
+ * @param[in] cardName The index of a device's name.
  *
  * @return
  * - "Unknown" if the string of the device's name can't be found, otherwise the string of the device's name will be returned.
@@ -2227,6 +2240,7 @@ cndevRet_t cndevGetCardName(cndevCardName_t *cardName, cndevDevice_t device);
 CNDEV_EXPORT
 const char *cndevGetCardNameString(cndevNameEnum_t cardName);
 
+// Group: Device Management
 /**
  * @brief Translates the index of a device's name to the string of the device's name.
  *
@@ -2238,6 +2252,7 @@ const char *cndevGetCardNameString(cndevNameEnum_t cardName);
 CNDEV_EXPORT
 const char *cndevGetCardNameStringByDevId(cndevDevice_t device);
 
+// Group: Device Management
 /**
  * @brief Gets the SN (serial number) of the device.
  *
@@ -2255,6 +2270,7 @@ const char *cndevGetCardNameStringByDevId(cndevDevice_t device);
 CNDEV_EXPORT
 cndevRet_t cndevGetCardSN(cndevCardSN_t *cardSN, cndevDevice_t device);
 
+// Group: Device Management
 /**
  * @brief Gets the PN (part number) of the device.
  *
@@ -2272,11 +2288,11 @@ cndevRet_t cndevGetCardSN(cndevCardSN_t *cardSN, cndevDevice_t device);
 CNDEV_EXPORT
 cndevRet_t cndevGetCardPartNumber(cndevCardPartNumber_t *cardPN, cndevDevice_t device);
 
+// Group: Device Management
 /**
- * @brief Gets the PCIe throughput information.
- * Gets the total throughput and throughput in the past 20ms.
+ * @brief Gets the healthy state of the device.
  *
- * @param[in,out] pciethroughput The pointer which stores PCIe throughput information.
+ * @param[in,out] cardHealthState The pointer to the structure storing the HP of the device after the function ends. 1 means health, and 0 means sick.
  * @param[in] device The identifier of the target device.
  *
  * @return
@@ -2285,131 +2301,33 @@ cndevRet_t cndevGetCardPartNumber(cndevCardPartNumber_t *cardPN, cndevDevice_t d
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
  * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetPCIethroughputV2(cndevPCIethroughputV2_t *pciethroughput, cndevDevice_t device);
+cndevRet_t cndevGetCardHealthState(cndevCardHealthState_t *cardHealthState, cndevDevice_t device);
 
+// Group: Device Management
 /**
- * @brief Gets device related CPU affinity.
+ * @brief Gets the healthy state of the device with list of incidents.
  *
- * @param[in,out] affinity The pointer which stores CPU affinity info.
+ * @param[in,out] cardHealthState The pointer to the structure storing the health result.
  * @param[in] device The identifier of the target device.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
  * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetDeviceAffinity(cndevAffinity_t *affinity, cndevDevice_t device);
+cndevRet_t cndevGetCardHealthStateV2(cndevCardHealthStateV2_t *cardHealthState, cndevDevice_t device);
 
+// Group: Device Management
 /**
- * @brief Clears current thread's CPU affinity, set to default.
+ * @brief Gets the heartbeat count of the device.
  *
- * @param[in] version The CNDev version.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevClearCurrentThreadAffinity(__int32_t version, cndevDevice_t device);
-
-/**
- * @brief Sets current thread's CPU affinity to device related CPUs.
- *
- * @param[in] version The CNDev version.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevSetCurrentThreadAffinity(__int32_t version, cndevDevice_t device);
-
-/**
- * @brief Gets two devices' relationship.
- *
- * @param[in,out] relationship The pointer which stores two devices' relationship.
- * @param[in] device1 The identifier of the target device1.
- * @param[in] device2 The identifier of the target device2.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevTopologyGetRelationship(cndevTopologyRelationship_t *relationship, cndevDevice_t device1, cndevDevice_t device2);
-
-/**
- * @brief Gets devid nearest devices by relationship.
- *
- * @param[in] version The CNDev version.
- * @param[in] rel Specified relationship.
- * @param[in,out] count DeviceArray's size.
- * @param[out] deviceArray The pointer which stores related devices handle.
- * @param[in] device The count of devices, starting from 0.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INSUFFICIENT_SPACE,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevTopologyGetNearestDevices(__int32_t version, cndevTopologyRelationshipEnum_t rel, __uint64_t *count,
-                                          __uint64_t *deviceArray, cndevDevice_t device);
-
-/**
- * @brief Gets two devices' relationship.
- *
- * @param version The CNDev version.
- * @param cpuId Specified CPU ID.
- * @param[in,out] count DeviceArray's size.
- * @param[out] deviceArray The pointer which stores related devices handle.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INSUFFICIENT_SPACE,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevTopologyGetCpuRelatedDevices(__int32_t version, __int32_t cpuId, __uint64_t *count, __uint64_t *deviceArray);
-
-/**
- * @brief Gets the current PCI information.
- *
- * @param[in,out] currentPCIInfo The pointer to the structure storing the current PCI information.
-     after the function ends.
+ * @param[in,out] cardHeartbeatCount The pointer to the structure storing the heartbeat count.
  * @param[in] device The identifier of the target device.
  *
  * @return
@@ -2418,17 +2336,16 @@ cndevRet_t cndevTopologyGetCpuRelatedDevices(__int32_t version, __int32_t cpuId,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
  * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
-*/
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
+ */
 CNDEV_EXPORT
-cndevRet_t cndevGetCurrentPCIInfo(cndevCurrentPCIInfo_t *currentPCIInfo, cndevDevice_t device);
+cndevRet_t cndevGetCardHeartbeatCount(cndevCardHeartbeatCount_t *cardHeartbeatCount, cndevDevice_t device);
 
+// Group: Device Management
 /**
- * @brief Gets the max PCI information.
+ * @brief Gets the fast alloc information.
  *
- * @param[in,out] maxPCIInfo The pointer to the structure storing the max PCI information.
-     after the function ends.
+ * @param[in,out] fastalloc The pointer to the structure storing the fast alloc total memory and free memory.
  * @param[in] device The identifier of the target device.
  *
  * @return
@@ -2440,39 +2357,36 @@ cndevRet_t cndevGetCurrentPCIInfo(cndevCurrentPCIInfo_t *currentPCIInfo, cndevDe
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_IN_PROBLEM
-*/
+ */
 CNDEV_EXPORT
-cndevRet_t cndevGetMaxPCIInfo(cndevPCIInfo_t *maxPCIInfo, cndevDevice_t device);
+cndevRet_t cndevGetFastAlloc(cndevFastAlloc_t *fastalloc, cndevDevice_t device);
 
+// Group: Device Management
 /**
- * @brief Gets two nodes' relationship.
+ * @brief Gets the codec turbo mode.
  *
- * @param[out] relationship The pointer which stores two devices' relationship.
- * @param[in] node1 The topology node.
- * @param[in] node2 The topology node.
+ * @param[in,out] codecTurbo The pointer to the structure storing the codec turbo information.
+ * @param[in] device The identifier of the target device.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
-cndevRet_t cndevTopologyGetRelationshipByNode(cndevTopologyRelationship_t *relationship, cndevTopologyNode_t *node1,
-                                              cndevTopologyNode_t *node2);
+cndevRet_t cndevGetCodecTurbo(cndevCodecTurbo_t *codecTurbo, cndevDevice_t device);
 
+// Group: Device Management
 /**
- * @brief Gets a topology tree node by BDF.
+ * @brief Gets the NUMA node ID of tree node by device ID.
  *
- * @param[in] version The CNDev version.
- * @param[out] treeNode The target topology tree node.
- * @param[in] domain  The domain number of PCI device.
- * @param[in] bus The bus number of PCI device.
- * @param[in] device The slot number of PCI device.
- * @param[in] function The function number of PCI device.
+ * @param[in,out] numaNodeId The NUMA node ID of tree node.
+ * @param[in] device The identifier of the target device.
  *
  * @return
  * - ::CNDEV_SUCCESS,
@@ -2483,9 +2397,276 @@ cndevRet_t cndevTopologyGetRelationshipByNode(cndevTopologyRelationship_t *relat
  * - ::CNDEV_ERROR_NOT_SUPPORTED
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetNodeByBDF(__int32_t version, cndevTopologyNode_t **treeNode, __uint32_t domain, __uint32_t bus,
-					 __uint32_t device, __uint32_t function);
+cndevRet_t cndevGetNUMANodeIdByDevId(cndevNUMANodeId_t *numaNodeId, cndevDevice_t device);
 
+// Group: Device Management
+/**
+ * @brief Gets the chassis information V2.
+ *
+ * @param[in,out] chassisinfo The pointer to the structure storing the chassis information.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetChassisInfoV2(cndevChassisInfoV2_t *chassisinfo, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the UUID information. The array of UUID don't end with '\0'.
+ *
+ * @param[in,out] uuidInfo The pointer to the structure storing the UUID information.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetUUID(cndevUUID_t *uuidInfo, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets device VF state.
+ *
+ * @param[in,out] vfstate The pointer which stores the state of VF.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetCardVfState(cndevCardVfState_t *vfstate, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets device OS memory usage information.
+ * @param[out] mem The pointer which stores device OS memory usage.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceOsMemoryUsageV2(cndevDeviceOsMemoryInfo_t *mem, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets device chip ID information.
+ *
+ * @param[in,out] chipid The pointer which stores device chip ID.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetChipId(cndevChipId_t *chipid, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets device MLU frequency status.
+ *
+ * @param[in,out] status The pointer which stores MLU frequency status.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetMLUFrequencyStatus(cndevMLUFrequencyStatus_t *status, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Unlocks MLU frequency.
+ *
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_NO_PERMISSION,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevUnlockMLUFrequency(cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the information of the device's D2D CRC, only valid on MLU370.
+ *
+ * @param[in,out] crcInfo The pointer which stores the information of the device's D2D CRC.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetCRCInfo(cndevCRCInfo_t *crcInfo, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the information of the device's DDR.
+ *
+ * @param[in,out] ddrInfo The pointer which stores the information of the device's DDR.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDDRInfo(cndevDDRInfo_t *ddrInfo, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the information of the device's overtemperature.
+ *
+ * @param[in,out] tempInfo The pointer which stores the information of overtemperature.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetOverTemperatureInfo(cndevOverTemperatureInfo_t *tempInfo, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the information of the device's performance throttle reason.
+ * When performance exceeds the maximum limit, the device will throttle performance, could call this API to get
+ * what are reasons for throttle performance.
+ *
+ * @param[in,out] reason The pointer which stores the information of performance throttle reason.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetPerformanceThrottleReason(cndevPerformanceThrottleReason_t *reason, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the information of the device's compute mode.
+ *
+ * @param[in,out] mode The pointer which stores the information of compute mode.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetComputeMode(cndevComputeMode_t *mode, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Sets the information of the device's compute mode.
+ *
+ * @param[in,out] mode The pointer which stores the information of compute mode.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_NO_PERMISSION,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevSetComputeMode(cndevComputeMode_t *mode, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets MLU device handle for the given index.
+ *
+ * @param[in] index The index of the target MLU.
+ * @param[out] handle The MLU device handle.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_NOT_FOUND,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceHandleByIndex(__int32_t index, cndevDevice_t *handle);
+
+// Group: Device Management
 /**
  * @brief Gets the device ID by BDF.
  *
@@ -2508,6 +2689,575 @@ CNDEV_EXPORT
 cndevRet_t cndevGetDevIdByBDF(__int32_t version, cndevDevice_t *dev, __uint32_t domain, __uint32_t bus, __uint32_t device,
 					__uint32_t function);
 
+// Group: Device Management
+/**
+ * @brief Gets the MLU device handle for the given PCI bus ID.
+ *
+ * @param[in] pciBusId The PCI bus ID of the target MLU.
+ * @param[out] handle The MLU device handle.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_NOT_FOUND,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceHandleByPciBusId(const char *pciBusId, cndevDevice_t *handle);
+
+// Group: Device Management
+/**
+ * @brief Gets the MLU device handle for the given serial number.
+ *
+ * @param[in] sn The serial number of the target MLU.
+ * @param[out] handle The MLU device handle.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_NOT_FOUND
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceHandleBySerial(const char *sn, cndevDevice_t *handle);
+
+// Group: Device Management
+/**
+ * @brief Gets the MLU device handle for the given UUID.
+ *
+ * @param[in] uuid The UUID of the target MLU.
+ * @param[out] handle The MLU device handle.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_NOT_FOUND
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceHandleByUUID(const char *uuid, cndevDevice_t *handle);
+
+// Group: Device Management
+/**
+ * @brief Gets the parity error information.
+ *
+ * @param[in,out] error The pointer to the structure storing the information of parity error.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetParityError(cndevParityError_t *error, cndevDevice_t handle);
+
+// Group: Device Management
+/**
+ * @brief Gets the information of the device's docker param.
+ *
+ * @param[in,out] param The pointer which stores the information of docker param.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_USE,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDockerParam(cndevDockerParam_t *param, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets total available and used size of BAR4 memory. BAR4 is used to map the device memory.
+ *
+ * @param[out] bar4Memory The pointer which stores the information of the device's BAR4 memory after the function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetBAR4MemoryInfo(cndevBAR4Memory_t *bar4Memory, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets major and minor compute capability of the device.
+ *
+ * @param[out] major The pointer which stores the major compute capability of the device.
+ * @param[out] minor The pointer which stores the minor compute capability of the device.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetComputeCapability(__uint32_t *major, __uint32_t *minor, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the information of the device's application clock.
+ *
+ * @param[in] clockType Identify which clock domain to query.
+ * @param[out] clockMHz The pointer which stores the current setting of application clock in MHz. 0 indicates that it has not been set.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetApplicationsClock(cndevClockType_t clockType, __uint32_t *clockMHz, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets value of the given field for device.
+ * This API supports the retrieval of multiple fields in a single request.
+ *
+ * @param[in] device The identifier of the target device.
+ * @param[in] valueCount The count of fields that are needed to get value.
+ * @param[in,out] value The pointer which stores the value of the information of given fields.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevDeviceGetFieldValues(cndevDevice_t device, __int32_t valueCount, cndevFieldValue_t *value);
+
+// Group: Device Management
+/**
+ * @brief Gets the device voltage information.
+ * If a certain voltage value is -1, it means that obtaining this voltage is not supported on the device.
+ *
+ * @param[out] voltage  The pointer which stores the voltage information.
+ * @param[in]  device   The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetVoltageInfo(cndevVoltageInfo_t *voltage, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Gets the device current information.
+ * If a certain current value is -1, it means that obtaining this current is not supported on the device.
+ *
+ * @param[out] current  The pointer which stores the current information.
+ * @param[in]  device   The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetCurrentInfo(cndevCurrentInfo_t *current, cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Resets device to its default status. Ensure that no one is using the device.
+ * The maximum waiting time is 120 seconds, reaching this value will return ::CNDEV_ERROR_TIMEOUT.
+ *
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_NO_PERMISSION,
+ * - ::CNDEV_ERROR_IN_USE,
+ * - ::CNDEV_ERROR_TIMEOUT,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevResetDevice(cndevDevice_t device);
+
+// Group: Device Management
+/**
+ * @brief Checks the peer-to-peer ability.
+ *
+ * @param[out] canPeerAble The pointer which stores the peer-to-peer ability between @p deviceSrc and @p deviceDst.
+ * @param[in] deviceSrc The identifier of the source device.
+ * @param[in] deviceDst The identifier of the destination device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceCanPeerAble(bool *canPeerAble, cndevDevice_t deviceSrc, cndevDevice_t deviceDst);
+
+// Group: Device Management
+/**
+ * @brief Gets the private function.
+ *
+ * @param[in] name The name of the private function.
+ * @param[out] func The pointer of the private function.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_NOT_FOUND
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetExportFunction(const char *name, const void **func);
+
+
+/******************************************************************************
+ * PCIe Management
+ ******************************************************************************/
+// Group: PCIe Management
+/**
+ * @brief Gets the current PCI information.
+ *
+ * @param[in,out] currentPCIInfo The pointer to the structure storing the current PCI information
+ *   after the function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetCurrentPCIInfo(cndevCurrentPCIInfo_t *currentPCIInfo, cndevDevice_t device);
+
+// Group: PCIe Management
+/**
+ * @brief Gets the max PCI information.
+ *
+ * @param[in,out] maxPCIInfo The pointer to the structure storing the max PCI information.
+ *   after the function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetMaxPCIInfo(cndevPCIInfo_t *maxPCIInfo, cndevDevice_t device);
+
+// Group: PCIe Management
+/**
+ * @brief Gets the device information of PCIe.
+ *
+ * @param[out] deviceInfo The pointer which stores the information of the device ID after the function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNKNOWN
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetPCIeInfoV2(cndevPCIeInfoV2_t *deviceInfo, cndevDevice_t device);
+
+// Group: PCIe Management
+/**
+ * @brief Gets the PCIe throughput information.
+ * Gets the total throughput and throughput in the past 20ms.
+ *
+ * @param[in,out] pciethroughput The pointer which stores PCIe throughput information.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetPCIethroughputV2(cndevPCIethroughputV2_t *pciethroughput, cndevDevice_t device);
+
+// Group: PCIe Management
+/**
+ * @brief Gets the PCIe switch link speed.
+ *
+ * @param[in,out] linkspeed The pointer to the structure storing the PCIe switch link speed.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetLowestLinkSpeed(cndevLinkSpeed_t *linkspeed, cndevDevice_t device);
+
+// Group: PCIe Management
+/**
+ * @brief Gets the information of the device's PCIe replay count.
+ *
+ * @param[in,out] count The pointer which stores the information of PCIe replay count.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetPcieReplayCounter(cndevPcieReplayCounter_t *count, cndevDevice_t device);
+
+/******************************************************************************
+ * Topology Management
+ ******************************************************************************/
+// Group: Topology Management
+/**
+ * @brief Gets device related CPU affinity.
+ *
+ * @param[in,out] affinity The pointer which stores CPU affinity info.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceAffinity(cndevAffinity_t *affinity, cndevDevice_t device);
+
+// Group: Topology Management
+/**
+ * @brief Clears current thread's CPU affinity, set to default.
+ *
+ * @param[in] version The CNDev version.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevClearCurrentThreadAffinity(__int32_t version, cndevDevice_t device);
+
+// Group: Topology Management
+/**
+ * @brief Sets current thread's CPU affinity to device related CPUs.
+ *
+ * @param[in] version The CNDev version.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevSetCurrentThreadAffinity(__int32_t version, cndevDevice_t device);
+
+// Group: Topology Management
+/**
+ * @brief Gets two devices' relationship.
+ *
+ * @param[in,out] relationship The pointer which stores two devices' relationship.
+ * @param[in] device1 The identifier of the target device1.
+ * @param[in] device2 The identifier of the target device2.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevTopologyGetRelationship(cndevTopologyRelationship_t *relationship, cndevDevice_t device1, cndevDevice_t device2);
+
+// Group: Topology Management
+/**
+ * @brief Gets devid nearest devices by relationship.
+ *
+ * @param[in] version The CNDev version.
+ * @param[in] rel Specified relationship.
+ * @param[in,out] count DeviceArray's size.
+ * @param[out] deviceArray The pointer which stores related devices handle.
+ * @param[in] device The count of devices, starting from 0.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INSUFFICIENT_SPACE,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevTopologyGetNearestDevices(__int32_t version, cndevTopologyRelationshipEnum_t rel, __uint64_t *count,
+				__uint64_t *deviceArray, cndevDevice_t device);
+
+// Group: Topology Management
+/**
+ * @brief Gets the NUMA node ID of tree node.
+ *
+ * @param[in,out] numaNodeId The NUMA node ID of tree node.
+ * @param[in] treeNode The target tree node.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetNUMANodeIdByTopologyNode(cndevNUMANodeId_t *numaNodeId, cndevTopologyNode_t *treeNode);
+
+// Group: Topology Management
+/**
+ * @brief Gets two devices' relationship.
+ *
+ * @param[in] version The CNDev version.
+ * @param[in] cpuId Specified CPU ID.
+ * @param[in,out] count DeviceArray's size.
+ * @param[out] deviceArray The pointer which stores related devices handle.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INSUFFICIENT_SPACE,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevTopologyGetCpuRelatedDevices(__int32_t version, __int32_t cpuId, __uint64_t *count, __uint64_t *deviceArray);
+
+// Group: Topology Management
+/**
+ * @brief Gets two nodes' relationship.
+ *
+ * @param[in,out] relationship The pointer which stores two devices' relationship.
+ * @param[in] node1 The topology node.
+ * @param[in] node2 The topology node.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_NOT_FOUND
+ */
+CNDEV_EXPORT
+cndevRet_t cndevTopologyGetRelationshipByNode(cndevTopologyRelationship_t *relationship, cndevTopologyNode_t *node1,
+				cndevTopologyNode_t *node2);
+
+// Group: Topology Management
+/**
+ * @brief Gets a topology tree node by BDF.
+ *
+ * @param[in] version The CNDev version.
+ * @param[out] treeNode The target topology tree node.
+ * @param[in] domain  The domain number of PCI device.
+ * @param[in] bus The bus number of PCI device.
+ * @param[in] device The slot number of PCI device.
+ * @param[in] function The function number of PCI device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetNodeByBDF(__int32_t version, cndevTopologyNode_t **treeNode, __uint32_t domain, __uint32_t bus,
+					 __uint32_t device, __uint32_t function);
+
+// Group: Topology Management
 /**
  * @brief Gets a topology tree node by device ID.
  *
@@ -2526,6 +3276,7 @@ cndevRet_t cndevGetDevIdByBDF(__int32_t version, cndevDevice_t *dev, __uint32_t 
 CNDEV_EXPORT
 cndevRet_t cndevGetNodeByDevId(__int32_t version, cndevTopologyNode_t **treeNode, cndevDevice_t device);
 
+// Group: Topology Management
 /**
  * @brief Gets the virtual root node of topology tree.
  *
@@ -2543,6 +3294,7 @@ cndevRet_t cndevGetNodeByDevId(__int32_t version, cndevTopologyNode_t **treeNode
 CNDEV_EXPORT
 cndevRet_t cndevTopologyGetVirtualRootNode(__int32_t version, cndevTopologyNode_t **root);
 
+// Group: Topology Management
 /**
  * @brief Traverses the topology tree with a callback function.
  *
@@ -2562,6 +3314,7 @@ cndevRet_t cndevTopologyGetVirtualRootNode(__int32_t version, cndevTopologyNode_
 CNDEV_EXPORT
 cndevRet_t cndevTopologyTraverseTree(__int32_t version, CNDEV_TRAVERSE_CALLBACK callback, void *userdata);
 
+// Group: Topology Management
 /**
  * @brief Gets the capability info of tree node.
  *
@@ -2579,6 +3332,7 @@ cndevRet_t cndevTopologyTraverseTree(__int32_t version, CNDEV_TRAVERSE_CALLBACK 
 CNDEV_EXPORT
 cndevRet_t cndevGetNodeCapabilityInfo(cndevCapabilityInfo_t *capability, cndevTopologyNode_t *treeNode);
 
+// Group: Topology Management
 /**
  * @brief Gets tree nodes by device name.
  *
@@ -2600,184 +3354,10 @@ cndevRet_t cndevGetNodeCapabilityInfo(cndevCapabilityInfo_t *capability, cndevTo
 CNDEV_EXPORT
 cndevRet_t cndevGetNodeByDeviceName(__int32_t version, __int32_t *count, cndevTopologyNode_t *nodeArray, const char *deviceName);
 
-/**
- * @brief Gets the healthy state of the device.
- *
- * @param[in,out] cardHealthState The pointer to the structure storing the HP of the device after the function ends. 1 means health, and 0 means sick.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetCardHealthState(cndevCardHealthState_t *cardHealthState, cndevDevice_t device);
-
-/**
- * @brief Gets the healthy state of the device with list of incidents.
- *
- * @param[in,out] cardHealthState The pointer to the structure storing the health result.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetCardHealthStateV2(cndevCardHealthStateV2_t *cardHealthState, cndevDevice_t device);
-
-/**
- * @brief Gets the heartbeat count of the device.
- *
- * @param[in,out] cardHeartbeatCount The pointer to the structure storing the heartbeat count.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetCardHeartbeatCount(cndevCardHeartbeatCount_t *cardHeartbeatCount, cndevDevice_t device);
-
-/**
- * @brief Gets the PCIe switch link speed.
- *
- * @param[in,out] linkspeed The pointer to the structure storing the PCIe switch link speed.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetLowestLinkSpeed(cndevLinkSpeed_t *linkspeed, cndevDevice_t device);
-
-/**
- * @brief Gets the JPU codec utilization.
- *
- * @param jpu_util The pointer to the structure storing the JPU codec utilization.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetImageCodecUtilization(cndevImageCodecUtilization_t *jpuutil, cndevDevice_t device);
-
-/**
- * @brief Gets the VPU codec utilization.
- *
- * @param[in,out] vpu_util The pointer to the structure storing the VPU codec utilization.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetVideoCodecUtilization(cndevVideoCodecUtilization_t *vpuutil, cndevDevice_t device);
-
-/**
- * @brief Gets the fast alloc information.
- *
- * @param[in,out] fastalloc The pointer to the structure storing the fast alloc total memory and free memory.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetFastAlloc(cndevFastAlloc_t *fastalloc, cndevDevice_t device);
-
-/**
- * @brief Gets the NUMA node ID of tree node.
- *
- * @param[in,out] numaNodeId The NUMA node ID of tree node.
- * @param[in] treeNode The target tree node.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetNUMANodeIdByTopologyNode(cndevNUMANodeId_t *numaNodeId, cndevTopologyNode_t *treeNode);
-
-/**
- * @brief Gets the scaler utilization.
- *
- * @param[in,out] scalerutil The pointer to the structure storing the scaler utilization.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetScalerUtilization(cndevScalerUtilization_t *scalerutil, cndevDevice_t device);
-
-/**
- * @brief Gets the codec turbo mode.
- *
- * @param[in,out] codecTurbo The pointer to the structure storing the codec turbo information.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetCodecTurbo(cndevCodecTurbo_t *codecTurbo, cndevDevice_t device);
-
+/******************************************************************************
+ * MLULink Management
+ ******************************************************************************/
+// Group: MLULink Management
 /**
  * @brief Gets the MLU-Link version.
  *
@@ -2797,6 +3377,8 @@ cndevRet_t cndevGetCodecTurbo(cndevCodecTurbo_t *codecTurbo, cndevDevice_t devic
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkVersion(cndevMLULinkVersion_t *version, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the Presence, SerDes and MAC status of MLU-Link.
  *
@@ -2816,6 +3398,8 @@ cndevRet_t cndevGetMLULinkVersion(cndevMLULinkVersion_t *version, cndevDevice_t 
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkStatusV2(cndevMLULinkStatusV2_t *status, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the optical information of MLU-Link.
  *
@@ -2836,6 +3420,8 @@ cndevRet_t cndevGetMLULinkStatusV2(cndevMLULinkStatusV2_t *status, cndevDevice_t
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetOpticalInfo(cndevOpticalInfo_t *optical, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the MLU-Link speed.
  *
@@ -2855,6 +3441,8 @@ cndevRet_t cndevGetOpticalInfo(cndevOpticalInfo_t *optical, cndevDevice_t device
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkSpeedInfo(cndevMLULinkSpeed_t *speed, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the MLU-Link capability, only valid on MLU370.
  *
@@ -2875,6 +3463,8 @@ cndevRet_t cndevGetMLULinkSpeedInfo(cndevMLULinkSpeed_t *speed, cndevDevice_t de
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkCapability(cndevMLULinkCapability_t *capability, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the MLU-Link count information.
  *
@@ -2899,6 +3489,8 @@ cndevRet_t cndevGetMLULinkCapability(cndevMLULinkCapability_t *capability, cndev
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkCounter(cndevMLULinkCounter_t *count, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the MLU-Link statistics information.
  *
@@ -2915,6 +3507,8 @@ cndevRet_t cndevGetMLULinkCounter(cndevMLULinkCounter_t *count, cndevDevice_t de
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkCounterExt(cndevMLULinkCounterExt_t *count, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Resets the counters of the MLU-Link.
  *
@@ -2922,7 +3516,7 @@ cndevRet_t cndevGetMLULinkCounterExt(cndevMLULinkCounterExt_t *count, cndevDevic
  * - ::cndevResetMLULinkCounter is deprecated and will be removed in future release.
  *   Use ::cndevResetMLULinkAllCounters instead.
  *
- * @param[in,out] setcount The pointer to the structure storing the MLU-Link count.
+ * @param[in] setcount The pointer to the structure storing the MLU-Link count.
  * @param[in] device The identifier of the target device.
  * @param[in] link The count of the ports which the user selects, starting from 0.
  *
@@ -2940,6 +3534,8 @@ cndevRet_t cndevGetMLULinkCounterExt(cndevMLULinkCounterExt_t *count, cndevDevic
  */
 CNDEV_EXPORT
 cndevRet_t cndevResetMLULinkCounter(cndevMLULinkSetCounter_t *setcount, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Resets the MLU-Link count.
  *
@@ -2961,6 +3557,8 @@ cndevRet_t cndevResetMLULinkCounter(cndevMLULinkSetCounter_t *setcount, cndevDev
  */
 CNDEV_EXPORT
 cndevRet_t cndevResetMLULinkAllCounters(cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the basic counter of an MLU-Link.
  *
@@ -2978,6 +3576,8 @@ cndevRet_t cndevResetMLULinkAllCounters(cndevDevice_t device, __int32_t link);
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkBasicCounter(cndevMLULinkBasicCounter_t *counter, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the congestion control counter of an MLU-Link.
  *
@@ -2995,6 +3595,8 @@ cndevRet_t cndevGetMLULinkBasicCounter(cndevMLULinkBasicCounter_t *counter, cnde
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkCongestionCtrlCounter(cndevMLULinkCongestionCtrlCounter_t *counter, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the error counter of an MLU-Link.
  *
@@ -3012,6 +3614,8 @@ cndevRet_t cndevGetMLULinkCongestionCtrlCounter(cndevMLULinkCongestionCtrlCounte
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkErrorCounter(cndevMLULinkErrorCounter_t *counter, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the flow control counter of an MLU-Link.
  *
@@ -3029,6 +3633,8 @@ cndevRet_t cndevGetMLULinkErrorCounter(cndevMLULinkErrorCounter_t *counter, cnde
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkFlowCtrlCounter(cndevMLULinkFlowCtrlCounter_t *counter, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the event counter of an MLU-Link.
  *
@@ -3046,6 +3652,8 @@ cndevRet_t cndevGetMLULinkFlowCtrlCounter(cndevMLULinkFlowCtrlCounter_t *counter
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkEventCounter(cndevMLULinkEventCounter_t *counter, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the task statistics counter of an MLU-Link.
  *
@@ -3063,6 +3671,8 @@ cndevRet_t cndevGetMLULinkEventCounter(cndevMLULinkEventCounter_t *counter, cnde
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkTaskStatsCounter(cndevMLULinkTaskStatsCounter_t *counter, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Sets an MLU-Link state. This will take effect after resetting the device.
  *
@@ -3080,6 +3690,8 @@ cndevRet_t cndevGetMLULinkTaskStatsCounter(cndevMLULinkTaskStatsCounter_t *count
  */
 CNDEV_EXPORT
 cndevRet_t cndevSetMLULinkState(cndevDevice_t device, __int32_t link, bool enable);
+
+// Group: MLULink Management
 /**
  * @brief Gets an MLU-Link state.
  *
@@ -3098,6 +3710,8 @@ cndevRet_t cndevSetMLULinkState(cndevDevice_t device, __int32_t link, bool enabl
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkState(__int32_t *ib_cmd_info, __int32_t *ob_cmd_info, cndevDevice_t device, __int32_t link);
+
+// Group: MLULink Management
 /**
  * @brief Gets the MLU-Link remote information.
  *
@@ -3119,6 +3733,7 @@ cndevRet_t cndevGetMLULinkState(__int32_t *ib_cmd_info, __int32_t *ob_cmd_info, 
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkRemoteInfo(cndevMLULinkRemoteInfo_t *remoteinfo, cndevDevice_t device, __int32_t link);
 
+// Group: MLULink Management
 /**
  * @brief Gets the management IP address of the MLU-Link remote host.
  *
@@ -3139,6 +3754,7 @@ cndevRet_t cndevGetMLULinkRemoteInfo(cndevMLULinkRemoteInfo_t *remoteinfo, cndev
 CNDEV_EXPORT
 cndevRet_t cndevGetRemoteHostMgmtAddr(cndevMLULinkMgmtAddr_t *mgmt_addr, cndevDevice_t device, __int32_t link);
 
+// Group: MLULink Management
 /**
  * @brief Gets the serial number of the MLU-Link remote host.
  *
@@ -3159,6 +3775,7 @@ cndevRet_t cndevGetRemoteHostMgmtAddr(cndevMLULinkMgmtAddr_t *mgmt_addr, cndevDe
 CNDEV_EXPORT
 cndevRet_t cndevGetRemoteHostSN(cndevMLULinkHostSN_t *host_sn, cndevDevice_t device, __int32_t link);
 
+// Group: MLULink Management
 /**
  * @brief Gets the physical port index name of the scale out MLU-Link.
  *
@@ -3179,6 +3796,7 @@ cndevRet_t cndevGetRemoteHostSN(cndevMLULinkHostSN_t *host_sn, cndevDevice_t dev
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkPPI(cndevMLULinkPPI_t *ppi, cndevDevice_t device, __int32_t link);
 
+// Group: MLULink Management
 /**
  * @brief Gets the OAM port name of the MLU-Link.
  *
@@ -3199,6 +3817,7 @@ cndevRet_t cndevGetMLULinkPPI(cndevMLULinkPPI_t *ppi, cndevDevice_t device, __in
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkOPN(cndevMLULinkOPN_t *opn, cndevDevice_t device, __int32_t link);
 
+// Group: MLULink Management
 /**
  * @brief Gets the MLU-Link devices' SN.
  *
@@ -3217,132 +3836,188 @@ cndevRet_t cndevGetMLULinkOPN(cndevMLULinkOPN_t *opn, cndevDevice_t device, __in
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMLULinkDevSN(cndevMLULinkDevSN_t *devinfo, cndevDevice_t device);
-/**
- * @brief Gets the NUMA node ID of tree node by device ID.
- *
- * @param[in,out] numaNodeId The NUMA node ID of tree node.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetNUMANodeIdByDevId(cndevNUMANodeId_t *numaNodeId, cndevDevice_t device);
 
+// Group: MLULink Management
 /**
- * @brief Gets the chassis information V2.
+ * @brief Gets device MLU-Link port mode.
  *
- * @param[in,out] chassisinfo The pointer to the structure storing the chassis information.
+ * @param[in,out] mode The pointer which stores the mode of the device.
  * @param[in] device The identifier of the target device.
+ * @param[in] port The count of the ports which the user selects, starting from 0.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
  * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetChassisInfoV2(cndevChassisInfoV2_t *chassisinfo, cndevDevice_t device);
-/**
- * @brief Gets the PCIe firmware version information.
- *
- * @param[in,out] version The pointer to the structure storing the PCIe firmware version information.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
+ * - ::CNDEV_ERROR_INVALID_LINK
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetPCIeFirmwareVersion(cndevPCIeFirmwareVersion_t *version, cndevDevice_t device);
-/**
- * @brief Gets the UUID information. The array of UUID don't end with '\0'.
- * 
- * @param[in,out] uuidInfo The pointer to the structure storing the UUID information.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetUUID(cndevUUID_t *uuidInfo, cndevDevice_t device);
+cndevRet_t cndevGetMLULinkPortMode(cndevMLULinkPortMode_t *mode, cndevDevice_t device, __int32_t port);
 
+// Group: MLULink Management
 /**
- * @brief Gets the device CPU utilization V2.
- * 
- * @param[in,out] util The pointer to the structure storing the device CPU utilization.
+ * @brief Gets device MLU-Link port RoCE control information.
+ *
+ * @param[in,out] ctrl The pointer which stores RoCE control information.
+ * @param[in] device The identifier of the target device.
+ * @param[in] port The count of the ports which the user selects, starting from 0.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_INVALID_LINK,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetMLULinkOverRoCECtrl(cndevMLULinkOverRoCECtrl_t *ctrl, cndevDevice_t device, __int32_t port);
+
+// Group: MLULink Management
+/**
+ * @brief Gets device port number.
+ *
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - Returns the port count of the device.
+ */
+CNDEV_EXPORT
+__int32_t cndevGetMLULinkPortNumber(cndevDevice_t device);
+
+// Group: MLULink Management
+/**
+ * @brief Gets device MLU-Link port IP.
+ *
+ * @param[in,out] ip The pointer which stores device MLU-Link port IP.
+ * @param[in] device The identifier of the target device.
+ * @param[in] port The count of the ports which the user selects, starting from 0.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_INVALID_LINK,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetMLULinkPortIP(cndevMLULinkPortIP_t *ip, cndevDevice_t device, __int32_t port);
+
+/******************************************************************************
+ * ECC Management
+ ******************************************************************************/
+// Group: ECC Management
+/**
+ * @brief Gets the information of the device's ECC.
+ *
+ * @param[in,out] eccInfo The pointer which stores the information of the device's ECC.
  * @param[in] device The identifier of the target device.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetDeviceCPUUtilizationV2(cndevDeviceCPUUtilizationV2_t *util, cndevDevice_t device);
+cndevRet_t cndevGetECCInfo(cndevECCInfo_t *eccInfo, cndevDevice_t device);
+
+// Group: ECC Management
 /**
- * @brief Gets the device CPU refresh time.
- * 
- * @param[in,out] time The pointer to the structure storing the device CPU refresh time.
+ * @brief Sets the mode of the device's ECC.
+ *
+ * @param[in,out] eccMode The pointer which stores the mode of the device's ECC.
  * @param[in] device The identifier of the target device.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_NO_PERMISSION,
  * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetDeviceCPUSamplingInterval(cndevDeviceCPUSamplingInterval_t *time, cndevDevice_t device);
+cndevRet_t cndevSetEccMode(cndevEccMode_t *eccMode, cndevDevice_t device);
+
+// Group: ECC Management
 /**
- * @brief Sets the device CPU refresh time.
- * 
- * @param[in] time The pointer to the structure storing the device CPU refresh time.
+ * @brief Gets the ECC mode of the device.
+ *
+ * @param[in,out] currentMode The pointer which stores the current ECC mode of the device.
+ * @param[in,out] pendingMode The pointer which stores the pending ECC mode of the device.
  * @param[in] device The identifier of the target device.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
-cndevRet_t cndevSetDeviceCPUSamplingInterval(cndevDeviceCPUSamplingInterval_t *time, cndevDevice_t device);
+cndevRet_t cndevGetEccMode(cndevEccMode_t *currentMode, cndevEccMode_t *pendingMode, cndevDevice_t device);
+
+// Group: ECC Management
 /**
- * @brief Returns the calling thread's last-error code.
- * 
+ * @brief Gets the ECC count of the device.
+ *
+ * @param[in,out] eccCounter The pointer which stores the ECC count of the device.
+ * @param[in] device The identifier of the target device.
+ *
  * @return
- * - The value of the last error that occurred during the execution of this program.
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetLastError();
+cndevRet_t cndevGetMemEccCounter(cndevMemEccCounter_t *eccCounter, cndevDevice_t device);
+
+// Group: ECC Management
+/**
+ * @brief Gets the SRAM ECC histogram of the device.
+ *
+ * @param[out] eccHistogram The pointer which stores the SRAM ECC histogram of the device.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetSramEccHistogram(cndevSramEccHistogram_t *eccHistogram, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the status of retired pages.
  *
@@ -3363,6 +4038,8 @@ cndevRet_t cndevGetLastError();
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetRetiredPages(cndevRetiredPageInfo_t *retirepage, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the status of retired pages.
  *
@@ -3383,10 +4060,12 @@ cndevRet_t cndevGetRetiredPages(cndevRetiredPageInfo_t *retirepage, cndevDevice_
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetRetiredPagesStatus(cndevRetiredPageStatus_t *retirepagestatus, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the row remapping information.
  *
- * Gets the number of rows that have been fixed for different types of memory errors. 
+ * Gets the number of rows that have been fixed for different types of memory errors.
  * @p pendingRows in @p rows, indicates the number of rows in pending status. Reload the driver
  * will be required to actually remap the row. @p failedRows in @p rows, indicates the number of
  * failure rows. A pending remapping doesn't affect ongoing operations on the MLU because error-containment
@@ -3406,10 +4085,12 @@ cndevRet_t cndevGetRetiredPagesStatus(cndevRetiredPageStatus_t *retirepagestatus
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetRemappedRows(cndevRemappedRow_t *rows, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the row remapping information.
  *
- * Gets the number of rows that have been fixed for different types of memory errors. 
+ * Gets the number of rows that have been fixed for different types of memory errors.
  * @p histogram in @p rows indicates the remap availability for each bank on the MLU.
  *
  * @param[in,out] rows The pointer to the structure storing the remapped rows.
@@ -3426,6 +4107,8 @@ cndevRet_t cndevGetRemappedRows(cndevRemappedRow_t *rows, cndevDevice_t device);
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetRemappedRowsV2(cndevRemappedRowV2_t *rows, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the repair status.
  *
@@ -3451,6 +4134,8 @@ cndevRet_t cndevGetRemappedRowsV2(cndevRemappedRowV2_t *rows, cndevDevice_t devi
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetRepairStatus(cndevRepairStatus_t *status, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the address swapping information.
  *
@@ -3468,6 +4153,8 @@ cndevRet_t cndevGetRepairStatus(cndevRepairStatus_t *status, cndevDevice_t devic
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetAddressSwaps(cndevAddressSwap_t *swaps, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the address swapping information.
  *
@@ -3484,6 +4171,8 @@ cndevRet_t cndevGetAddressSwaps(cndevAddressSwap_t *swaps, cndevDevice_t device)
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetAddressSwapsV2(cndevAddressSwapV2_t *swaps, cndevDevice_t device);
+
+// Group: ECC Management
 /**
  * @brief Gets the retired pages operation.
  *
@@ -3502,10 +4191,34 @@ cndevRet_t cndevGetAddressSwapsV2(cndevAddressSwapV2_t *swaps, cndevDevice_t dev
 CNDEV_EXPORT
 cndevRet_t cndevGetRetiredPagesOperation(cndevRetiredPageOperation_t *operation, cndevDevice_t device);
 
+/******************************************************************************
+ * Utilization Management
+ ******************************************************************************/
+// Group: Utilization Management
 /**
- * @brief Gets device VF state.
+ * @brief Gets the information of the device's utilization.
  *
- * @param[in,out] vfstate The pointer which stores the state of VF.
+ * @param[in,out] utilInfo The pointer which stores the information of the  devices' utilization after the function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceUtilizationInfo(cndevUtilizationInfo_t *utilInfo, cndevDevice_t device);
+
+// Group: Utilization Management
+/**
+ * @brief Gets the JPU codec utilization.
+ *
+ * @param[in,out] jpuutil The pointer to the structure storing the JPU codec utilization.
  * @param[in] device The identifier of the target device.
  *
  * @return
@@ -3518,13 +4231,14 @@ cndevRet_t cndevGetRetiredPagesOperation(cndevRetiredPageOperation_t *operation,
  * - ::CNDEV_ERROR_NOT_SUPPORTED
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetCardVfState(cndevCardVfState_t *vfstate, cndevDevice_t device);
+cndevRet_t cndevGetImageCodecUtilization(cndevImageCodecUtilization_t *jpuutil, cndevDevice_t device);
+
+// Group: Utilization Management
 /**
- * @brief Gets device MLU-Link port mode.
+ * @brief Gets the VPU codec utilization.
  *
- * @param[in,out] mode The pointer which stores the mode of the device.
+ * @param[in,out] vpuutil The pointer to the structure storing the VPU codec utilization.
  * @param[in] device The identifier of the target device.
- * @param[in] port The count of the ports which the user selects, starting from 0.
  *
  * @return
  * - ::CNDEV_SUCCESS,
@@ -3534,41 +4248,88 @@ cndevRet_t cndevGetCardVfState(cndevCardVfState_t *vfstate, cndevDevice_t device
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_INVALID_LINK
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetMLULinkPortMode(cndevMLULinkPortMode_t *mode, cndevDevice_t device, __int32_t port);
-/**
- * @brief Gets device MLU-Link port RoCE control information.
- *
- * @param[in,out] ctrl The pointer which stores RoCE control information.
- * @param[in] device The identifier of the target device.
- * @param[in] port The count of the ports which the user selects, starting from 0.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_INVALID_LINK,
  * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetMLULinkOverRoCECtrl(cndevMLULinkOverRoCECtrl_t *ctrl, cndevDevice_t device, __int32_t port);
+cndevRet_t cndevGetVideoCodecUtilization(cndevVideoCodecUtilization_t *vpuutil, cndevDevice_t device);
+
+// Group: Utilization Management
 /**
- * @brief Gets device port number.
+ * @brief Gets the scaler utilization.
  *
+ * @param[in,out] scalerutil The pointer to the structure storing the scaler utilization.
  * @param[in] device The identifier of the target device.
  *
  * @return
- * - Returns the port count of the device.
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED
  */
 CNDEV_EXPORT
-__int32_t cndevGetMLULinkPortNumber(cndevDevice_t device);
+cndevRet_t cndevGetScalerUtilization(cndevScalerUtilization_t *scalerutil, cndevDevice_t device);
 
+// Group: Utilization Management
+/**
+ * @brief Gets the device CPU utilization V2.
+ *
+ * @param[in,out] util The pointer to the structure storing the device CPU utilization.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceCPUUtilizationV2(cndevDeviceCPUUtilizationV2_t *util, cndevDevice_t device);
+
+// Group: Utilization Management
+/**
+ * @brief Gets the device CPU refresh time.
+ *
+ * @param[in,out] time The pointer to the structure storing the device CPU refresh time.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDeviceCPUSamplingInterval(cndevDeviceCPUSamplingInterval_t *time, cndevDevice_t device);
+
+// Group: Utilization Management
+/**
+ * @brief Sets the device CPU refresh time.
+ *
+ * @param[in] time The pointer to the structure storing the device CPU refresh time.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevSetDeviceCPUSamplingInterval(cndevDeviceCPUSamplingInterval_t *time, cndevDevice_t device);
+
+// Group: Utilization Management
 /**
  * @brief Gets device tinycore utilization.
  *
@@ -3588,131 +4349,7 @@ __int32_t cndevGetMLULinkPortNumber(cndevDevice_t device);
 CNDEV_EXPORT
 cndevRet_t cndevGetTinyCoreUtilization(cndevTinyCoreUtilization_t *util, cndevDevice_t device);
 
-/**
- * @brief Gets device OS memory usage information. 
- * @param[out] mem The pointer which stores device OS memory usage.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDeviceOsMemoryUsageV2(cndevDeviceOsMemoryInfo_t *mem, cndevDevice_t device);
-
-/**
- * @brief Gets device chip ID information.
- *
- * @param[in,out] chipid The pointer which stores device chip ID.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetChipId(cndevChipId_t *chipid, cndevDevice_t device);
-/**
- * @brief Gets device MLU frequency status.
- *
- * @param[in,out] status The pointer which stores MLU frequency status.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetMLUFrequencyStatus(cndevMLUFrequencyStatus_t *status, cndevDevice_t device);
-/**
- * @brief Unlocks MLU frequency.
- *
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_NO_PERMISSION,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevUnlockMLUFrequency(cndevDevice_t device);
-/**
- * @brief Gets device MLU-Link port IP.
- *
- * @param[in,out] ip The pointer which stores device MLU-Link port IP.
- * @param[in] device The identifier of the target device.
- * @param[in] port The count of the ports which the user selects, starting from 0.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_INVALID_LINK,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetMLULinkPortIP(cndevMLULinkPortIP_t *ip, cndevDevice_t device, __int32_t port);
-
-/**
- * @brief Gets the information of the device's D2D CRC, only valid on MLU370.
- *
- * @param[in,out] crcInfo The pointer which stores the information of the device's D2D CRC.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetCRCInfo(cndevCRCInfo_t *crcInfo, cndevDevice_t device);
-
-/**
- * @brief Gets the information of the device's DDR.
- *
- * @param[in,out] ddrInfo The pointer which stores the information of the device's DDR.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDDRInfo(cndevDDRInfo_t *ddrInfo, cndevDevice_t device);
-
+// Group: Utilization Management
 /**
  * @brief Gets the information of the device's processes utilization.
  *
@@ -3735,6 +4372,7 @@ cndevRet_t cndevGetDDRInfo(cndevDDRInfo_t *ddrInfo, cndevDevice_t device);
 CNDEV_EXPORT
 cndevRet_t cndevGetProcessUtilization(__uint32_t *processCount, cndevProcessUtilization_t *processUtil, cndevDevice_t device);
 
+// Group: Utilization Management
 /**
  * @brief Gets the average utilization information of the device's processes between two calls.
  *
@@ -3756,6 +4394,10 @@ cndevRet_t cndevGetProcessUtilization(__uint32_t *processCount, cndevProcessUtil
 CNDEV_EXPORT
 cndevRet_t cndevGetProcessUtilizationInfo(unsigned int *processCount, cndevProcessUtilizationInfo_t *processUtil, cndevDevice_t device);
 
+/******************************************************************************
+ * Power Management
+ ******************************************************************************/
+// Group: Power Management
 /**
  * @brief Sets the information of the device's power management limit.
  *
@@ -3775,6 +4417,7 @@ cndevRet_t cndevGetProcessUtilizationInfo(unsigned int *processCount, cndevProce
 CNDEV_EXPORT
 cndevRet_t cndevSetPowerManagementLimitation(cndevPowerManagementLimitation_t *limitation, cndevDevice_t device);
 
+// Group: Power Management
 /**
  * @brief Gets the information of the device's power management limit.
  *
@@ -3794,6 +4437,7 @@ cndevRet_t cndevSetPowerManagementLimitation(cndevPowerManagementLimitation_t *l
 CNDEV_EXPORT
 cndevRet_t cndevGetPowerManagementLimitation(cndevPowerManagementLimitation_t *limitation, cndevDevice_t device);
 
+// Group: Power Management
 /**
  * @brief Gets the information of the device's power management default limit.
  *
@@ -3813,6 +4457,7 @@ cndevRet_t cndevGetPowerManagementLimitation(cndevPowerManagementLimitation_t *l
 CNDEV_EXPORT
 cndevRet_t cndevGetPowerManagementDefaultLimitation(cndevPowerManagementLimitation_t *defaultLimitation, cndevDevice_t device);
 
+// Group: Power Management
 /**
  * @brief Gets the information of the device's power management limit range.
  *
@@ -3832,10 +4477,34 @@ cndevRet_t cndevGetPowerManagementDefaultLimitation(cndevPowerManagementLimitati
 CNDEV_EXPORT
 cndevRet_t cndevGetPowerManagementLimitationRange(cndevPowerManagementLimitationRange_t *limit, cndevDevice_t device);
 
+// Group: Power Management
 /**
- * @brief Gets the information of the device's overtemperature.
+ * @brief Gets the information of the device's power consumption. @p maxPower in @p powerInfo greater than 0 is valid.
  *
- * @param[in,out] tempInfo The pointer which stores the information of overtemperature.
+ * @param[out] powerInfo The pointer which stores the information of the device's power consumption after the
+ * function ends.
+ * @param[in] device The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_NOT_SUPPORTED,
+ * - ::CNDEV_ERROR_IN_PROBLEM
+ */
+CNDEV_EXPORT
+cndevRet_t cndevGetDevicePowerInfo(cndevDevicePowerInfo_t *powerInfo, cndevDevice_t device);
+
+/******************************************************************************
+ * MIM Management
+ ******************************************************************************/
+// Group: MIM Management
+/**
+ * @brief Gets the information of the device's MIM mode.
+ *
+ * @param[in,out] mode The pointer which stores the information of MIM mode.
  * @param[in] device The identifier of the target device.
  *
  * @return
@@ -3848,14 +4517,13 @@ cndevRet_t cndevGetPowerManagementLimitationRange(cndevPowerManagementLimitation
  * - ::CNDEV_ERROR_NOT_SUPPORTED
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetOverTemperatureInfo(cndevOverTemperatureInfo_t *tempInfo, cndevDevice_t device);
+cndevRet_t cndevGetMimMode(cndevMimMode_t *mode, cndevDevice_t device);
 
+// Group: MIM Management
 /**
- * @brief Gets the information of the device's performance throttle reason.
- * When performance exceeds the maximum limit, the device will throttle performance, could call this API to get
- * what are reasons for throttle performance.
+ * @brief Sets the information of the device's MIM mode.
  *
- * @param[in,out] reason The pointer which stores the information of performance throttle reason.
+ * @param[in] mode The pointer which stores the information of MIM mode.
  * @param[in] device The identifier of the target device.
  *
  * @return
@@ -3866,68 +4534,12 @@ cndevRet_t cndevGetOverTemperatureInfo(cndevOverTemperatureInfo_t *tempInfo, cnd
  * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
+ * - ::CNDEV_ERROR_NO_PERMISSION
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetPerformanceThrottleReason(cndevPerformanceThrottleReason_t *reason, cndevDevice_t device);
+cndevRet_t cndevSetMimMode(cndevMimMode_t *mode, cndevDevice_t device);
 
-/**
- * @brief Gets the information of the device's compute mode.
- *
- * @param[in,out] mode The pointer which stores the information of compute mode.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetComputeMode(cndevComputeMode_t *mode, cndevDevice_t device);
-
-/**
- * @brief Sets the information of the device's compute mode.
- *
- * @param[in] mode The pointer which stores the information of compute mode.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_NO_PERMISSION,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevSetComputeMode(cndevComputeMode_t *mode, cndevDevice_t device);
-
-/**
- * @brief Gets the information of the device's PCIe replay count.
- *
- * @param[in,out] count The pointer which stores the information of PCIe replay count.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetPcieReplayCounter(cndevPcieReplayCounter_t *count, cndevDevice_t device);
-
+// Group: MIM Management
 /**
  * @brief Gets the information of the device's SR-IOV mode.
  *
@@ -3946,6 +4558,8 @@ cndevRet_t cndevGetPcieReplayCounter(cndevPcieReplayCounter_t *count, cndevDevic
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetSRIOVMode(cndevSRIOVMode_t *mode, cndevDevice_t device);
+
+// Group: MIM Management
 /**
  * @brief Sets the information of the device's SR-IOV mode.
  *
@@ -3967,6 +4581,7 @@ cndevRet_t cndevGetSRIOVMode(cndevSRIOVMode_t *mode, cndevDevice_t device);
 CNDEV_EXPORT
 cndevRet_t cndevSetSRIOVMode(cndevSRIOVMode_t *mode, cndevDevice_t device);
 
+// Group: MIM Management
 /**
  * @brief Creates an MLU instance by profile ID based on MIM.
  *
@@ -3992,6 +4607,7 @@ cndevRet_t cndevSetSRIOVMode(cndevSRIOVMode_t *mode, cndevDevice_t device);
 CNDEV_EXPORT
 cndevRet_t cndevCreateMluInstanceByProfileId(cndevMluInstance_t *miHandle, __uint32_t profileId, cndevDevice_t device, char *instanceName);
 
+// Group: MIM Management
 /**
  * @brief Creates an MLU instance by profile name based on MIM.
  *
@@ -4010,13 +4626,14 @@ cndevRet_t cndevCreateMluInstanceByProfileId(cndevMluInstance_t *miHandle, __uin
  * - ::CNDEV_ERROR_INSUFFICIENT_SPACE,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_NO_PERMISSION,
- * - ::CNDEV_ERROR_NOT_FOUND, 
+ * - ::CNDEV_ERROR_NOT_FOUND,
  * - ::CNDEV_ERROR_DUPLICATE,
  * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
 cndevRet_t cndevCreateMluInstanceByProfileName(cndevMluInstance_t *miHandle, char *profileName, cndevDevice_t device, char *instanceName);
 
+// Group: MIM Management
 /**
  * @brief Creates MLU instance with the specified placement by profile ID based on MIM.
  *
@@ -4044,6 +4661,7 @@ CNDEV_EXPORT
 cndevRet_t cndevCreateMluInstanceByProfileIdWithPlacement(cndevMluInstancePlacement_t *placement,
 					cndevMluInstance_t *miHandle, __uint32_t profileId, cndevDevice_t device, char *instanceName);
 
+// Group: MIM Management
 /**
  * @brief Creates an MLU instance with the specified placement by profilename based on MIM.
  *
@@ -4070,6 +4688,8 @@ cndevRet_t cndevCreateMluInstanceByProfileIdWithPlacement(cndevMluInstancePlacem
 CNDEV_EXPORT
 cndevRet_t cndevCreateMluInstanceByProfileNameWithPlacement(cndevMluInstancePlacement_t *placement,
 					cndevMluInstance_t *miHandle, char *profileName, cndevDevice_t device, char *instanceName);
+
+// Group: MIM Management
 /**
  * @brief Destroys an MLU instance by MLU instance handle based on MIM.
  *
@@ -4091,6 +4711,7 @@ cndevRet_t cndevCreateMluInstanceByProfileNameWithPlacement(cndevMluInstancePlac
 CNDEV_EXPORT
 cndevRet_t cndevDestroyMluInstanceByHandle(cndevMluInstance_t miHandle);
 
+// Group: MIM Management
 /**
  * @brief Destroys an MLU instance by MLU instance name based on MIM.
  *
@@ -4112,6 +4733,8 @@ cndevRet_t cndevDestroyMluInstanceByHandle(cndevMluInstance_t miHandle);
  */
 CNDEV_EXPORT
 cndevRet_t cndevDestroyMluInstanceByInstanceName(cndevDevice_t device, char *instanceName);
+
+// Group: MIM Management
 /**
  * @brief Gets MLU instance profile information based on MIM.
  *
@@ -4134,6 +4757,7 @@ CNDEV_EXPORT
 cndevRet_t cndevGetMluInstanceProfileInfo(cndevMluInstanceProfileInfo_t *profileInfo,
 					__int32_t profile, cndevDevice_t device);
 
+// Group: MIM Management
 /**
  * @brief Gets MLU instance possible placements based on MIM.
  *
@@ -4158,6 +4782,7 @@ CNDEV_EXPORT
 cndevRet_t cndevGetMluInstancePossiblePlacements(__int32_t *count, cndevMluInstancePlacement_t *placement,
 					__int32_t profileId, cndevDevice_t device);
 
+// Group: MIM Management
 /**
  * @brief Gets MLU instance remaining capacity for the given profile ID based on MIM.
  *
@@ -4179,6 +4804,7 @@ cndevRet_t cndevGetMluInstancePossiblePlacements(__int32_t *count, cndevMluInsta
 CNDEV_EXPORT
 cndevRet_t cndevGetMluInstanceRemainingCapacity(__int32_t *count, __int32_t profileId, cndevDevice_t device);
 
+// Group: MIM Management
 /**
  * @brief Gets MLU instance max count for the given profile ID based on MIM.
  *
@@ -4200,6 +4826,7 @@ cndevRet_t cndevGetMluInstanceRemainingCapacity(__int32_t *count, __int32_t prof
 CNDEV_EXPORT
 cndevRet_t cndevGetMaxMluInstanceCount(__int32_t *count, __int32_t profileId, cndevDevice_t device);
 
+// Group: MIM Management
 /**
  * @brief Gets MLU instance information based on MIM.
  *
@@ -4220,6 +4847,7 @@ cndevRet_t cndevGetMaxMluInstanceCount(__int32_t *count, __int32_t profileId, cn
 CNDEV_EXPORT
 cndevRet_t cndevGetMluInstanceInfo(cndevMluInstanceInfo_t *miInfo, cndevMluInstance_t miHandle);
 
+// Group: MIM Management
 /**
  * @brief Gets all MLU instance information based on MIM
  *
@@ -4242,6 +4870,7 @@ cndevRet_t cndevGetMluInstanceInfo(cndevMluInstanceInfo_t *miInfo, cndevMluInsta
 CNDEV_EXPORT
 cndevRet_t cndevGetAllMluInstanceInfo(__int32_t *count, cndevMluInstanceInfo_t *miInfo, cndevDevice_t device);
 
+// Group: MIM Management
 /**
  * @brief Gets MLU instance handle for the given index under its parent device based on MIM.
  *
@@ -4262,6 +4891,7 @@ cndevRet_t cndevGetAllMluInstanceInfo(__int32_t *count, cndevMluInstanceInfo_t *
 CNDEV_EXPORT
 cndevRet_t cndevGetMluInstanceByIndex(cndevMluInstance_t *miHandle, __int32_t index, cndevDevice_t device);
 
+// Group: MIM Management
 /**
  * @brief Gets parent device handle from an MLU instance handle.
  *
@@ -4281,6 +4911,7 @@ cndevRet_t cndevGetMluInstanceByIndex(cndevMluInstance_t *miHandle, __int32_t in
 CNDEV_EXPORT
 cndevRet_t cndevGetDeviceHandleFromMluInstanceHandle(cndevDevice_t *devcieHanlde, cndevMluInstance_t miHandle);
 
+// Group: MIM Management
 /**
  * @brief Gets MLU instance for given profile ID based on MIM.
  *
@@ -4303,6 +4934,8 @@ cndevRet_t cndevGetDeviceHandleFromMluInstanceHandle(cndevDevice_t *devcieHanlde
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMluInstance(cndevMluInstance_t *miHandle,  __int32_t *count, __int32_t profileId, cndevDevice_t device);
+
+// Group: MIM Management
 /**
  * @brief Gets the MLU instance ID for the given MLU device handle based on MIM.
  *
@@ -4321,6 +4954,8 @@ cndevRet_t cndevGetMluInstance(cndevMluInstance_t *miHandle,  __int32_t *count, 
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMluInstanceId(__int32_t *instanceId, cndevMluInstance_t miHandle);
+
+// Group: MIM Management
 /**
  * @brief Gets the MLU instance for the given MLU instance ID based on MIM.
  *
@@ -4340,142 +4975,11 @@ cndevRet_t cndevGetMluInstanceId(__int32_t *instanceId, cndevMluInstance_t miHan
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetMluInstanceById(cndevMluInstance_t *miHandle, __int32_t instanceId, cndevDevice_t device);
-/**
- * @brief Gets MLU device handle for the given index based on MIM.
- *
- * @param[in] index The index of the target MLU.
- * @param[out] handle The MLU device handle.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_NOT_FOUND,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDeviceHandleByIndex(__int32_t index, cndevDevice_t *handle);
-/**
- * @brief Gets the MLU device handle for the given PCI bus ID.
- *
- * @param[in] pciBusId The PCI bus ID of the target MLU.
- * @param[out] handle The MLU device handle.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_NOT_FOUND,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDeviceHandleByPciBusId(const char *pciBusId, cndevDevice_t *handle);
-/**
- * @brief Gets the MLU device handle for the given serial number.
- *
- * @param[in] sn The serial number of the target MLU.
- * @param[out] handle The MLU device handle.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_NOT_FOUND
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDeviceHandleBySerial(const char *sn, cndevDevice_t *handle);
-/**
- * @brief Gets the MLU device handle for the given UUID.
- *
- * @param[in] uuid The UUID of the target MLU.
- * @param[out] handle The MLU device handle.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_NOT_FOUND
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDeviceHandleByUUID(const char *uuid, cndevDevice_t *handle);
-/**
- * @brief Gets the parity error information.
- *
- * @param[in,out] error The pointer to the structure storing the information of parity error.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetParityError(cndevParityError_t *error, cndevDevice_t handle);
 
-/**
- * @brief Gets the information of the device's MIM mode.
- *
- * @param[in,out] mode The pointer which stores the information of MIM mode.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetMimMode(cndevMimMode_t *mode, cndevDevice_t device);
-/**
- * @brief Sets the information of the device's MIM mode.
- *
- * @param[in] mode The pointer which stores the information of MIM mode.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_NO_PERMISSION
- */
-CNDEV_EXPORT
-cndevRet_t cndevSetMimMode(cndevMimMode_t *mode, cndevDevice_t device);
-/**
- * @brief Gets the information of the device's docker param.
- *
- * @param[in,out] param The pointer which stores the information of docker param.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_USE,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetDockerParam(cndevDockerParam_t *param, cndevDevice_t device);
-
+/******************************************************************************
+ * sMLU Management
+ ******************************************************************************/
+// Group: sMLU Management
 /**
  * @brief Gets the information of the device's sMLU mode.
  *
@@ -4493,6 +4997,8 @@ cndevRet_t cndevGetDockerParam(cndevDockerParam_t *param, cndevDevice_t device);
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetSMLUMode(cndevSMLUMode_t *mode, cndevDevice_t device);
+
+// Group: sMLU Management
 /**
  * @brief Sets the information of the device's sMLU mode.
  *
@@ -4511,6 +5017,8 @@ cndevRet_t cndevGetSMLUMode(cndevSMLUMode_t *mode, cndevDevice_t device);
  */
 CNDEV_EXPORT
 cndevRet_t cndevSetSMLUMode(cndevSMLUMode_t *mode, cndevDevice_t device);
+
+// Group: sMLU Management
 /**
  * @brief Gets MLU instance profile ID count based on sMLU.
  *
@@ -4529,6 +5037,8 @@ cndevRet_t cndevSetSMLUMode(cndevSMLUMode_t *mode, cndevDevice_t device);
  */
 CNDEV_EXPORT
 cndevRet_t cndevGetSMluProfileIdInfo(cndevSMluProfileIdInfo_t *profileId, cndevDevice_t device);
+
+// Group: sMLU Management
 /**
  * @brief Gets MLU instance profile information based on sMLU.
  *
@@ -4549,11 +5059,12 @@ cndevRet_t cndevGetSMluProfileIdInfo(cndevSMluProfileIdInfo_t *profileId, cndevD
 CNDEV_EXPORT
 cndevRet_t cndevGetSMluProfileInfo(cndevSMluProfileInfo_t *profileInfo, __int32_t profile, cndevDevice_t device);
 
+// Group: sMLU Management
 /**
  * @brief Creates an MLU instance by profile ID based on sMLU.
  *
  * @param[out] miHandle The MLU instance handle.
- * @param[in] profileId The MLU instance profile ID. For more information, see cndevGetSMluProfileIdInfo.
+ * @param[in] profileId The MLU instance profile ID. For more information, see ::cndevGetSMluProfileIdInfo.
  * @param[in] device The identifier of the target device.
  * @param[in] instanceName The name of the instance you want to create.
  *
@@ -4572,12 +5083,12 @@ cndevRet_t cndevGetSMluProfileInfo(cndevSMluProfileInfo_t *profileInfo, __int32_
 CNDEV_EXPORT
 cndevRet_t cndevCreateSMluInstanceByProfileId(cndevMluInstance_t *miHandle, __uint32_t profileId, cndevDevice_t device, char *instanceName);
 
-
+// Group: sMLU Management
 /**
  * @brief Creates an MLU instance by profile name based on sMLU.
  *
  * @param[out] miHandle The MLU instance handle.
- * @param[in] profileName The MLU instance profile Name. For more information, see cndevGetSMluProfileIDInfo.
+ * @param[in] profileName The MLU instance profile Name. For more information, see ::cndevGetSMluProfileIdInfo.
  * @param[in] device The identifier of the target device.
  * @param[in] instanceName The name of the instance you want to create.
  *
@@ -4596,6 +5107,7 @@ cndevRet_t cndevCreateSMluInstanceByProfileId(cndevMluInstance_t *miHandle, __ui
 CNDEV_EXPORT
 cndevRet_t cndevCreateSMluInstanceByProfileName(cndevMluInstance_t *miHandle, char *profileName, cndevDevice_t device, char *instanceName);
 
+// Group: sMLU Management
 /**
  * @brief Destroys an MLU instance by MLU instance Handle based on sMLU.
  *
@@ -4615,6 +5127,7 @@ cndevRet_t cndevCreateSMluInstanceByProfileName(cndevMluInstance_t *miHandle, ch
 CNDEV_EXPORT
 cndevRet_t cndevDestroySMluInstanceByHandle(cndevMluInstance_t miHandle);
 
+// Group: sMLU Management
 /**
  * @brief Destroys an MLU instance by MLU instance name based on sMLU.
  *
@@ -4635,6 +5148,7 @@ cndevRet_t cndevDestroySMluInstanceByHandle(cndevMluInstance_t miHandle);
 CNDEV_EXPORT
 cndevRet_t cndevDestroySMluInstanceByInstanceName(cndevDevice_t device, char *instanceName);
 
+// Group: sMLU Management
 /**
  * @brief Gets MLU instance information based on sMLU.
  *
@@ -4654,7 +5168,7 @@ cndevRet_t cndevDestroySMluInstanceByInstanceName(cndevDevice_t device, char *in
 CNDEV_EXPORT
 cndevRet_t cndevGetSMluInstanceInfo(cndevSMluInfo_t *miInfo, cndevMluInstance_t miHandle);
 
-
+// Group: sMLU Management
 /**
  * @brief Updates the quota of MLU instance by MLU instance Handle based on sMLU.
  *
@@ -4677,6 +5191,7 @@ cndevRet_t cndevGetSMluInstanceInfo(cndevSMluInfo_t *miInfo, cndevMluInstance_t 
 CNDEV_EXPORT
 cndevRet_t cndevUpdateSMluInstanceQuotaByHandle(cndevMluInstance_t miHandle, cndevSMluSet_t *instance_quota);
 
+// Group: sMLU Management
 /**
  * @brief Updates the quota of an MLU instance by MLU instance name based on sMLU.
  *
@@ -4700,6 +5215,7 @@ cndevRet_t cndevUpdateSMluInstanceQuotaByHandle(cndevMluInstance_t miHandle, cnd
 CNDEV_EXPORT
 cndevRet_t cndevUpdateSMluInstanceQuotaByInstanceName(cndevDevice_t device, char *instanceName, cndevSMluSet_t *instance_quota);
 
+// Group: sMLU Management
 /**
  * @brief Gets all MLU instance information based on sMLU.
  *
@@ -4723,6 +5239,7 @@ cndevRet_t cndevUpdateSMluInstanceQuotaByInstanceName(cndevDevice_t device, char
 CNDEV_EXPORT
 cndevRet_t cndevGetAllSMluInstanceInfo(__int32_t *count, cndevSMluInfo_t *miInfo, cndevDevice_t device);
 
+// Group: sMLU Management
 /**
  * @brief Creates sMLU profile based on sMLU.
  *
@@ -4744,6 +5261,7 @@ cndevRet_t cndevGetAllSMluInstanceInfo(__int32_t *count, cndevSMluInfo_t *miInfo
 CNDEV_EXPORT
 cndevRet_t cndevCreateSMluProfileInfo(cndevSMluSet_t *profileInfo, __int32_t *profileId, cndevDevice_t device);
 
+// Group: sMLU Management
 /**
  * @brief Destroys sMLU profile based on sMLU.
  *
@@ -4764,6 +5282,11 @@ cndevRet_t cndevCreateSMluProfileInfo(cndevSMluSet_t *profileInfo, __int32_t *pr
  */
 CNDEV_EXPORT
 cndevRet_t cndevDestroySMluProfileInfo(__int32_t profileId, cndevDevice_t device);
+
+/******************************************************************************
+ * Device Configs Management
+ ******************************************************************************/
+// Group: Device Configs Management
 /**
  * @brief Sets device configurations and it will take effective after calling ::cndevDeviceActiveConfigs().
  *
@@ -4780,13 +5303,15 @@ cndevRet_t cndevDestroySMluProfileInfo(__int32_t profileId, cndevDevice_t device
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_NO_PERMISSION,
  * - ::CNDEV_ERROR_IN_PROBLEM
- * 
+ *
  * @note
  * - If this API fails, it is recommended to call ::cndevDeviceResetConfigs() to reset
  * - the configuration and prevent the next call to this API from failing.
  */
 CNDEV_EXPORT
 cndevRet_t cndevDeviceSetConfigs(unsigned long long value, cndevDeviceConfigsTypeEnum_t type, cndevDevice_t device);
+
+// Group: Device Configs Management
 /**
  * @brief Queries configuration value that has been activated in MLU Driver.
  *
@@ -4806,6 +5331,8 @@ cndevRet_t cndevDeviceSetConfigs(unsigned long long value, cndevDeviceConfigsTyp
  */
 CNDEV_EXPORT
 cndevRet_t cndevDeviceGetConfigs(unsigned long long *value, cndevDeviceConfigsTypeEnum_t type, cndevDevice_t device);
+
+// Group: Device Configs Management
 /**
  * @brief Activates the device configurations that have been set by ::cndevDeviceSetConfigs(). Ensure that no one is using the device.
  *
@@ -4819,13 +5346,15 @@ cndevRet_t cndevDeviceGetConfigs(unsigned long long *value, cndevDeviceConfigsTy
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_IN_PROBLEM
- * 
+ *
  *  * @note
  * - If this API fails, it is recommended to call ::cndevDeviceResetConfigs() to reset
  * - the configuration and prevent the next call to this API from failing.
  */
 CNDEV_EXPORT
 cndevRet_t cndevDeviceActiveConfigs(cndevDevice_t device);
+
+// Group: Device Configs Management
 /**
  * @brief Resets device configurations to default value. Ensure that no one is using the device.
  *
@@ -4844,76 +5373,11 @@ cndevRet_t cndevDeviceActiveConfigs(cndevDevice_t device);
  */
 CNDEV_EXPORT
 cndevRet_t cndevDeviceResetConfigs(cndevDevice_t device);
-/**
- * @brief Gets total available and used size of BAR4 memory. BAR4 is used to map the device memory.
- *
- * @param[in,out] bar4Memory The pointer which stores the information of the device's BAR4 memory after the function ends.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetBAR4MemoryInfo(cndevBAR4Memory_t *bar4Memory, cndevDevice_t device);
-/**
- * @brief Gets major and minor compute capability of the device.
- *
- * @param[in,out] major The pointer which stores the major compute capability of the device.
- * @param[in,out] minor The pointer which stores the minor compute capability of the device.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetComputeCapability(__uint32_t *major, __uint32_t *minor, cndevDevice_t device);
-/**
- * @brief Gets the information of the device's application clock.
- *
- * @param[in] clockType Identify which clock domain to query.
- * @param[in,out] clockMHz The pointer which stores the current setting of application clock in MHz, 0 indicates it has not been set.
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetApplicationsClock(cndevClockType_t clockType, __uint32_t *clockMHz, cndevDevice_t device);
 
-/**
- * @brief Gets value of the given field for device.
- * This API supports the retrieval of multiple fields in a single request.
- *
- * @param[in] device The identifier of the target device.
- * @param[in] valueCount The count of fields that are needed to get value.
- * @param[in,out] value The pointer which stores the value of the information of given fields.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_NOT_SUPPORTED
- */
-CNDEV_EXPORT
-cndevRet_t cndevDeviceGetFieldValues(cndevDevice_t device, __int32_t valueCount, cndevFieldValue_t *value);
-
+/******************************************************************************
+ * Event Management
+ ******************************************************************************/
+// Group: Event Management
 /**
  * @brief Creates an event handle.
  *
@@ -4928,6 +5392,7 @@ cndevRet_t cndevDeviceGetFieldValues(cndevDevice_t device, __int32_t valueCount,
 CNDEV_EXPORT
 cndevRet_t cndevEventHandleCreate(cndevEventHandle *handle);
 
+// Group: Event Management
 /**
  * @brief Destroys the event handle.
  *
@@ -4937,10 +5402,10 @@ cndevRet_t cndevEventHandleCreate(cndevEventHandle *handle);
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
  */
-
 CNDEV_EXPORT
 cndevRet_t cndevEventHandleDestroy(cndevEventHandle handle);
 
+// Group: Event Management
 /**
  * @brief Registers the given event type to device.
  *
@@ -4959,6 +5424,7 @@ cndevRet_t cndevEventHandleDestroy(cndevEventHandle handle);
 CNDEV_EXPORT
 cndevRet_t cndevRegisterEvents(cndevEventHandle handle, unsigned long long eventTypes, cndevDevice_t device);
 
+// Group: Event Management
 /**
  * @brief Waits for the event to occur. The operation is not thread safe.
  *
@@ -4977,6 +5443,7 @@ cndevRet_t cndevRegisterEvents(cndevEventHandle handle, unsigned long long event
 CNDEV_EXPORT
 cndevRet_t cndevEventWait(cndevEventHandle handle, cndevEventData_t *eventData, __int32_t timeout);
 
+// Group: Event Management
 /**
  * @brief Gets the supported event type.
  *
@@ -4993,6 +5460,7 @@ cndevRet_t cndevEventWait(cndevEventHandle handle, cndevEventData_t *eventData, 
 CNDEV_EXPORT
 cndevRet_t cndevGetSupportedEventTypes(unsigned long long *eventTypes, cndevDevice_t device);
 
+// Group: Event Management
 /**
  * @brief Injects an event Xid error to device for simulating a real event.
  *
@@ -5009,93 +5477,96 @@ cndevRet_t cndevGetSupportedEventTypes(unsigned long long *eventTypes, cndevDevi
 CNDEV_EXPORT
 cndevRet_t cndevInjectEventError(__uint64_t eventError, cndevDevice_t device);
 
+/******************************************************************************
+ * MPM Management
+ ******************************************************************************/
+// Group: MPM Management
 /**
- * @brief Gets the device voltage information.
- * If a certain voltage value is -1, it means that obtaining this voltage is not supported on the device.
+ * @brief Indicates whether the supplied device supports MPM.
  *
- * @param[out] voltage  The pointer which stores the voltage information.
- * @param[in]  device   The identifier of the target device.
+ * @param[in] device      The identifier of the target device.
+ * @param[out] mpmSupport The pointer which stores MPM support status.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetVoltageInfo(cndevVoltageInfo_t *voltage, cndevDevice_t device);
-
-/**
- * @brief Gets the device current information.
- * If a certain current value is -1, it means that obtaining this current is not supported on the device.
- *
- * @param[out] current  The pointer which stores the current information.
- * @param[in]  device   The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
- * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_IN_PROBLEM
- */
-CNDEV_EXPORT
-cndevRet_t cndevGetCurrentInfo(cndevCurrentInfo_t *current, cndevDevice_t device);
-
-/**
- * @brief Resets device to its default status. Ensure that no one is using the device.
- * The maximum waiting time is 120 seconds, reaching this value will return ::CNDEV_ERROR_TIMEOUT.
- *
- * @param[in] device The identifier of the target device.
- *
- * @return
- * - ::CNDEV_SUCCESS,
- * - ::CNDEV_ERROR_UNINITIALIZED,
  * - ::CNDEV_ERROR_UNKNOWN,
- * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
- * - ::CNDEV_ERROR_NO_PERMISSION,
- * - ::CNDEV_ERROR_IN_USE,
- * - ::CNDEV_ERROR_TIMEOUT,
  * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
-cndevRet_t cndevResetDevice(cndevDevice_t device);
+cndevRet_t cndevMpmQueryDeviceSupport(cndevDevice_t device, bool *mpmSupport);
 
+// Group: MPM Management
 /**
- * @brief Checks the peer-to-peer ability.
+ * @brief Allocates a sample buffer to be used with MPM.
  *
- * @param[out] canPeerAble The pointer which stores the peer-to-peer ability between @p deviceSrc and @p deviceDst.
- * @param[in] deviceSrc The identifier of the source device.
- * @param[in] deviceDst The identifier of the destination device.
+ * @param[out] mpmSample The pointer which stores the allocated sample buffer.
  *
  * @return
  * - ::CNDEV_SUCCESS,
  * - ::CNDEV_ERROR_UNINITIALIZED,
- * - ::CNDEV_ERROR_UNKNOWN,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
+ * - ::CNDEV_ERROR_MALLOC
+ */
+CNDEV_EXPORT
+cndevRet_t cndevMpmSampleAlloc(cndevMpmSample_t *mpmSample);
+
+// Group: MPM Management
+/**
+ * @brief Frees an allocated sample buffer that was allocated with ::cndevMpmSampleAlloc.
+ *
+ * @param[in] mpmSample The sample buffer to be freed.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT
+ */
+CNDEV_EXPORT
+cndevRet_t cndevMpmSampleFree(cndevMpmSample_t mpmSample);
+
+// Group: MPM Management
+/**
+ * @brief Reads a sample of MPM metrics into the provided @p mpmSample buffer.
+ *
+ * @param[in] mpmSample The buffer to read the sample into.
+ * @param[in] device    The identifier of the target device.
+ *
+ * @return
+ * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
+ * - ::CNDEV_ERROR_INVALID_ARGUMENT,
  * - ::CNDEV_ERROR_INVALID_DEVICE_ID,
+ * - ::CNDEV_ERROR_UNKNOWN,
  * - ::CNDEV_ERROR_NOT_SUPPORTED,
  * - ::CNDEV_ERROR_IN_PROBLEM
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetDeviceCanPeerAble(bool *canPeerAble, cndevDevice_t deviceSrc, cndevDevice_t deviceDst);
+cndevRet_t cndevMpmSampleGet(cndevMpmSample_t mpmSample, cndevDevice_t device);
 
+// Group: MPM Management
 /**
- * @brief Gets the private function.
+ * @brief Calculates MPM metrics from two samples.
  *
- * @param[in] name The name of the private function.
- * @param[out] func The pointer of the private function.
+ * @param[in,out] metricsGet The pointer which stores the metric information of given metric IDs.
  *
  * @return
  * - ::CNDEV_SUCCESS,
+ * - ::CNDEV_ERROR_UNINITIALIZED,
  * - ::CNDEV_ERROR_INVALID_ARGUMENT,
- * - ::CNDEV_ERROR_NOT_FOUND
+ * - ::CNDEV_ERROR_UNSUPPORTED_API_VERSION
+ *
+ * @note
+ * - If the interval between the calls of ::cndevMpmSampleGet that returns two samples is less than 100ms,
+ *   the function returns ::CNDEV_SUCCESS, the status of all metrics is ::CNDEV_SUCCESS,
+ *   but the values of all metrics are NaN.
  */
 CNDEV_EXPORT
-cndevRet_t cndevGetExportFunction(const char *name, const void **func);
+cndevRet_t cndevMpmMetricsGet(cndevMpmMetricsGet_t *metricsGet);
+
 #if defined(__cplusplus)
 }
 #endif  /*__cplusplus*/

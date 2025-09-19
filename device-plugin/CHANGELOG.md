@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.21
+
+- Simplify cndev detection by directly checking common paths
+- Bump cndev to 6.5.24
+
 ## v2.0.20
 
 - Support to auto set mlu related labels for node

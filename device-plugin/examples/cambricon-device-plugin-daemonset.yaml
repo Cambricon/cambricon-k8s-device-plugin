@@ -47,7 +47,7 @@ spec:
       hostIPC: true
       serviceAccount: cambricon-device-plugin # comment to use default rbac
       containers:
-      - image: cambricon-device-plugin:v2.0.20
+      - image: cambricon-device-plugin:v2.0.21
         name: cambricon-device-plugin-ctr
         command:
         - /usr/bin/k8s-device-plugin
@@ -86,6 +86,8 @@ spec:
           mountPath: /dev
         - name: cndev-lib
           mountPath: /host/usr/lib
+        - name: cndev-lib64
+          mountPath: /host/usr/lib64
         - name: host-proc
           mountPath: /host/proc
           # mount /etc/cambricon if dynamic-smlu mode is enabled
@@ -104,6 +106,9 @@ spec:
       - name: cndev-lib
         hostPath:
           path: /usr/lib
+      - name: cndev-lib64
+        hostPath:
+          path: /usr/lib64
       - name: host-proc
         hostPath:
           path: /proc

@@ -22,9 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -733,25 +731,25 @@ func EnsureMLUAllOk() {
 }
 
 func EnsureCndevLib() error {
-	arch := runtime.GOARCH
-	log.Infof("Ensuring cndev lib, arch is %s", arch)
-	var targetDir string
-	switch arch {
-	case "386", "amd64":
-		targetDir = "x86_64-linux-gnu"
-	case "arm", "arm64":
-		targetDir = "aarch64-linux-gnu"
-	default:
-		log.Infof("Invalid arch %s", arch)
-		return nil
-	}
-
-	src := path.Join("/host/usr/lib", targetDir, "libcndev.so")
-	dst := "/usr/lib/libcndev.so"
-	if _, err := os.Stat(src); err != nil {
+	var src string
+	x86Src := "/host/usr/lib/x86_64-linux-gnu/libcndev.so"
+	armSrc := "/host/usr/lib/aarch64-linux-gnu/libcndev.so"
+	lib64Src := "/host/usr/lib64/libcndev.so"
+	if _, err := os.Stat(x86Src); err == nil {
+		src = x86Src
+		log.Infof("Found libcndev.so on host: %s", x86Src)
+	} else if _, err := os.Stat(armSrc); err == nil {
+		src = armSrc
+		log.Infof("Found libcndev.so on host: %s", armSrc)
+	} else if _, err := os.Stat(lib64Src); err == nil {
+		src = lib64Src
+		log.Infof("Found libcndev.so on host: %s", lib64Src)
+	} else {
 		log.Info("Found no libcndev.so on host, use default")
 		return nil
 	}
+
+	dst := "/usr/lib/libcndev.so"
 	log.Info("Found libcndev.so in host, try to copy to /usr/lib")
 	sourceFile, err := os.Open(src)
 	if err != nil {

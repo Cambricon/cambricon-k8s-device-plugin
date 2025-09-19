@@ -30,6 +30,7 @@ type Options struct {
 	DisableHealthCheck  bool       `long:"disable-health-check" description:"disable MLU health check" json:"disableHealthCheck,omitempty"`
 	EnableConsole       bool       `long:"enable-console" description:"enable UART console device(/dev/ttyMS) in container" json:"enableConsole,omitempty"`
 	EnableDeviceType    bool       `long:"enable-device-type" description:"enable device registration with type info" json:"enableDeviceType,omitempty"`
+	EnabledCDI          bool       `long:"enable-cdi" description:"enable CDI support" json:"enabledCDI,omitempty"`
 	LogLevel            string     `long:"log-level" description:"set log level: trace/debug/info/warn/error/fatal/panic" default:"info" json:"logLevel,omitempty"`
 	MinDsmluUnit        int        `long:"min-dsmlu-unit" description:"minimum unit for dsmu, used only in dynamic-smlu mode" default:"0" env:"MIN-DSMLU-UNIT" json:"minDsmluUnit,omitempty"`
 	MLULinkPolicy       string     `long:"mlulink-policy" description:"MLULink topology policy" default:"best-effort" choice:"best-effort" choice:"restricted" choice:"guaranteed" json:"mluLinkPolicy,omitempty"`

@@ -202,11 +202,27 @@ func (m *CambriconDevicePlugin) ListAndWatch(_ *pluginapi.Empty, s pluginapi.Dev
 	}
 }
 
-func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.ContainerAllocateResponse {
-	resp := pluginapi.ContainerAllocateResponse{}
+func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) *pluginapi.ContainerAllocateResponse {
+	resp := &pluginapi.ContainerAllocateResponse{}
 
 	devPaths := m.uuidToPath(uuids)
 	log.Debugf("Prepare response device paths %v", devPaths)
+
+	if m.options.EnabledCDI {
+		if (m.options.Mode == Mim || m.options.Mode == DynamicSmlu) && m.profile != normalMlu {
+			// TODO: support CDI in mim or dynamic-smlu mode
+			log.Error("Not support CDI in mim or dynamic-smlu mode")
+			return resp
+		}
+		cdiDevices := []*pluginapi.CDIDevice{}
+		for _, uuid := range uuids {
+			deviceID := "mlu-" + strconv.Itoa(int(m.devsInfo[uuid].Slot))
+			cdiName := fmt.Sprintf("cambricon.com/mlu=%s", deviceID)
+			cdiDevices = append(cdiDevices, &pluginapi.CDIDevice{Name: cdiName})
+		}
+		resp.CDIDevices = cdiDevices
+		return resp
+	}
 
 	if m.options.UseRuntime {
 		resp.Envs = make(map[string]string)
@@ -238,11 +254,11 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 	}
 
 	if m.deviceList.hasCtrlDev {
-		addDevice(&resp, mluMonitorDeviceName)
+		addDevice(resp, mluMonitorDeviceName)
 	}
 
 	if m.deviceList.hasGdrDev {
-		addDevice(&resp, mluGdrDeviceName)
+		addDevice(resp, mluGdrDeviceName)
 	}
 
 	omitDup := map[string]struct{}{}
@@ -255,13 +271,13 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 				continue
 			}
 			if _, ok := omitDup[pathSets[0]]; !ok {
-				addDevice(&resp, pathSets[0])
+				addDevice(resp, pathSets[0])
 				if m.deviceList.hasIpcmDev {
-					addDevice(&resp, pathSets[1])
+					addDevice(resp, pathSets[1])
 				}
 				omitDup[pathSets[0]] = struct{}{}
 			}
-			addDevice(&resp, pathSets[2])
+			addDevice(resp, pathSets[2])
 			continue
 		}
 
@@ -272,24 +288,24 @@ func (m *CambriconDevicePlugin) PrepareResponse(uuids []string) pluginapi.Contai
 			continue
 		}
 		if m.deviceList.hasMsgqDev {
-			addDevice(&resp, fmt.Sprintf(mluMsgqDeviceName+":%d", index))
+			addDevice(resp, fmt.Sprintf(mluMsgqDeviceName+":%d", index))
 		}
 		if m.deviceList.hasRPCDev {
-			addDevice(&resp, fmt.Sprintf(mluRPCDeviceName+":%d", index))
+			addDevice(resp, fmt.Sprintf(mluRPCDeviceName+":%d", index))
 		}
 		if m.deviceList.hasCmsgDev {
-			addDevice(&resp, fmt.Sprintf(mluCmsgDeviceName+"%d", index))
+			addDevice(resp, fmt.Sprintf(mluCmsgDeviceName+"%d", index))
 		}
 		if m.deviceList.hasCommuDev {
-			addDevice(&resp, fmt.Sprintf(mluCommuDeviceName+"%d", index))
+			addDevice(resp, fmt.Sprintf(mluCommuDeviceName+"%d", index))
 		}
 		if m.deviceList.hasIpcmDev {
-			addDevice(&resp, fmt.Sprintf(mluIpcmDeviceName+"%d", index))
+			addDevice(resp, fmt.Sprintf(mluIpcmDeviceName+"%d", index))
 		}
 		if m.deviceList.hasUARTConsoleDev && m.options.EnableConsole {
-			addDevice(&resp, fmt.Sprintf(mluUARTConsoleDeviceName+"%d", index))
+			addDevice(resp, fmt.Sprintf(mluUARTConsoleDeviceName+"%d", index))
 		}
-		addDevice(&resp, devPath)
+		addDevice(resp, devPath)
 	}
 	return resp
 }
@@ -424,18 +440,18 @@ func (m *CambriconDevicePlugin) allocateDynamicSmlu(ctx context.Context) (*plugi
 		Profile: strings.ReplaceAll(dsmluInfo.Name, "+", "-"),
 	}
 
-	responses := pluginapi.AllocateResponse{}
+	responses := &pluginapi.AllocateResponse{}
 	resp := m.PrepareResponse([]string{uid})
-	responses.ContainerResponses = append(responses.ContainerResponses, &resp)
+	responses.ContainerResponses = append(responses.ContainerResponses, resp)
 
 	dynamicSmlu = make(map[string]*pluginapi.AllocateResponse)
-	dynamicSmlu[pod.Name] = &responses
+	dynamicSmlu[pod.Name] = responses
 	profileAndInstance = make(map[string]string)
 	profileAndInstance[pod.Name] = fmt.Sprintf("%d_%d_%d_%d", profileID, mluIntance, pl.Slot, dsmluInfo.InstanceID)
 
 	log.Debugf("Store in dynamicSmlu Map with key %s, value %v", pod.Name, responses)
 
-	return &responses, nil
+	return responses, nil
 }
 
 // Allocate which return list of devices.
@@ -455,7 +471,7 @@ func (m *CambriconDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Al
 			}
 		}
 		car := m.PrepareResponse(req.DevicesIDs)
-		responses.ContainerResponses = append(responses.ContainerResponses, &car)
+		responses.ContainerResponses = append(responses.ContainerResponses, car)
 	}
 
 	tf := time.Now()
