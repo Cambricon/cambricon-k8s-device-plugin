@@ -22,7 +22,7 @@ spec:
   hostPID: true
   hostIPC: true
   containers:
-  - image: cambricon-device-plugin:v2.0.21
+  - image: cambricon-device-plugin:v2.0.22
     name: cambricon-device-plugin-ctr
     command:
     - /usr/bin/k8s-device-plugin

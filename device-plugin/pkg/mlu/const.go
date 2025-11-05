@@ -26,8 +26,6 @@ const (
 	DsmluProfileAndInstance = "CAMBRICON_DSMLU_PROFILE_INSTANCE"
 	DsmluResourceAssigned   = "CAMBRICON_DSMLU_ASSIGHED"
 
-	mluLinkPolicyUnsatisfied = "mluLinkPolicyUnsatisfied"
-
 	normalMlu      = "mlu"
 	realCounts     = "real-mlu-counts"
 	retries        = 5

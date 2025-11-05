@@ -525,12 +525,6 @@ func (m *CambriconDevicePlugin) Serve() error {
 	if m.options.Mode == TopologyAware {
 		m.allocator = allocator.New(m.options.MLULinkPolicy, m.devsInfo)
 		m.clientset = InitClientSet()
-
-		if m.options.MLULinkPolicy != bestEffort {
-			if err := m.updateNodeMLULinkAnnotation(0); err != nil {
-				return err
-			}
-		}
 	}
 
 	if m.options.Mode == DynamicSmlu {
@@ -630,9 +624,6 @@ func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uin
 		var err error
 		devs, err = m.allocator.Allocate(available, required, size)
 		if err != nil {
-			if e := m.updateNodeMLULinkAnnotation(size); e != nil {
-				log.Errorf("UpdateNodeMLULinkAnnotation err: %v", e)
-			}
 			return nil, err
 		}
 	}
@@ -650,37 +641,6 @@ func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uin
 
 	log.Println("=== Finish getPreferredAllocatedDeviceUUIDs ===")
 	return uuids, nil
-}
-
-func (m *CambriconDevicePlugin) createAnnotationWithTimestamp(size int) error {
-	node, err := m.clientset.CoreV1().Nodes().Get(context.TODO(), m.nodeHostname, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("get node err %v", err)
-	}
-	if size == 0 {
-		delete(node.Annotations, mluLinkPolicyUnsatisfied)
-	} else {
-		timeStamp := strconv.FormatInt(time.Now().Unix(), 10)
-		if len(node.Annotations) == 0 {
-			node.Annotations = make(map[string]string)
-		}
-		node.Annotations[mluLinkPolicyUnsatisfied] = fmt.Sprintf("%d-%s-%s", size, m.options.MLULinkPolicy, timeStamp)
-	}
-	_, err = m.clientset.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("update node err: %v", err)
-	}
-	return nil
-}
-
-func (m *CambriconDevicePlugin) updateNodeMLULinkAnnotation(size int) error {
-	err := m.createAnnotationWithTimestamp(size)
-	for i := 0; i < retries && err != nil; i++ {
-		log.Printf("CreateAnnotationWithTimestamp err: %v, retried times: %d", err, i+1)
-		time.Sleep(time.Duration(rand.Intn(i)) * 10 * time.Millisecond)
-		err = m.createAnnotationWithTimestamp(size)
-	}
-	return err
 }
 
 func (m *CambriconDevicePlugin) getSlots(ids []string) []uint {

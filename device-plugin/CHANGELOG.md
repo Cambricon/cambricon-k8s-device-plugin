@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.22
+
+- Clean deprecated code about mlulink unsatisfy
+
 ## v2.0.21
 
 - Simplify cndev detection by directly checking common paths
