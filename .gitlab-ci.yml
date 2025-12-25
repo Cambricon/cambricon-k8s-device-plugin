@@ -15,7 +15,8 @@
 image: yellow.hub.cambricon.com/caip/ci/buildpack:20250311
 variables:
   GOPROXY: http://10.3.68.2:8080
-
+  CNDEV_HEADER_URL: "http://10.3.68.83:9000/public/release/cndev/include/v6.5.24/cndev.h"
+  HEADER_DEST_PATH: "${CI_PROJECT_DIR}/device-plugin/pkg/cndev/include/cndev.h"
 .only-mr-refs: &only-mr-refs
   refs:
     - merge_requests

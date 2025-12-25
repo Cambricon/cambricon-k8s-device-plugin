@@ -126,8 +126,6 @@ cndevRet_t cndevGetCardName(cndevCardName_t *cardName, cndevDevice_t device) {
 		cardName->id = MLU290;
 	} else if (card_type == 23) {
 		cardName->id = MLU370;
-	} else if (card_type == 26) {
-		cardName->id = MLU590;
 	}
 
 	cJSON_Delete(config);
@@ -154,8 +152,6 @@ const char *cndevGetCardNameStringByDevId(cndevDevice_t device) {
 		return "MLU290";
 	} else if (card_type == 23) {
 		return "MLU370";
-	} else if (card_type == 26) {
-		return "MLU590";
 	}
 }
 

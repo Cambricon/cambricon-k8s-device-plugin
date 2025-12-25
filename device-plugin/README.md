@@ -38,6 +38,8 @@ git clone https://github.com/Cambricon/cambricon-k8s-device-plugin.git
 cd cambricon-k8s-device-plugin/device-plugin
 ```
 
+Note: when building the device plugin you must obtain the cndev.h header file (version 6.5.24) and place it into the repository at pkg/cndev/include/. This file is provided with Cambricon driver packages.
+
 Set the following environment variables if you need.
 
 | env        | description                                                                   |

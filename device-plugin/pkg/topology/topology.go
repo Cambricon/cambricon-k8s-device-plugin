@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/allocator"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cndev"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/cntopo"
 	"github.com/Cambricon/cambricon-k8s-device-plugin/device-plugin/pkg/mlu"
@@ -44,10 +45,10 @@ var (
 	socket    = "/var/lib/kubelet/pod-resources/kubelet.sock"
 	timeout   = 10 * time.Second
 	topoRules = map[string]map[int]int{
-		"MLU290": {2: 2, 4: 4}, //key is the number of cards required, value is the best 'NonConflictRingNum' for this card number combination derived from cntopo
-		"MLU370": {2: 2, 4: 2, 8: 4},
-		"MLU580": {2: 2},
-		"MLU590": {2: 2, 4: 6},
+		"092U": {2: 2, 4: 4}, //key is the number of cards required, value is the best 'NonConflictRingNum' for this card number combination derived from cntopo
+		"073U": {2: 2, 4: 2, 8: 4},
+		"085U": {2: 2},
+		"095U": {2: 2, 4: 6},
 	}
 	uuidPrefix = "MLU-"
 )
@@ -65,7 +66,7 @@ type Topology struct {
 }
 
 func NewTopology(o mlu.Options, num uint) *Topology {
-	model := cndev.GetDeviceModel(uint(0))
+	model := allocator.Reverse(cndev.GetDeviceModel(uint(0)))
 	topoRule := make(map[int]int)
 	for k := range topoRules {
 		if strings.Contains(model, k) {

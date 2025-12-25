@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.23
+
+- Add resource limits and requests
+
 ## v2.0.22
 
 - Clean deprecated code about mlulink unsatisfy

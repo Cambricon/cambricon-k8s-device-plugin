@@ -20,6 +20,18 @@
       - device-plugin/**/*
     refs:
       - merge_requests
+  before_script:
+    - |
+      echo "Downloading cndev.h from file server..."
+      cd "${CI_PROJECT_DIR}"
+      echo "Working in: $(pwd)"
+      mkdir -p device-plugin/pkg/cndev/include
+      if wget -q "${CNDEV_HEADER_URL}" -O "${HEADER_DEST_PATH}"; then
+        echo "✓ Successfully downloaded cndev.h"
+      else
+        echo "✗ Failed to download cndev.h"
+        exit 1
+      fi
 
 run-device-plugin-lint:
   extends: .run-device-plugin-mr
