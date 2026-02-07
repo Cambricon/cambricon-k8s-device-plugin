@@ -24,7 +24,7 @@ const (
 	DsmluLockTime           = "cambricon.com/dsmlu.lock"
 	DsmluProfile            = "CAMBRICON_DSMLU_PROFILE"
 	DsmluProfileAndInstance = "CAMBRICON_DSMLU_PROFILE_INSTANCE"
-	DsmluResourceAssigned   = "CAMBRICON_DSMLU_ASSIGHED"
+	DsmluResourceAssigned   = "CAMBRICON_DSMLU_ASSIGNED"
 
 	normalMlu      = "mlu"
 	realCounts     = "real-mlu-counts"
