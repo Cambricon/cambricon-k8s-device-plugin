@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+stages:
+  - precheckin
+  - lint
+  - build
+  - test
+
 .run-device-plugin-mr:
   only:
     changes:
@@ -60,3 +66,107 @@ run-device-plugin-integration:
     - shell47
   script:
     - make -C device-plugin integration-test
+
+run-device-plugin-sensitive-word-check:
+  stage: precheckin
+  image:
+    name: yellow.hub.cambricon.com/toolrd/sensitive-word-detector-local:2.0.0
+    entrypoint: [""]
+  script:
+    - |
+      set -e
+      WORKSPACE=${CI_PROJECT_DIR}
+      OUTPUT_DIR=${WORKSPACE}/sensitive_check
+      rm -rf "${OUTPUT_DIR}"
+      mkdir -p "${OUTPUT_DIR}"
+
+      # 修复敏感词检测工具的字典路径问题
+      DICT_SRC="/usr/local/bin/dict"
+      DICT_DST="/go/pkg/mod/github.com/yanyiwu/gojieba@v1.4.6/deps/cppjieba/dict"
+      mkdir -p "${DICT_DST}"
+      cp -n "${DICT_SRC}"/*.utf8 "${DICT_DST}"/ 2>/dev/null || true
+
+      FAILED=0
+      SUBDIR="device-plugin"
+
+      # 检查 README.md
+      if [ -f "${WORKSPACE}/${SUBDIR}/README.md" ]; then
+        echo "Checking ${SUBDIR}/README.md..."
+        sensitive-filter -P "${WORKSPACE}/${SUBDIR}/README.md" -o "${OUTPUT_DIR}" --filename "readme"
+        if grep -q "红灯" "${OUTPUT_DIR}/readme.csv"; then
+          echo "ERROR: Sensitive word '红灯' found in ${SUBDIR}/README.md"
+          cat "${OUTPUT_DIR}/readme.csv"
+          FAILED=1
+        fi
+      fi
+
+      # 检查 CHANGELOG.md
+      if [ -f "${WORKSPACE}/${SUBDIR}/CHANGELOG.md" ]; then
+        echo "Checking ${SUBDIR}/CHANGELOG.md..."
+        sensitive-filter -P "${WORKSPACE}/${SUBDIR}/CHANGELOG.md" -o "${OUTPUT_DIR}" --filename "changelog"
+        if grep -q "红灯" "${OUTPUT_DIR}/changelog.csv"; then
+          echo "ERROR: Sensitive word '红灯' found in ${SUBDIR}/CHANGELOG.md"
+          cat "${OUTPUT_DIR}/changelog.csv"
+          FAILED=1
+        fi
+      fi
+
+      # 检查 docs 目录下的 rst 文件
+      if [ -d "${WORKSPACE}/${SUBDIR}/docs" ]; then
+        echo "Checking ${SUBDIR}/docs/..."
+        for rst_file in $(find "${WORKSPACE}/${SUBDIR}/docs" -type f \( -name "*.rst" -o -name "*.md" \)); do
+          file_name=$(basename "${rst_file}" | sed 's/\./_/g')
+          sensitive-filter -P "${rst_file}" -o "${OUTPUT_DIR}" --filename "docs_${file_name}"
+          if grep -q "红灯" "${OUTPUT_DIR}/docs_${file_name}.csv"; then
+            echo "ERROR: Sensitive word '红灯' found in ${rst_file}"
+            cat "${OUTPUT_DIR}/docs_${file_name}.csv"
+            FAILED=1
+          fi
+        done
+      fi
+
+      # 检查 Makefile
+      if [ -f "${WORKSPACE}/${SUBDIR}/Makefile" ]; then
+        echo "Checking ${SUBDIR}/Makefile..."
+        sensitive-filter -P "${WORKSPACE}/${SUBDIR}/Makefile" -o "${OUTPUT_DIR}" --filename "makefile"
+        if grep -q "红灯" "${OUTPUT_DIR}/makefile.csv"; then
+          echo "ERROR: Sensitive word '红灯' found in ${SUBDIR}/Makefile"
+          cat "${OUTPUT_DIR}/makefile.csv"
+          FAILED=1
+        fi
+      fi
+
+      # 检查代码文件 (*.go)，排除 cndev.h
+      echo "Checking ${SUBDIR}/ source code..."
+      for go_file in $(find "${WORKSPACE}/${SUBDIR}" -type f -name "*.go" ! -name "cndev.h"); do
+        file_name=$(basename "${go_file}" .go)
+        dir_name=$(dirname "${go_file}" | xargs basename)
+        sensitive-filter -P "${go_file}" -o "${OUTPUT_DIR}" --filename "pkg_${dir_name}_${file_name}"
+        if grep -q "红灯" "${OUTPUT_DIR}/pkg_${dir_name}_${file_name}.csv"; then
+          echo "ERROR: Sensitive word '红灯' found in ${go_file}"
+          cat "${OUTPUT_DIR}/pkg_${dir_name}_${file_name}.csv"
+          FAILED=1
+        fi
+      done
+
+      # 检查 shell 脚本
+      echo "Checking ${SUBDIR}/ shell scripts..."
+      for sh_file in $(find "${WORKSPACE}/${SUBDIR}" -name '*.sh' -type f); do
+        file_name=$(basename "${sh_file}" .sh)
+        sensitive-filter -P "${sh_file}" -o "${OUTPUT_DIR}" --filename "sh_${file_name}"
+        if grep -q "红灯" "${OUTPUT_DIR}/sh_${file_name}.csv"; then
+          echo "ERROR: Sensitive word '红灯' found in ${sh_file}"
+          cat "${OUTPUT_DIR}/sh_${file_name}.csv"
+          FAILED=1
+        fi
+      done
+
+      if [ "${FAILED}" -eq 1 ]; then
+        echo "Sensitive word check FAILED."
+        exit 1
+      fi
+
+      echo "Sensitive word check passed."
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master"

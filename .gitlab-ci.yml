@@ -23,6 +23,7 @@ variables:
     - master
 
 stages:
+  - precheckin
   - lint
   - build
   - test

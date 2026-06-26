@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.2.0
+
+- Bump cntopo to 1.9.1
+
 ## v2.0.24
 
 - Replace cndevGetCardName with cndevGetCardNameStringByDevId

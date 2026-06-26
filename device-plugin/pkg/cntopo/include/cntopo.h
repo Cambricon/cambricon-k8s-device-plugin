@@ -1,5 +1,5 @@
 /***********************************************************************************
- * Copyright (c) [2019-2025] by Cambricon, Inc.
+ * Copyright (c) [2019-2028] by Cambricon, Inc.
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
@@ -28,8 +28,8 @@
 #define CNTOPO_H_  // NOLINT
 
 #define CNTOPO_MAJOR_VERSION 1
-#define CNTOPO_MINOR_VERSION 7
-#define CNTOPO_PATCH_VERSION 2
+#define CNTOPO_MINOR_VERSION 9
+#define CNTOPO_PATCH_VERSION 1
 
 #ifndef CNTOPO_VERSION
 #define CNTOPO_VERSION \
@@ -118,11 +118,11 @@ typedef enum {
 typedef void *cntopoContext_t;
 /** @brief The handle of local machine information. */
 typedef char *cntopoMachineInfo_t;
-/** @brief The handle of CNTopo Query based on CNTopo Context. 
- * @details Sets the Query restrictions based on  
+/** @brief The handle of CNTopo Query based on CNTopo Context.
+ * @details Sets the Query restrictions based on
  * the devices information obtained by ::cntopoContext_t,
- * finds the corresponding topology according to the restrictions, such as blacklists,
- * and manages the reclamation of dynamic memory. */
+ * finds the corresponding topology according to the restrictions, such as
+ * blacklists, and manages the reclamation of dynamic memory. */
 typedef void *cntopoQuery_t;
 /** @brief The handle of DevSet found by CNTopo Query. */
 /** @details Stores a single ring or single tree device set.
@@ -130,9 +130,10 @@ typedef void *cntopoQuery_t;
  * unordered, without connection information or topological edges.*/
 typedef void *cntopoDevSet_t;
 /** @brief The handle of topology based on DevSet. */
-/** @details Saves the information of non-conflict single ring topology or single tree topology.
- * The topology is ordered and edged, and you can get the exact port used by each
- * edge from the topology, which is a capability that the device set does not have. */
+/** @details Saves the information of non-conflict single ring topology or single
+ * tree topology. The topology is ordered and edged, and you can get the exact port
+ * used by each edge from the topology, which is a capability that the device set
+ * does not have. */
 typedef void *cntopoTopo_t;
 /** @brief Topology types supported by CNTopo.*/
 typedef enum cntopoTopoType_t {
@@ -203,7 +204,7 @@ const char *cntopoGetErrorStr(cntopoResult_t ret);
  * @brief Initializes a CNTopo Context which manages all machines' information.
  *
  * @param[out] ctx Pointer to the obtained CNTopo Context handle.
- * 
+ *
  * @return
  * - ::CNTOPO_RET_SUCCESS
  *
@@ -213,7 +214,8 @@ cntopoResult_t cntopoInitContext(cntopoContext_t *ctx);
 //Group:Context Management
 
 /**
- * @brief Destroys the Context to free all CNTopo inside resources including management resources.
+ * @brief Destroys the Context to free all CNTopo inside resources including
+ * management resources.
  *
  * @param[in] ctx The handle of CNTopo Context obtained by #cntopoInitContext.
  * @return
@@ -275,9 +277,9 @@ cntopoResult_t cntopoSaveMachineInfoToFile(cntopoMachineInfo_t node_info,
  * - ::CNTOPO_FILE_ERR
  *
  * @note
- * - The Context is only used to manage resources in ::cntopoLoadMachineInfoFromFile. 
+ * - The Context is only used to manage resources in ::cntopoLoadMachineInfoFromFile.
  * - Before finding the topology, #cntopoAddMachineInfo must be called.
- * 
+ *
  * @par Example
  * @code
  *   ...
@@ -371,7 +373,7 @@ cntopoResult_t cntopoAddMachineInfo(cntopoContext_t ctx,
  * and call ::cntopoAddMachineInfo to add the new machine information to the Context.
  * - Call ::cntopoCreateQuery to create a new Query to query the topology,
  * if the device information in the Context changes.
- * The previous Query still retains the previous device information. 
+ * The previous Query still retains the previous device information.
  *
  */
 cntopoResult_t cntopoClearMachineInfo(cntopoContext_t ctx);
@@ -414,8 +416,8 @@ cntopoResult_t cntopoClearMachineInfo(cntopoContext_t ctx);
  *   ...
  *   CNTOPO_CHECK(cntopoDestroyQuery(query_handle));
  * @endcode
- * 
- * @note 
+ *
+ * @note
  * - Different query configuration must use different ::cntopoQuery_t.
  */
 cntopoResult_t cntopoCreateQuery(cntopoContext_t ctx, cntopoQuery_t *query_handle);
@@ -445,7 +447,7 @@ cntopoResult_t cntopoDestroyQuery(cntopoQuery_t query_handle);
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_QUERY_NOT_INIT
- * 
+ *
  * @par Example
  * @code
  *   ...
@@ -530,7 +532,7 @@ cntopoResult_t cntopoSetBlacklistUUID(cntopoQuery_t query_handle,
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_QUERY_NOT_INIT
- * 
+ *
  * @par Example
  * @code
  *   ...
@@ -578,7 +580,8 @@ cntopoResult_t cntopoSetWhitelistUUID(cntopoQuery_t query_handle,
 //Group:DevSet Information Management
 
 /**
- * @brief Finds DevSet according to input topology type and maximum number of topology.
+ * @brief Finds DevSet according to input topology type and maximum number of
+ * topology.
  *
  * @param[in] query_handle The handle of CNTopo Query obtain by #cntopoCreateQuery.
  * @param[in] topo_type The topology type. Only RING and TREE are supported.
@@ -589,9 +592,9 @@ cntopoResult_t cntopoSetWhitelistUUID(cntopoQuery_t query_handle,
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_QUERY_NOT_INIT
  *
- * @note 
+ * @note
  * - ``num_dev_set`` might be less than ``max_topo_num``.
- * 
+ *
  * @par Example
  * @code
  *   ...
@@ -621,7 +624,7 @@ cntopoResult_t cntopoFindDevSets(cntopoQuery_t query_handle,
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_DEVSET_NOT_INIT
- * 
+ *
  * @par Example
  * @code
  *   ...
@@ -652,7 +655,7 @@ cntopoResult_t cntopoGetDevSetSize(cntopoDevSet_t dev_set, size_t *size);
  * @return
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_DEVSET_NOT_INIT
- * 
+ *
  * @par Example
  * @code
  *   ...
@@ -733,11 +736,12 @@ cntopoResult_t cntopoFindTopos(cntopoDevSet_t dev_set,
  * - ::CNTOPO_RET_SUCCESS
  * - ::CNTOPO_TOPO_NOT_INIT
  *
- * @note 
- * - Each device might have different ``num_port_info``. For example, in tree topology, if
- * one node has one parent node and no leaf node, the value of ``num_port_info`` is ``1``; if
- * one node has two leaf nodes and no parent node, the value of ``num_port_info`` is ``2``.
- * 
+ * @note
+ * - Each device might have different ``num_port_info``. For example, in tree
+ * topology, if one node has one parent node and no leaf node, the value of
+ * ``num_port_info`` is ``1``; if one node has two leaf nodes and no parent node, the
+ * value of ``num_port_info`` is ``2``.
+ *
  * @par Example
  * @code
  *   ...
@@ -776,7 +780,7 @@ cntopoResult_t cntopoFindTopos(cntopoDevSet_t dev_set,
  *   CNTOPO_CHECK(cntopoDestroyQuery(query_handle));
  *   ...
  * @endcode
- * 
+ *
  * @par Example
  * @code
  *   ...
@@ -851,7 +855,8 @@ cntopoResult_t cntopoGetNodeFromTopo(cntopoTopo_t topo,
 //Group:Version Control
 
 /**
- * @brief Gets the current CNTopo library version to check if CNTopo satisfies the dependency.
+ * @brief Gets the current CNTopo library version to check if CNTopo satisfies the
+ * dependency.
  *
  * @param[out] major Pointer to the major version id.
  * @param[out] minor Pointer to the minor version id.
