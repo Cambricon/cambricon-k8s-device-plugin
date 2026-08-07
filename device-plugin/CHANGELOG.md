@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.0
+
+- Add sensitive word check gate in CI
+
 ## v2.2.0
 
 - Bump cntopo to 1.9.1
