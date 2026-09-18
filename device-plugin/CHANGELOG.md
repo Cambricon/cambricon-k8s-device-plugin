@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.4.0
+
+- Add `cambricon.com/node-mlu-cards` node label
+
 ## v2.3.0
 
 - Add sensitive word check gate in CI

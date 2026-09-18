@@ -28,6 +28,7 @@ const (
 	driverVersionLabel = "DriverVersion"
 	mcuVersionLabel    = "MCUVersion"
 	modelLabel         = "Model"
+	nodeMluCardsLabel  = "cambricon.com/node-mlu-cards"
 
 	checkInterval = 30 * time.Second
 	resyncPeriod  = 30 * time.Minute
@@ -257,6 +258,12 @@ func (nl *NodeLabel) getActualLabels() map[string]string {
 	}
 	labels[mcuVersionLabel] = fmt.Sprintf("v%d.%d.%d", mcuMajor, mcuMinor, mcuBuild)
 	labels[driverVersionLabel] = fmt.Sprintf("v%d.%d.%d", driverMajor, driverMinor, driverBuild)
+
+	if count, err := cndev.GetDeviceCount(); err != nil {
+		log.Error(errors.Wrap(err, "GetDeviceCount"))
+	} else if count > 0 {
+		labels[nodeMluCardsLabel] = fmt.Sprintf("%d", count)
+	}
 
 	log.Debugf("Actual labels are: %v", labels)
 

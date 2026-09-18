@@ -26,6 +26,10 @@ func TestGetActualLabels(t *testing.T) {
 		return 1, 2, 3, 4, 5, 6, nil
 	})
 
+	stub.ApplyFunc(cndev.GetDeviceCount, func() (uint, error) {
+		return 8, nil
+	})
+
 	nl := &NodeLabel{cpuType: "Intel Xeon"}
 	labels := nl.getActualLabels()
 
@@ -33,6 +37,7 @@ func TestGetActualLabels(t *testing.T) {
 	assert.Equal(t, "v1.2.3", labels[mcuVersionLabel])
 	assert.Equal(t, "v4.5.6", labels[driverVersionLabel])
 	assert.Equal(t, "Intel Xeon", labels[cpuTypeLabel])
+	assert.Equal(t, "8", labels[nodeMluCardsLabel])
 }
 
 func TestGetActualLabels_HardwareError(t *testing.T) {
@@ -45,6 +50,10 @@ func TestGetActualLabels_HardwareError(t *testing.T) {
 		return 0, 0, 0, 0, 0, 0, errors.New("device error")
 	})
 
+	stub.ApplyFunc(cndev.GetDeviceCount, func() (uint, error) {
+		return 0, errors.New("device error")
+	})
+
 	nl := &NodeLabel{cpuType: "Intel Xeon"}
 	labels := nl.getActualLabels()
 
@@ -52,6 +61,7 @@ func TestGetActualLabels_HardwareError(t *testing.T) {
 	assert.Empty(t, labels[mcuVersionLabel])
 	assert.Empty(t, labels[driverVersionLabel])
 	assert.Equal(t, "Intel Xeon", labels[cpuTypeLabel])
+	assert.Empty(t, labels[nodeMluCardsLabel])
 }
 
 func TestGetPhysicalCPUType(t *testing.T) {
