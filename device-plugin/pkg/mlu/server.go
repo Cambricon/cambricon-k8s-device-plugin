@@ -470,7 +470,16 @@ func (m *CambriconDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Al
 				return nil, fmt.Errorf("invalid allocation request: unknown device: %s", id)
 			}
 		}
-		car := m.PrepareResponse(req.DevicesIDs)
+		ids := req.DevicesIDs
+		if m.options.Mode == TopologyAware && m.allocator != nil && len(ids) > 1 {
+			if ordered, err := m.orderDeviceIDs(ids); err != nil {
+				log.Warnf("Failed to reorder allocated devices %v: %v, keep kubelet order", ids, err)
+			} else {
+				log.Printf("Reordered allocated devices from %v to %v", ids, ordered)
+				ids = ordered
+			}
+		}
+		car := m.PrepareResponse(ids)
 		responses.ContainerResponses = append(responses.ContainerResponses, car)
 	}
 
@@ -617,15 +626,9 @@ func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uin
 	log.Println("=== Start getPreferredAllocatedDeviceUUIDs ===")
 	log.Printf("Available devs: %v, size %d", available, size)
 
-	var devs []uint
-	if m.options.MLULinkPolicy == bestEffort && len(available) == size {
-		devs = available
-	} else {
-		var err error
-		devs, err = m.allocator.Allocate(available, required, size)
-		if err != nil {
-			return nil, err
-		}
+	devs, err := m.allocator.Allocate(available, required, size)
+	if err != nil {
+		return nil, err
 	}
 
 	log.Printf("Preferred devices %v", devs)
@@ -641,6 +644,26 @@ func (m *CambriconDevicePlugin) getPreferredAllocatedDeviceUUIDs(available []uin
 
 	log.Println("=== Finish getPreferredAllocatedDeviceUUIDs ===")
 	return uuids, nil
+}
+
+func (m *CambriconDevicePlugin) orderDeviceIDs(ids []string) ([]string, error) {
+	slots := m.getSlots(ids)
+	ordered, err := m.allocator.Allocate(slots, nil, len(slots))
+	if err != nil {
+		return nil, err
+	}
+	if len(ordered) != len(slots) {
+		return nil, fmt.Errorf("allocator returned %d devices, expected %d", len(ordered), len(slots))
+	}
+	out := make([]string, 0, len(ordered))
+	for _, slot := range ordered {
+		uuid, found := m.GetDeviceUUIDByIndex(slot)
+		if !found {
+			return nil, fmt.Errorf("uuid not found for dev %d", slot)
+		}
+		out = append(out, uuid)
+	}
+	return out, nil
 }
 
 func (m *CambriconDevicePlugin) getSlots(ids []string) []uint {
