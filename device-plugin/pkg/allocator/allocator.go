@@ -41,6 +41,11 @@ func New(policy string, devs map[string]*cndev.Device) Allocator {
 	if strings.Contains(model, "8X-073U") || strings.Contains(model, "8H-095U") {
 		return NewBoardAllocator(policy, devs)
 	}
+	// MLU580 (085U) 16-card machines use 4-card MLULink quads that cntopo RING
+	// often cannot describe. Prefer MLULink groups and SGL-paired 8-card domains.
+	if strings.Contains(model, "085U") || uniqueSlots(devs) >= 16 {
+		return NewQuadAllocator(policy, devs)
+	}
 	return NewDefaultAllocator(policy, devs)
 }
 

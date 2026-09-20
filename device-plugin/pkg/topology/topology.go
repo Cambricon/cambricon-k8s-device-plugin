@@ -47,7 +47,7 @@ var (
 	topoRules = map[string]map[int]int{
 		"092U": {2: 2, 4: 4}, //key is the number of cards required, value is the best 'NonConflictRingNum' for this card number combination derived from cntopo
 		"073U": {2: 2, 4: 2, 8: 4},
-		"085U": {2: 2},
+		"085U": {2: 1, 4: 1, 8: 1}, // MLU580-X6: one MLULink per pair, 4-card quads, SGL-paired 8-card domains
 		"095U": {2: 2, 4: 6},
 	}
 	uuidPrefix = "MLU-"
@@ -123,6 +123,10 @@ func (t *Topology) getTopo() error {
 		if len(t.available) < size {
 			continue
 		}
+		if ann, ok := t.annotateByLinkGroups(size); ok {
+			annotation[strconv.Itoa(size)+"-cards"] = ann
+			continue
+		}
 		rings, err := t.topoClient.GetRings(t.available, size)
 		if err != nil {
 			log.Errorf("failed to get rings %v", err)
@@ -144,6 +148,90 @@ func (t *Topology) getTopo() error {
 	return nil
 }
 
+func (t *Topology) annotateByLinkGroups(size int) (string, bool) {
+	groups, err := cndev.GetMLULinkGroups()
+	if err != nil {
+		log.Errorf("failed to get mlulink groups for topology annotation: %v", err)
+		return "", false
+	}
+	if !hasQuadGroups(groups) {
+		return "", false
+	}
+	domains := allocator.PairQuadDomains(groups)
+	availGroups := filterSlotsByAvailable(groups, t.available)
+	availDomains := filterSlotsByAvailable(domains, t.available)
+
+	best := false
+	switch size {
+	case 2:
+		for _, g := range availGroups {
+			if len(g) >= 2 {
+				best = true
+				break
+			}
+		}
+	case 4:
+		for _, g := range availGroups {
+			if len(g) >= 4 {
+				best = true
+				break
+			}
+		}
+	case 8:
+		for _, d := range availDomains {
+			if len(d) >= 8 {
+				best = true
+				break
+			}
+		}
+	default:
+		return "", false
+	}
+	if best {
+		log.Printf("topology annotation from mlulink groups: size %d restricted, groups %v domains %v", size, availGroups, availDomains)
+		return "restricted", true
+	}
+	if len(t.available) >= size {
+		return "guaranteed", true
+	}
+	return "", false
+}
+
+func hasQuadGroups(groups [][]uint) bool {
+	n := 0
+	for _, g := range groups {
+		if len(g) == 4 {
+			n++
+		}
+	}
+	return n >= 2
+}
+
+func filterSlotsByAvailable(sets [][]uint, available []uint) [][]uint {
+	var out [][]uint
+	for _, set := range sets {
+		cur := []uint{}
+		for _, slot := range set {
+			if containsUint(available, slot) {
+				cur = append(cur, slot)
+			}
+		}
+		if len(cur) > 0 {
+			out = append(out, cur)
+		}
+	}
+	return out
+}
+
+func containsUint(set []uint, v uint) bool {
+	for _, s := range set {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Topology) UpdateNodeAnnotation() error {
 	node, err := t.k8sClient.CoreV1().Nodes().Get(context.TODO(), t.option.NodeName, metav1.GetOptions{})
 	if err != nil {
@@ -158,15 +246,25 @@ func (t *Topology) UpdateNodeAnnotation() error {
 	var needUpdate bool
 	for size := range t.topoRule {
 		key := strconv.Itoa(size) + "-cards"
-		if _, ok := node.Annotations[key]; ok {
-			if _, ok := t.annotation[key]; ok {
+		old, hasOld := node.Annotations[key]
+		v, hasNew := t.annotation[key]
+		if hasOld && hasNew {
+			if old == v {
 				continue
 			}
+			node.Annotations[key] = v
+			needUpdate = true
+			continue
+		}
+		if hasOld && !hasNew {
 			delete(node.Annotations, key)
 			needUpdate = true
 			continue
 		}
-		if v, ok := t.annotation[key]; ok {
+		if hasNew {
+			if node.Annotations == nil {
+				node.Annotations = map[string]string{}
+			}
 			node.Annotations[key] = v
 			needUpdate = true
 		}
